@@ -1,0 +1,20 @@
+[package]
+name = "octofhir-cql"
+description = "Clinical Quality Language (CQL) implementation for Rust"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+octofhir-cql-ast = { workspace = true }
+octofhir-cql-parser = { workspace = true }
+octofhir-cql-elm = { workspace = true }
+octofhir-cql-types = { workspace = true }
+octofhir-cql-eval = { workspace = true }
+octofhir-cql-model = { workspace = true }
+octofhir-cql-diagnostics = { workspace = true }
+
+[lints]
+workspace = true

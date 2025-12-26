@@ -1,0 +1,25 @@
+[package]
+name = "octofhir-cql-cli"
+description = "CQL command-line interface"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "cql"
+path = "src/main.rs"
+
+[dependencies]
+octofhir-cql = { workspace = true }
+octofhir-cql-diagnostics = { workspace = true, features = ["colored"] }
+clap = { workspace = true }
+human-panic = { workspace = true }
+colored = { workspace = true }
+anyhow = { workspace = true }
+tokio = { workspace = true }
+serde_json = { workspace = true }
+
+[lints]
+workspace = true

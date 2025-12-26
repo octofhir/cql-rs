@@ -1,0 +1,86 @@
+[workspace]
+members = [
+    "crates/octofhir-cql",
+    "crates/octofhir-cql-ast",
+    "crates/octofhir-cql-parser",
+    "crates/octofhir-cql-elm",
+    "crates/octofhir-cql-types",
+    "crates/octofhir-cql-eval",
+    "crates/octofhir-cql-model",
+    "crates/octofhir-cql-diagnostics",
+    "crates/octofhir-cql-cli",
+]
+exclude = []
+resolver = "3"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+authors = ["OctoFHIR Team <funyloony@gmail.com>"]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/octofhir/cql-rs"
+homepage = "https://github.com/octofhir/cql-rs"
+
+[workspace.dependencies]
+# Internal crates
+octofhir-cql = { path = "crates/octofhir-cql" }
+octofhir-cql-ast = { path = "crates/octofhir-cql-ast" }
+octofhir-cql-parser = { path = "crates/octofhir-cql-parser" }
+octofhir-cql-elm = { path = "crates/octofhir-cql-elm" }
+octofhir-cql-types = { path = "crates/octofhir-cql-types" }
+octofhir-cql-eval = { path = "crates/octofhir-cql-eval" }
+octofhir-cql-model = { path = "crates/octofhir-cql-model" }
+octofhir-cql-diagnostics = { path = "crates/octofhir-cql-diagnostics" }
+
+# External octofhir crates
+octofhir-fhir-model = { version = "0.1.7", features = ["serde", "http-client"] }
+octofhir-ucum = { version = "0.5.1", features = ["fhir", "serde"] }
+
+# Core dependencies
+anyhow = "1"
+chrono = { version = "0.4", features = ["serde"] }
+indexmap = "2.10"
+log = "0.4"
+parking_lot = "0.12"
+regex = "1.11"
+rust_decimal = { version = "1.37", features = ["serde-with-str"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+quick-xml = "0.38"
+smallvec = { version = "1.13", features = ["serde", "const_new"] }
+thiserror = "2"
+once_cell = "1.21"
+
+# Parser
+chumsky = { version = "0.12", features = ["pratt"] }
+
+# Async
+async-trait = "0.1"
+futures = "0.3"
+tokio = { version = "1.47", features = ["full"] }
+
+# CLI dependencies
+clap = { version = "4", features = ["derive"] }
+human-panic = "2.0"
+colored = "3.0"
+
+[workspace.lints.rust]
+missing_docs = "allow"
+
+[workspace.lints.clippy]
+wildcard_imports = "warn"
+module_name_repetitions = "allow"
+redundant_pub_crate = "warn"
+
+# Reduce debug info to avoid linker issues
+[profile.dev]
+debug = 0
+strip = "symbols"
+
+[profile.test]
+debug = 0
+strip = "symbols"
+
+[profile.release]
+debug = 0
+strip = "symbols"

@@ -1,0 +1,20 @@
+[package]
+name = "octofhir-cql-model"
+description = "CQL data model abstraction for FHIR and other data models"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+octofhir-cql-types = { workspace = true }
+octofhir-cql-diagnostics = { workspace = true }
+octofhir-fhir-model = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+async-trait = { workspace = true }
+thiserror = { workspace = true }
+
+[lints]
+workspace = true

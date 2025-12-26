@@ -1,0 +1,19 @@
+[package]
+name = "octofhir-cql-elm"
+description = "CQL ELM (Expression Logical Model) representation and serialization"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+octofhir-cql-ast = { workspace = true }
+octofhir-cql-types = { workspace = true }
+octofhir-cql-diagnostics = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+quick-xml = { workspace = true }
+
+[lints]
+workspace = true

@@ -1,0 +1,16 @@
+[package]
+name = "octofhir-cql-types"
+description = "CQL type system"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+octofhir-cql-diagnostics = { workspace = true }
+serde = { workspace = true }
+indexmap = { workspace = true }
+
+[lints]
+workspace = true

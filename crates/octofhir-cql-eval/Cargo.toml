@@ -1,0 +1,25 @@
+[package]
+name = "octofhir-cql-eval"
+description = "CQL evaluation engine"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+octofhir-cql-ast = { workspace = true }
+octofhir-cql-elm = { workspace = true }
+octofhir-cql-types = { workspace = true }
+octofhir-cql-model = { workspace = true }
+octofhir-cql-diagnostics = { workspace = true }
+octofhir-ucum = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+rust_decimal = { workspace = true }
+chrono = { workspace = true }
+indexmap = { workspace = true }
+parking_lot = { workspace = true }
+
+[lints]
+workspace = true

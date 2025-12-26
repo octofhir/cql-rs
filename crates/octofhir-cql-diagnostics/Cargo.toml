@@ -1,0 +1,20 @@
+[package]
+name = "octofhir-cql-diagnostics"
+description = "CQL error handling and diagnostics"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+serde = { workspace = true }
+thiserror = { workspace = true }
+colored = { workspace = true, optional = true }
+
+[features]
+default = []
+colored = ["dep:colored"]
+
+[lints]
+workspace = true

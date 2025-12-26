@@ -1,0 +1,20 @@
+[package]
+name = "octofhir-cql-parser"
+description = "CQL parser using Chumsky"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+octofhir-cql-ast = { workspace = true }
+octofhir-cql-diagnostics = { workspace = true }
+chumsky = { workspace = true }
+rust_decimal = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }
+
+[lints]
+workspace = true
