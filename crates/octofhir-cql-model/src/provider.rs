@@ -2,6 +2,8 @@
 
 use async_trait::async_trait;
 use serde_json::Value;
+use crate::model_info::{TypeInfo, PropertyInfo};
+use octofhir_cql_types::{CqlCode, CqlInterval, CqlValue};
 
 /// Trait for providing data to CQL evaluation
 #[async_trait]
@@ -83,6 +85,79 @@ pub enum DataProviderError {
 
     #[error("Network error: {0}")]
     NetworkError(String),
+
+    #[error("Internal error: {0}")]
+    Internal(String),
+}
+
+/// Trait for providing model metadata (type and property information)
+#[async_trait]
+pub trait ModelProvider: Send + Sync {
+    /// Get type information by type name
+    async fn get_type(&self, type_name: &str) -> Result<Option<TypeInfo>, ModelProviderError>;
+
+    /// Get property type information for a given parent type and property name
+    async fn get_property_type(&self, parent: &str, property: &str) -> Result<Option<PropertyInfo>, ModelProviderError>;
+
+    /// Check if a type is retrievable (can be used in Retrieve expressions)
+    fn is_retrievable(&self, type_name: &str) -> bool;
+
+    /// Get the primary code path for a type (used for terminology filtering)
+    fn get_primary_code_path(&self, type_name: &str) -> Option<String>;
+}
+
+/// Model provider error
+#[derive(Debug, Clone, thiserror::Error)]
+pub enum ModelProviderError {
+    #[error("Type not found: {0}")]
+    TypeNotFound(String),
+
+    #[error("Property not found: {parent}.{property}")]
+    PropertyNotFound { parent: String, property: String },
+
+    #[error("Model not loaded: {0}")]
+    ModelNotLoaded(String),
+
+    #[error("Parse error: {0}")]
+    ParseError(String),
+
+    #[error("IO error: {0}")]
+    IoError(String),
+
+    #[error("Internal error: {0}")]
+    Internal(String),
+}
+
+/// Trait for retrieving data from a data source (aligned with CQL Retrieve expression)
+#[async_trait]
+pub trait DataRetriever: Send + Sync {
+    /// Retrieve data with optional filtering
+    async fn retrieve(
+        &self,
+        context: &str,                     // "Patient", "Encounter", etc.
+        data_type: &str,                   // "Observation", "Condition", etc.
+        code_path: Option<&str>,           // "code"
+        codes: Option<&[CqlCode]>,         // Specific codes to filter by
+        valueset: Option<&str>,            // ValueSet URL for terminology filtering
+        date_path: Option<&str>,           // "effective", "onset", etc.
+        date_range: Option<&CqlInterval>,  // Date range for filtering
+    ) -> Result<Vec<CqlValue>, DataRetrieverError>;
+}
+
+/// Data retriever error
+#[derive(Debug, thiserror::Error)]
+pub enum DataRetrieverError {
+    #[error("Retrieve failed: {0}")]
+    RetrieveFailed(String),
+
+    #[error("Type not retrievable: {0}")]
+    TypeNotRetrievable(String),
+
+    #[error("Network error: {0}")]
+    NetworkError(String),
+
+    #[error("Terminology error: {0}")]
+    TerminologyError(String),
 
     #[error("Internal error: {0}")]
     Internal(String),

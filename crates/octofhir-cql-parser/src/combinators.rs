@@ -296,8 +296,36 @@ fn quantity_value<'a>() -> impl Parser<'a, &'a str, Decimal, extra::Err<Rich<'a,
 }
 
 /// Parse a UCUM unit string (single-quoted)
-fn unit_string<'a>() -> impl Parser<'a, &'a str, String, extra::Err<Rich<'a, char>>> + Clone {
+fn quoted_unit_string<'a>() -> impl Parser<'a, &'a str, String, extra::Err<Rich<'a, char>>> + Clone {
     string_parser()
+}
+
+/// Parse an unquoted duration unit keyword
+fn duration_unit_keyword<'a>() -> impl Parser<'a, &'a str, String, extra::Err<Rich<'a, char>>> + Clone
+{
+    choice((
+        text::keyword("years").to("year".to_string()),
+        text::keyword("year").to("year".to_string()),
+        text::keyword("months").to("month".to_string()),
+        text::keyword("month").to("month".to_string()),
+        text::keyword("weeks").to("week".to_string()),
+        text::keyword("week").to("week".to_string()),
+        text::keyword("days").to("day".to_string()),
+        text::keyword("day").to("day".to_string()),
+        text::keyword("hours").to("hour".to_string()),
+        text::keyword("hour").to("hour".to_string()),
+        text::keyword("minutes").to("minute".to_string()),
+        text::keyword("minute").to("minute".to_string()),
+        text::keyword("seconds").to("second".to_string()),
+        text::keyword("second").to("second".to_string()),
+        text::keyword("milliseconds").to("millisecond".to_string()),
+        text::keyword("millisecond").to("millisecond".to_string()),
+    ))
+}
+
+/// Parse a unit string (quoted UCUM or unquoted duration keyword)
+fn unit_string<'a>() -> impl Parser<'a, &'a str, String, extra::Err<Rich<'a, char>>> + Clone {
+    quoted_unit_string().or(duration_unit_keyword())
 }
 
 /// Parse a quantity literal: number [unit]

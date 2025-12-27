@@ -39,7 +39,7 @@ octofhir-ucum = { version = "0.5.1", features = ["fhir", "serde"] }
 # Core dependencies
 anyhow = "1"
 chrono = { version = "0.4", features = ["serde"] }
-indexmap = "2.10"
+indexmap = { version = "2.10", features = ["serde"] }
 log = "0.4"
 parking_lot = "0.12"
 regex = "1.11"
@@ -63,6 +63,16 @@ tokio = { version = "1.47", features = ["full"] }
 clap = { version = "4", features = ["derive"] }
 human-panic = "2.0"
 colored = "3.0"
+
+# Test dependencies
+rstest = "0.18"
+pretty_assertions = "1"
+proptest = "1"
+divan = "0.1"
+insta = { version = "1", features = ["yaml"] }
+criterion = "0.5"
+tempfile = "3"
+mockall = "0.13"
 
 [workspace.lints.rust]
 missing_docs = "allow"

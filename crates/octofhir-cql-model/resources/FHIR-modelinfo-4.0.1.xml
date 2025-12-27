@@ -1,0 +1,450 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<modelInfo name="FHIR" version="4.0.1" url="http://hl7.org/fhir" targetQualifier="fhir" patientClassName="Patient" patientBirthDatePropertyName="birthDate.value">
+    <!-- Base Types -->
+    <typeInfo name="System.Any" baseType="Element"/>
+    <typeInfo name="System.Boolean"/>
+    <typeInfo name="System.Integer"/>
+    <typeInfo name="System.Decimal"/>
+    <typeInfo name="System.String"/>
+    <typeInfo name="System.DateTime"/>
+    <typeInfo name="System.Date"/>
+    <typeInfo name="System.Time"/>
+    <typeInfo name="System.Quantity"/>
+    
+    <!-- FHIR Primitive Types -->
+    <typeInfo name="boolean" baseType="System.Boolean"/>
+    <typeInfo name="integer" baseType="System.Integer"/>
+    <typeInfo name="string" baseType="System.String"/>
+    <typeInfo name="decimal" baseType="System.Decimal"/>
+    <typeInfo name="uri" baseType="System.String"/>
+    <typeInfo name="url" baseType="System.String"/>
+    <typeInfo name="canonical" baseType="System.String"/>
+    <typeInfo name="base64Binary" baseType="System.String"/>
+    <typeInfo name="instant" baseType="System.DateTime"/>
+    <typeInfo name="date" baseType="System.Date"/>
+    <typeInfo name="dateTime" baseType="System.DateTime"/>
+    <typeInfo name="time" baseType="System.Time"/>
+    <typeInfo name="code" baseType="System.String"/>
+    <typeInfo name="oid" baseType="System.String"/>
+    <typeInfo name="id" baseType="System.String"/>
+    <typeInfo name="markdown" baseType="System.String"/>
+    <typeInfo name="unsignedInt" baseType="System.Integer"/>
+    <typeInfo name="positiveInt" baseType="System.Integer"/>
+    <typeInfo name="uuid" baseType="System.String"/>
+    <typeInfo name="xhtml" baseType="System.String"/>
+    
+    <!-- Complex Data Types -->
+    <typeInfo name="Element">
+        <element name="id" type="string"/>
+        <element name="extension" type="list<Extension>"/>
+    </typeInfo>
+    
+    <typeInfo name="Extension" baseType="Element">
+        <element name="url" type="uri"/>
+        <element name="value" type="System.Any"/>
+    </typeInfo>
+    
+    <typeInfo name="Coding" baseType="Element">
+        <element name="system" type="uri"/>
+        <element name="version" type="string"/>
+        <element name="code" type="code"/>
+        <element name="display" type="string"/>
+        <element name="userSelected" type="boolean"/>
+    </typeInfo>
+    
+    <typeInfo name="CodeableConcept" baseType="Element">
+        <element name="coding" type="list<Coding>"/>
+        <element name="text" type="string"/>
+    </typeInfo>
+    
+    <typeInfo name="Identifier" baseType="Element">
+        <element name="use" type="code"/>
+        <element name="type" type="CodeableConcept"/>
+        <element name="system" type="uri"/>
+        <element name="value" type="string"/>
+        <element name="period" type="Period"/>
+        <element name="assigner" type="Reference"/>
+    </typeInfo>
+    
+    <typeInfo name="Reference" baseType="Element">
+        <element name="reference" type="string"/>
+        <element name="type" type="uri"/>
+        <element name="identifier" type="Identifier"/>
+        <element name="display" type="string"/>
+    </typeInfo>
+    
+    <typeInfo name="Quantity" baseType="Element">
+        <element name="value" type="decimal"/>
+        <element name="comparator" type="code"/>
+        <element name="unit" type="string"/>
+        <element name="system" type="uri"/>
+        <element name="code" type="code"/>
+    </typeInfo>
+    
+    <typeInfo name="Period" baseType="Element">
+        <element name="start" type="dateTime"/>
+        <element name="end" type="dateTime"/>
+    </typeInfo>
+    
+    <typeInfo name="Range" baseType="Element">
+        <element name="low" type="Quantity"/>
+        <element name="high" type="Quantity"/>
+    </typeInfo>
+    
+    <typeInfo name="Ratio" baseType="Element">
+        <element name="numerator" type="Quantity"/>
+        <element name="denominator" type="Quantity"/>
+    </typeInfo>
+    
+    <typeInfo name="HumanName" baseType="Element">
+        <element name="use" type="code"/>
+        <element name="text" type="string"/>
+        <element name="family" type="string"/>
+        <element name="given" type="list<string>"/>
+        <element name="prefix" type="list<string>"/>
+        <element name="suffix" type="list<string>"/>
+        <element name="period" type="Period"/>
+    </typeInfo>
+    
+    <typeInfo name="Address" baseType="Element">
+        <element name="use" type="code"/>
+        <element name="type" type="code"/>
+        <element name="text" type="string"/>
+        <element name="line" type="list<string>"/>
+        <element name="city" type="string"/>
+        <element name="district" type="string"/>
+        <element name="state" type="string"/>
+        <element name="postalCode" type="string"/>
+        <element name="country" type="string"/>
+        <element name="period" type="Period"/>
+    </typeInfo>
+    
+    <typeInfo name="ContactPoint" baseType="Element">
+        <element name="system" type="code"/>
+        <element name="value" type="string"/>
+        <element name="use" type="code"/>
+        <element name="rank" type="positiveInt"/>
+        <element name="period" type="Period"/>
+    </typeInfo>
+    
+    <typeInfo name="Timing" baseType="Element">
+        <element name="event" type="list<dateTime>"/>
+        <element name="code" type="CodeableConcept"/>
+    </typeInfo>
+    
+    <typeInfo name="Dosage" baseType="Element">
+        <element name="sequence" type="integer"/>
+        <element name="text" type="string"/>
+        <element name="timing" type="Timing"/>
+        <element name="route" type="CodeableConcept"/>
+        <element name="doseAndRate" type="list<DosageDoseAndRate>"/>
+    </typeInfo>
+    
+    <typeInfo name="DosageDoseAndRate" baseType="Element">
+        <element name="type" type="CodeableConcept"/>
+        <element name="dose" type="Quantity"/>
+        <element name="rate" type="Quantity"/>
+    </typeInfo>
+    
+    <!-- Core Resources -->
+    
+    <!-- Patient Resource -->
+    <classInfo name="Patient" baseType="DomainResource" retrievable="true" primaryCodePath="null">
+        <element name="id" type="id"/>
+        <element name="identifier" type="list<Identifier>"/>
+        <element name="active" type="boolean"/>
+        <element name="name" type="list<HumanName>"/>
+        <element name="telecom" type="list<ContactPoint>"/>
+        <element name="gender" type="code"/>
+        <element name="birthDate" type="date"/>
+        <element name="deceased" type="boolean"/>
+        <element name="address" type="list<Address>"/>
+        <element name="maritalStatus" type="CodeableConcept"/>
+        <element name="multipleBirth" type="boolean"/>
+        <element name="contact" type="list<PatientContact>"/>
+        <element name="communication" type="list<PatientCommunication>"/>
+        <element name="generalPractitioner" type="list<Reference>"/>
+        <element name="managingOrganization" type="Reference"/>
+    </classInfo>
+    
+    <classInfo name="PatientContact" baseType="Element">
+        <element name="relationship" type="list<CodeableConcept>"/>
+        <element name="name" type="HumanName"/>
+        <element name="telecom" type="list<ContactPoint>"/>
+        <element name="address" type="Address"/>
+        <element name="gender" type="code"/>
+        <element name="organization" type="Reference"/>
+        <element name="period" type="Period"/>
+    </classInfo>
+    
+    <classInfo name="PatientCommunication" baseType="Element">
+        <element name="language" type="CodeableConcept"/>
+        <element name="preferred" type="boolean"/>
+    </classInfo>
+    
+    <!-- Observation Resource -->
+    <classInfo name="Observation" baseType="DomainResource" retrievable="true" primaryCodePath="code">
+        <element name="id" type="id"/>
+        <element name="identifier" type="list<Identifier>"/>
+        <element name="status" type="code"/>
+        <element name="category" type="list<CodeableConcept>"/>
+        <element name="code" type="CodeableConcept"/>
+        <element name="subject" type="Reference"/>
+        <element name="encounter" type="Reference"/>
+        <element name="effective" type="dateTime"/>
+        <element name="issued" type="instant"/>
+        <element name="performer" type="list<Reference>"/>
+        <element name="value" type="Quantity"/>
+        <element name="dataAbsentReason" type="CodeableConcept"/>
+        <element name="interpretation" type="list<CodeableConcept>"/>
+        <element name="note" type="list<Annotation>"/>
+        <element name="bodySite" type="CodeableConcept"/>
+        <element name="method" type="CodeableConcept"/>
+        <element name="referenceRange" type="list<ObservationReferenceRange>"/>
+        <element name="hasMember" type="list<Reference>"/>
+        <element name="derivedFrom" type="list<Reference>"/>
+        <element name="component" type="list<ObservationComponent>"/>
+    </classInfo>
+    
+    <classInfo name="ObservationReferenceRange" baseType="Element">
+        <element name="low" type="Quantity"/>
+        <element name="high" type="Quantity"/>
+        <element name="type" type="CodeableConcept"/>
+        <element name="appliesTo" type="list<CodeableConcept>"/>
+        <element name="age" type="Range"/>
+        <element name="text" type="string"/>
+    </classInfo>
+    
+    <classInfo name="ObservationComponent" baseType="Element">
+        <element name="code" type="CodeableConcept"/>
+        <element name="value" type="Quantity"/>
+        <element name="dataAbsentReason" type="CodeableConcept"/>
+        <element name="interpretation" type="list<CodeableConcept>"/>
+        <element name="referenceRange" type="list<ObservationReferenceRange>"/>
+    </classInfo>
+    
+    <!-- Condition Resource -->
+    <classInfo name="Condition" baseType="DomainResource" retrievable="true" primaryCodePath="code">
+        <element name="id" type="id"/>
+        <element name="identifier" type="list<Identifier>"/>
+        <element name="clinicalStatus" type="CodeableConcept"/>
+        <element name="verificationStatus" type="CodeableConcept"/>
+        <element name="category" type="list<CodeableConcept>"/>
+        <element name="severity" type="CodeableConcept"/>
+        <element name="code" type="CodeableConcept"/>
+        <element name="bodySite" type="list<CodeableConcept>"/>
+        <element name="subject" type="Reference"/>
+        <element name="encounter" type="Reference"/>
+        <element name="onset" type="dateTime"/>
+        <element name="abatement" type="dateTime"/>
+        <element name="recordedDate" type="dateTime"/>
+        <element name="recorder" type="Reference"/>
+        <element name="asserter" type="Reference"/>
+        <element name="stage" type="list<ConditionStage>"/>
+        <element name="evidence" type="list<ConditionEvidence>"/>
+        <element name="note" type="list<Annotation>"/>
+    </classInfo>
+    
+    <classInfo name="ConditionStage" baseType="Element">
+        <element name="summary" type="CodeableConcept"/>
+        <element name="assessment" type="list<Reference>"/>
+        <element name="type" type="CodeableConcept"/>
+    </classInfo>
+    
+    <classInfo name="ConditionEvidence" baseType="Element">
+        <element name="code" type="list<CodeableConcept>"/>
+        <element name="detail" type="list<Reference>"/>
+    </classInfo>
+    
+    <!-- Procedure Resource -->
+    <classInfo name="Procedure" baseType="DomainResource" retrievable="true" primaryCodePath="code">
+        <element name="id" type="id"/>
+        <element name="identifier" type="list<Identifier>"/>
+        <element name="status" type="code"/>
+        <element name="statusReason" type="CodeableConcept"/>
+        <element name="category" type="CodeableConcept"/>
+        <element name="code" type="CodeableConcept"/>
+        <element name="subject" type="Reference"/>
+        <element name="encounter" type="Reference"/>
+        <element name="performed" type="dateTime"/>
+        <element name="recorder" type="Reference"/>
+        <element name="asserter" type="Reference"/>
+        <element name="performer" type="list<ProcedurePerformer>"/>
+        <element name="location" type="Reference"/>
+        <element name="reasonCode" type="list<CodeableConcept>"/>
+        <element name="reasonReference" type="list<Reference>"/>
+        <element name="bodySite" type="list<CodeableConcept>"/>
+        <element name="outcome" type="CodeableConcept"/>
+        <element name="report" type="list<Reference>"/>
+        <element name="complication" type="list<CodeableConcept>"/>
+        <element name="followUp" type="list<CodeableConcept>"/>
+        <element name="note" type="list<Annotation>"/>
+        <element name="focalDevice" type="list<ProcedureFocalDevice>"/>
+        <element name="usedReference" type="list<Reference>"/>
+        <element name="usedCode" type="list<CodeableConcept>"/>
+    </classInfo>
+    
+    <classInfo name="ProcedurePerformer" baseType="Element">
+        <element name="function" type="CodeableConcept"/>
+        <element name="actor" type="Reference"/>
+        <element name="onBehalfOf" type="Reference"/>
+    </classInfo>
+    
+    <classInfo name="ProcedureFocalDevice" baseType="Element">
+        <element name="action" type="CodeableConcept"/>
+        <element name="manipulated" type="Reference"/>
+    </classInfo>
+    
+    <!-- MedicationRequest Resource -->
+    <classInfo name="MedicationRequest" baseType="DomainResource" retrievable="true" primaryCodePath="medication">
+        <element name="id" type="id"/>
+        <element name="identifier" type="list<Identifier>"/>
+        <element name="status" type="code"/>
+        <element name="statusReason" type="CodeableConcept"/>
+        <element name="intent" type="code"/>
+        <element name="category" type="list<CodeableConcept>"/>
+        <element name="priority" type="code"/>
+        <element name="medication" type="CodeableConcept"/>
+        <element name="subject" type="Reference"/>
+        <element name="encounter" type="Reference"/>
+        <element name="authoredOn" type="dateTime"/>
+        <element name="requester" type="Reference"/>
+        <element name="performer" type="Reference"/>
+        <element name="performerType" type="CodeableConcept"/>
+        <element name="recorder" type="Reference"/>
+        <element name="reasonCode" type="list<CodeableConcept>"/>
+        <element name="reasonReference" type="list<Reference>"/>
+        <element name="note" type="list<Annotation>"/>
+        <element name="dosageInstruction" type="list<Dosage>"/>
+        <element name="dispenseRequest" type="MedicationRequestDispenseRequest"/>
+        <element name="substitution" type="MedicationRequestSubstitution"/>
+        <element name="priorPrescription" type="Reference"/>
+        <element name="eventHistory" type="list<Reference>"/>
+    </classInfo>
+    
+    <classInfo name="MedicationRequestDispenseRequest" baseType="Element">
+        <element name="initialFill" type="MedicationRequestDispenseRequestInitialFill"/>
+        <element name="dispenseInterval" type="Duration"/>
+        <element name="validityPeriod" type="Period"/>
+        <element name="numberOfRepeatsAllowed" type="unsignedInt"/>
+        <element name="quantity" type="Quantity"/>
+        <element name="expectedSupplyDuration" type="Duration"/>
+        <element name="performer" type="Reference"/>
+    </classInfo>
+    
+    <classInfo name="MedicationRequestDispenseRequestInitialFill" baseType="Element">
+        <element name="quantity" type="Quantity"/>
+        <element name="duration" type="Duration"/>
+    </classInfo>
+    
+    <classInfo name="MedicationRequestSubstitution" baseType="Element">
+        <element name="allowed" type="boolean"/>
+        <element name="reason" type="CodeableConcept"/>
+    </classInfo>
+    
+    <!-- Encounter Resource -->
+    <classInfo name="Encounter" baseType="DomainResource" retrievable="true" primaryCodePath="type">
+        <element name="id" type="id"/>
+        <element name="identifier" type="list<Identifier>"/>
+        <element name="status" type="code"/>
+        <element name="statusHistory" type="list<EncounterStatusHistory>"/>
+        <element name="class" type="Coding"/>
+        <element name="classHistory" type="list<EncounterClassHistory>"/>
+        <element name="type" type="list<CodeableConcept>"/>
+        <element name="serviceType" type="CodeableConcept"/>
+        <element name="priority" type="CodeableConcept"/>
+        <element name="subject" type="Reference"/>
+        <element name="episodeOfCare" type="list<Reference>"/>
+        <element name="participant" type="list<EncounterParticipant>"/>
+        <element name="appointment" type="list<Reference>"/>
+        <element name="period" type="Period"/>
+        <element name="length" type="Duration"/>
+        <element name="reasonCode" type="list<CodeableConcept>"/>
+        <element name="reasonReference" type="list<Reference>"/>
+        <element name="diagnosis" type="list<EncounterDiagnosis>"/>
+        <element name="account" type="list<Reference>"/>
+        <element name="hospitalization" type="EncounterHospitalization"/>
+        <element name="location" type="list<EncounterLocation>"/>
+        <element name="serviceProvider" type="Reference"/>
+        <element name="partOf" type="Reference"/>
+    </classInfo>
+    
+    <classInfo name="EncounterStatusHistory" baseType="Element">
+        <element name="status" type="code"/>
+        <element name="period" type="Period"/>
+    </classInfo>
+    
+    <classInfo name="EncounterClassHistory" baseType="Element">
+        <element name="class" type="Coding"/>
+        <element name="period" type="Period"/>
+    </classInfo>
+    
+    <classInfo name="EncounterParticipant" baseType="Element">
+        <element name="type" type="list<CodeableConcept>"/>
+        <element name="period" type="Period"/>
+        <element name="individual" type="Reference"/>
+    </classInfo>
+    
+    <classInfo name="EncounterDiagnosis" baseType="Element">
+        <element name="condition" type="Reference"/>
+        <element name="use" type="CodeableConcept"/>
+        <element name="rank" type="positiveInt"/>
+    </classInfo>
+    
+    <classInfo name="EncounterHospitalization" baseType="Element">
+        <element name="preAdmissionIdentifier" type="Identifier"/>
+        <element name="origin" type="Reference"/>
+        <element name="admitSource" type="CodeableConcept"/>
+        <element name="reAdmission" type="CodeableConcept"/>
+        <element name="dietPreference" type="list<CodeableConcept>"/>
+        <element name="specialCourtesy" type="list<CodeableConcept>"/>
+        <element name="specialArrangement" type="list<CodeableConcept>"/>
+        <element name="destination" type="Reference"/>
+        <element name="dischargeDisposition" type="CodeableConcept"/>
+    </classInfo>
+    
+    <classInfo name="EncounterLocation" baseType="Element">
+        <element name="location" type="Reference"/>
+        <element name="status" type="code"/>
+        <element name="physicalType" type="CodeableConcept"/>
+        <element name="period" type="Period"/>
+    </classInfo>
+    
+    <!-- Supporting Types -->
+    <typeInfo name="Annotation" baseType="Element">
+        <element name="author" type="Reference"/>
+        <element name="time" type="dateTime"/>
+        <element name="text" type="markdown"/>
+    </typeInfo>
+    
+    <typeInfo name="Duration" baseType="Quantity"/>
+    
+    <typeInfo name="DomainResource" baseType="Resource">
+        <element name="text" type="Narrative"/>
+        <element name="contained" type="list<Resource>"/>
+        <element name="extension" type="list<Extension>"/>
+        <element name="modifierExtension" type="list<Extension>"/>
+    </typeInfo>
+    
+    <typeInfo name="Resource" baseType="Element">
+        <element name="id" type="id"/>
+        <element name="meta" type="Meta"/>
+        <element name="implicitRules" type="uri"/>
+        <element name="language" type="code"/>
+    </typeInfo>
+    
+    <typeInfo name="Meta" baseType="Element">
+        <element name="versionId" type="id"/>
+        <element name="lastUpdated" type="instant"/>
+        <element name="source" type="uri"/>
+        <element name="profile" type="list<canonical>"/>
+        <element name="security" type="list<Coding>"/>
+        <element name="tag" type="list<Coding>"/>
+    </typeInfo>
+    
+    <typeInfo name="Narrative" baseType="Element">
+        <element name="status" type="code"/>
+        <element name="div" type="xhtml"/>
+    </typeInfo>
+    
+</modelInfo>

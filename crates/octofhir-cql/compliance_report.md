@@ -1,0 +1,4223 @@
+# CQL Specification Compliance Report
+
+## Summary
+
+| Metric | Count |
+|--------|-------|
+| Total Tests | 1693 |
+| Passed | 595 (35.1%) |
+| Failed | 1082 |
+| Skipped | 16 |
+
+## Results by Suite
+
+### CqlNullologicalOperatorsTest
+
+- Passed: 11/22
+- Failed: 11
+- Skipped: 0
+
+#### Failed Tests
+
+- **Coalesce::CoalesceANull**
+  - Expected: `'a'`
+  - Actual: `a`
+- **Coalesce::CoalesceNullA**
+  - Expected: `'a'`
+  - Actual: `a`
+- **Coalesce::CoalesceEmptyList**
+  - Expected: `null`
+  - Actual: `List with 0 elements`
+- **Coalesce::CoalesceListFirstA**
+  - Expected: `'a'`
+  - Actual: `List with 3 elements`
+- **Coalesce::CoalesceListLastA**
+  - Expected: `'a'`
+  - Actual: `List with 3 elements`
+- **Coalesce::CoalesceFirstList**
+  - Expected: `{'a'}`
+  - Actual: `List with 1 elements`
+- **Coalesce::CoalesceLastList**
+  - Expected: `{'a'}`
+  - Actual: `List with 1 elements`
+- **Coalesce::DateTimeCoalesce**
+  - Expected: `@2012-05-18T`
+  - Actual: `@2012-05-18`
+- **Coalesce::DateTimeListCoalesce**
+  - Expected: `@2012-05-18T`
+  - Actual: `List with 3 elements`
+- **Coalesce::TimeCoalesce**
+  - Expected: `@T05:15:33.556`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **Coalesce::TimeListCoalesce**
+  - Expected: `@T05:15:33.556`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+
+### CqlDateTimeOperatorsTest
+
+- Passed: 18/317
+- Failed: 299
+- Skipped: 0
+
+#### Failed Tests
+
+- **Add::DateTimeAdd5Years**
+  - Expected: `@2010-10-10T`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedOperator { operator: "Add", types: "DateTime, Quantity" }
+- **Add::DateTimeAdd5Months**
+  - Expected: `@2005-10-10T`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedOperator { operator: "Add", types: "DateTime, Quantity" }
+- **Add::DateTimeAddMonthsOverflow**
+  - Expected: `@2006-03-10T`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedOperator { operator: "Add", types: "DateTime, Quantity" }
+- **Add::DateTimeAddThreeWeeks**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedOperator { operator: "Add", types: "DateTime, Quantity" }
+- **Add::DateTimeAddYearInWeeks**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedOperator { operator: "Add", types: "DateTime, Quantity" }
+- **Add::DateTimeLeapDayAddYearInWeeks**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedOperator { operator: "Add", types: "DateTime, Quantity" }
+- **Add::DateTimeLeapYearAddYearInWeeks**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedOperator { operator: "Add", types: "DateTime, Quantity" }
+- **Add::DateTimeAdd5Days**
+  - Expected: `@2005-05-15T`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedOperator { operator: "Add", types: "DateTime, Quantity" }
+- **Add::DateTimeAddDaysOverflow**
+  - Expected: `@2016-07-01T`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedOperator { operator: "Add", types: "DateTime, Quantity" }
+- **Add::DateTimeAdd5Hours**
+  - Expected: `@2005-05-10T10`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedOperator { operator: "Add", types: "DateTime, Quantity" }
+- **Add::DateTimeAdd5HoursWithLeftMinPrecisionSecond**
+  - Expected: `@2005-05-10T10:20:30`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedOperator { operator: "Add", types: "DateTime, Quantity" }
+- **Add::DateTimeAdd5HoursWithLeftMinPrecisionDay**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedOperator { operator: "Add", types: "DateTime, Quantity" }
+- **Add::DateTimeAdd5HoursWithLeftMinPrecisionDayOverflow**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedOperator { operator: "Add", types: "DateTime, Quantity" }
+- **Add::DateAdd2YearsAsMonths**
+  - Expected: `@2016`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedOperator { operator: "Add", types: "Date, Quantity" }
+- **Add::DateAdd2YearsAsMonthsRem1**
+  - Expected: `@2016`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedOperator { operator: "Add", types: "Date, Quantity" }
+- **Add::DateAdd33Days**
+  - Expected: `@2014-07`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedOperator { operator: "Add", types: "Date, Quantity" }
+- **Add::DateAdd1Year**
+  - Expected: `@2015-06`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedOperator { operator: "Add", types: "Date, Quantity" }
+- **Add::DateTimeAddHoursOverflow**
+  - Expected: `@2016-06-11T00`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedOperator { operator: "Add", types: "DateTime, Quantity" }
+- **Add::DateTimeAdd5Minutes**
+  - Expected: `@2005-05-10T05:10`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedOperator { operator: "Add", types: "DateTime, Quantity" }
+- **Add::DateTimeAddMinutesOverflow**
+  - Expected: `@2016-06-10T06:00`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedOperator { operator: "Add", types: "DateTime, Quantity" }
+- **Add::DateTimeAdd5Seconds**
+  - Expected: `@2005-05-10T05:05:10`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedOperator { operator: "Add", types: "DateTime, Quantity" }
+- **Add::DateTimeAddSecondsOverflow**
+  - Expected: `@2016-06-10T05:06:00`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedOperator { operator: "Add", types: "DateTime, Quantity" }
+- **Add::DateTimeAdd5Milliseconds**
+  - Expected: `@2005-05-10T05:05:05.010`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedOperator { operator: "Add", types: "DateTime, Quantity" }
+- **Add::DateTimeAddMillisecondsOverflow**
+  - Expected: `@2016-06-10T05:05:06.000`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedOperator { operator: "Add", types: "DateTime, Quantity" }
+- **Add::DateTimeAddLeapYear**
+  - Expected: `@2013-02-28T`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedOperator { operator: "Add", types: "DateTime, Quantity" }
+- **Add::DateTimeAdd2YearsByMonths**
+  - Expected: `@2016T`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedOperator { operator: "Add", types: "DateTime, Quantity" }
+- **Add::DateTimeAdd2YearsByDays**
+  - Expected: `@2016T`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedOperator { operator: "Add", types: "DateTime, Quantity" }
+- **Add::DateTimeAdd2YearsByDaysRem5Days**
+  - Expected: `@2016T`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedOperator { operator: "Add", types: "DateTime, Quantity" }
+- **Add::TimeAdd5Hours**
+  - Expected: `@T20:59:59.999`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **Add::TimeAdd1Minute**
+  - Expected: `@T16:00:59.999`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **Add::TimeAdd1Second**
+  - Expected: `@T16:00:00.999`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **Add::TimeAdd1Millisecond**
+  - Expected: `@T16:00:00.000`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **Add::TimeAdd5Hours1Minute**
+  - Expected: `@T21:00:59.999`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **Add::TimeAdd5hoursByMinute**
+  - Expected: `@T20:59:59.999`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **After::DateTimeAfterYearTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2005, 10, 10) after year of DateTime(2004, 10, 10)", location: None, context: None }
+- **After::DateTimeAfterYearFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2004, 11, 10) after year of DateTime(2004, 10, 10)", location: None, context: None }
+- **After::DateTimeAfterMonthTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2004, 12, 10) after month of DateTime(2004, 11, 10)", location: None, context: None }
+- **After::DateTimeAfterMonthFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2004, 9, 10) after month of DateTime(2004, 10, 10)", location: None, context: None }
+- **After::DateTimeAfterDayTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2004, 12, 11) after day of DateTime(2004, 10, 10)", location: None, context: None }
+- **After::DateTimeAfterDayTrue2**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '9' expected '.', ''', '\"years\"', '\"year\"', '\"months\"', '\"month\"', '\"weeks\"', '\"week\"', '\"days\"', '\"day\"', '\"hours\"', '\"hour\"', '\"minutes\"', '\"minute\"', '\"seconds\"', '\"second\"', '\"milliseconds\"', '\"millisecond\"', ':', 'L', 'l', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', ',', or ')'", expression: "library Test version '1.0'\ndefine Result: DateTime(2004, 12, 09) after day of DateTime(2003, 10, 10)", location: None, context: None }
+- **After::DateTimeAfterDayFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2004, 10, 9) after day of DateTime(2004, 10, 10)", location: None, context: None }
+- **After::DateTimeAfterHourTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2004, 10, 10, 10) after hour of DateTime(2004, 10, 10, 5)", location: None, context: None }
+- **After::DateTimeAfterHourFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2004, 10, 10, 20) after hour of DateTime(2004, 10, 10, 21)", location: None, context: None }
+- **After::DateTimeAfterMinuteTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2004, 10, 10, 20, 30) after minute of DateTime(2004, 10, 10, 20, 29)", location: None, context: None }
+- **After::DateTimeAfterMinuteFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2004, 10, 10, 20, 30) after minute of DateTime(2004, 10, 10, 20, 31)", location: None, context: None }
+- **After::DateTimeAfterSecondTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2004, 10, 10, 20, 30, 15) after second of DateTime(2004, 10, 10, 20, 30, 14)", location: None, context: None }
+- **After::DateTimeAfterSecondFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2004, 10, 10, 20, 30, 15) after second of DateTime(2004, 10, 10, 20, 30, 16)", location: None, context: None }
+- **After::DateTimeAfterMillisecondTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2004, 10, 10, 20, 30, 15, 512) after millisecond of DateTime(2004, 10, 10, 20, 30, 15, 510)", location: None, context: None }
+- **After::DateTimeAfterMillisecondFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2004, 10, 10, 20, 30, 15, 512) after millisecond of DateTime(2004, 10, 10, 20, 30, 15, 513)", location: None, context: None }
+- **After::DateTimeAfterUncertain**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2005, 10, 10) after day of DateTime(2005, 9)", location: None, context: None }
+- **After::AfterTimezoneTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @2012-03-10T10:20:00.999+07:00 after hour of @2012-03-10T08:20:00.999+06:00", location: None, context: None }
+- **After::AfterTimezoneFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @2012-03-10T10:20:00.999+07:00 after hour of @2012-03-10T10:20:00.999+06:00", location: None, context: None }
+- **After::TimeAfterHourTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @T15:59:59.999 after hour of @T14:59:59.999", location: None, context: None }
+- **After::TimeAfterHourFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @T15:59:59.999 after hour of @T16:59:59.999", location: None, context: None }
+- **After::TimeAfterMinuteTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @T15:59:59.999 after minute of @T15:58:59.999", location: None, context: None }
+- **After::TimeAfterMinuteFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @T15:58:59.999 after minute of @T15:59:59.999", location: None, context: None }
+- **After::TimeAfterSecondTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @T15:59:59.999 after second of @T15:59:58.999", location: None, context: None }
+- **After::TimeAfterSecondFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @T15:59:58.999 after second of @T15:59:59.999", location: None, context: None }
+- **After::TimeAfterMillisecondTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @T15:59:59.999 after millisecond of @T15:59:59.998", location: None, context: None }
+- **After::TimeAfterMillisecondFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @T15:59:59.998 after millisecond of @T15:59:59.999", location: None, context: None }
+- **After::TimeAfterTimeCstor**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Time(12, 30) after hour of Time(11, 55)", location: None, context: None }
+- **Before::DateTimeBeforeYearTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2003) before year of DateTime(2004, 10, 10)", location: None, context: None }
+- **Before::DateTimeBeforeYearFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2004, 11, 10) before year of DateTime(2003, 10, 10)", location: None, context: None }
+- **Before::DateTimeBeforeMonthTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2004, 10, 10) before month of DateTime(2004, 11, 10)", location: None, context: None }
+- **Before::DateTimeBeforeMonthFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2004, 11, 10) before month of DateTime(2004, 10, 10)", location: None, context: None }
+- **Before::DateTimeBeforeDayTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2004, 10, 1) before day of DateTime(2004, 10, 10)", location: None, context: None }
+- **Before::DateTimeBeforeDayTrue2**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2003, 10, 11) before day of DateTime(2004, 10, 10)", location: None, context: None }
+- **Before::DateTimeBeforeDayFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2004, 10, 11) before day of DateTime(2004, 10, 10)", location: None, context: None }
+- **Before::DateTimeBeforeHourTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2004, 10, 10, 1) before hour of DateTime(2004, 10, 10, 5)", location: None, context: None }
+- **Before::DateTimeBeforeHourFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2004, 10, 10, 23) before hour of DateTime(2004, 10, 10, 21)", location: None, context: None }
+- **Before::DateTimeBeforeMinuteTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2004, 10, 10, 20, 28) before minute of DateTime(2004, 10, 10, 20, 29)", location: None, context: None }
+- **Before::DateTimeBeforeMinuteFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2004, 10, 10, 20, 35) before minute of DateTime(2004, 10, 10, 20, 31)", location: None, context: None }
+- **Before::DateTimeBeforeSecondTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2004, 10, 10, 20, 30, 12) before second of DateTime(2004, 10, 10, 20, 30, 14)", location: None, context: None }
+- **Before::DateTimeBeforeSecondFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2004, 10, 10, 20, 30, 55) before second of DateTime(2004, 10, 10, 20, 30, 16)", location: None, context: None }
+- **Before::DateTimeBeforeMillisecondTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2004, 10, 10, 20, 30, 15, 508) before millisecond of DateTime(2004, 10, 10, 20, 30, 15, 510)", location: None, context: None }
+- **Before::DateTimeBeforeMillisecondFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2004, 10, 10, 20, 30, 15, 599) before millisecond of DateTime(2004, 10, 10, 20, 30, 15, 513)", location: None, context: None }
+- **Before::BeforeTimezoneTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @2012-03-10T10:20:00.999+07:00 before hour of @2012-03-10T10:20:00.999+06:00", location: None, context: None }
+- **Before::BeforeTimezoneFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @2012-03-10T10:20:00.999+07:00 before hour of @2012-03-10T09:20:00.999+06:00", location: None, context: None }
+- **Before::TimeBeforeHourTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @T13:59:59.999 before hour of @T14:59:59.999", location: None, context: None }
+- **Before::TimeBeforeHourFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @T16:59:59.999 before hour of @T15:59:59.999", location: None, context: None }
+- **Before::TimeBeforeMinuteTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @T15:57:59.999 before minute of @T15:58:59.999", location: None, context: None }
+- **Before::TimeBeforeMinuteFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @T15:59:59.999 before minute of @T15:59:59.999", location: None, context: None }
+- **Before::TimeBeforeSecondTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @T15:59:57.999 before second of @T15:59:58.999", location: None, context: None }
+- **Before::TimeBeforeSecondFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @T15:59:56.999 before second of @T15:59:55.999", location: None, context: None }
+- **Before::TimeBeforeMillisecondTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @T15:59:59.997 before millisecond of @T15:59:59.998", location: None, context: None }
+- **Before::TimeBeforeMillisecondFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @T15:59:59.998 before millisecond of @T15:59:59.997", location: None, context: None }
+- **DateTime::DateTimeYear**
+  - Expected: `@2003T`
+  - Actual: `@2003`
+- **DateTime::DateTimeMonth**
+  - Expected: `@2003-10T`
+  - Actual: `@2003-10`
+- **DateTime::DateTimeDay**
+  - Expected: `@2003-10-29T`
+  - Actual: `@2003-10-29`
+- **DateTimeComponentFrom::DateTimeComponentFromYear**
+  - Expected: `2003`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'f' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: year from DateTime(2003, 10, 29, 20, 50, 33, 955)", location: None, context: None }
+- **DateTimeComponentFrom::DateTimeComponentFromMonth**
+  - Expected: `10`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'f' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: month from DateTime(2003, 10, 29, 20, 50, 33, 955)", location: None, context: None }
+- **DateTimeComponentFrom::DateTimeComponentFromMonthMinBoundary**
+  - Expected: `1`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'f' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: month from DateTime(2003, 01, 29, 20, 50, 33, 955)", location: None, context: None }
+- **DateTimeComponentFrom::DateTimeComponentFromDay**
+  - Expected: `29`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'f' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: day from DateTime(2003, 10, 29, 20, 50, 33, 955)", location: None, context: None }
+- **DateTimeComponentFrom::DateTimeComponentFromHour**
+  - Expected: `20`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'f' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: hour from DateTime(2003, 10, 29, 20, 50, 33, 955)", location: None, context: None }
+- **DateTimeComponentFrom::DateTimeComponentFromMinute**
+  - Expected: `50`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'f' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: minute from DateTime(2003, 10, 29, 20, 50, 33, 955)", location: None, context: None }
+- **DateTimeComponentFrom::DateTimeComponentFromSecond**
+  - Expected: `33`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'f' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: second from DateTime(2003, 10, 29, 20, 50, 33, 955)", location: None, context: None }
+- **DateTimeComponentFrom::DateTimeComponentFromMillisecond**
+  - Expected: `955`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'f' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: millisecond from DateTime(2003, 10, 29, 20, 50, 33, 955)", location: None, context: None }
+- **DateTimeComponentFrom::DateTimeComponentFromTimezone2**
+  - Expected: `1.00`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'f' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: timezoneoffset from DateTime(2003, 10, 29, 20, 50, 33, 955, 1)", location: None, context: None }
+- **DateTimeComponentFrom::DateTimeComponentFromDate**
+  - Expected: `@2003-10-29`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'f' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: date from DateTime(2003, 10, 29, 20, 50, 33, 955, 1)", location: None, context: None }
+- **DateTimeComponentFrom::TimeComponentFromHour**
+  - Expected: `23`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'f' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: hour from @T23:20:15.555", location: None, context: None }
+- **DateTimeComponentFrom::TimeComponentFromMinute**
+  - Expected: `20`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'f' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: minute from @T23:20:15.555", location: None, context: None }
+- **DateTimeComponentFrom::TimeComponentFromSecond**
+  - Expected: `15`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'f' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: second from @T23:20:15.555", location: None, context: None }
+- **DateTimeComponentFrom::TimeComponentFromMilli**
+  - Expected: `555`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'f' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: millisecond from @T23:20:15.555", location: None, context: None }
+- **Difference::DateTimeDifferenceYear**
+  - Expected: `5`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'b' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: difference in years between DateTime(2000) and DateTime(2005, 12)", location: None, context: None }
+- **Difference::DateTimeDifferenceMonth**
+  - Expected: `8`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'b' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: difference in months between DateTime(2000, 2) and DateTime(2000, 10)", location: None, context: None }
+- **Difference::DateTimeDifferenceDay**
+  - Expected: `10`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'b' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: difference in days between DateTime(2000, 10, 15, 10, 30) and DateTime(2000, 10, 25, 10, 0)", location: None, context: None }
+- **Difference::DateTimeDifferenceHour**
+  - Expected: `8`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'b' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: difference in hours between DateTime(2000, 4, 1, 12) and DateTime(2000, 4, 1, 20)", location: None, context: None }
+- **Difference::DateTimeDifferenceMinute**
+  - Expected: `9`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'b' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: difference in minutes between DateTime(2005, 12, 10, 5, 16) and DateTime(2005, 12, 10, 5, 25)", location: None, context: None }
+- **Difference::DateTimeDifferenceSecond**
+  - Expected: `5`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'b' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: difference in seconds between DateTime(2000, 10, 10, 10, 5, 45) and DateTime(2000, 10, 10, 10, 5, 50)", location: None, context: None }
+- **Difference::DateTimeDifferenceMillisecond**
+  - Expected: `3600400`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'b' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: difference in milliseconds between DateTime(2000, 10, 10, 10, 5, 45, 500, -6.0) and DateTime(2000, 10, 10, 10, 5, 45, 900, -7.0)", location: None, context: None }
+- **Difference::DateTimeDifferenceWeeks**
+  - Expected: `1`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'b' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: difference in weeks between DateTime(2000, 10, 15) and DateTime(2000, 10, 28)", location: None, context: None }
+- **Difference::DateTimeDifferenceWeeks2**
+  - Expected: `2`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'b' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: difference in weeks between DateTime(2000, 10, 15) and DateTime(2000, 10, 29)", location: None, context: None }
+- **Difference::DateTimeDifferenceWeeks3**
+  - Expected: `2`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'b' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: difference in weeks between @2012-03-10T22:05:09 and @2012-03-24T07:19:33", location: None, context: None }
+- **Difference::DateTimeDifferenceNegative**
+  - Expected: `-18`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'b' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: difference in years between DateTime(2016) and DateTime(1998)", location: None, context: None }
+- **Difference::DateTimeDifferenceUncertain**
+  - Expected: `true`
+  - Actual: `5`
+- **Difference::TimeDifferenceHour**
+  - Expected: `3`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'b' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: difference in hours between @T20 and @T23:25:15.555", location: None, context: None }
+- **Difference::TimeDifferenceMinute**
+  - Expected: `5`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'b' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: difference in minutes between @T20:20:15.555 and @T20:25:15.555", location: None, context: None }
+- **Difference::TimeDifferenceSecond**
+  - Expected: `5`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'b' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: difference in seconds between @T20:20:15.555 and @T20:20:20.555", location: None, context: None }
+- **Difference::TimeDifferenceMillis**
+  - Expected: `-5`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'b' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: difference in milliseconds between @T20:20:15.555 and @T20:20:15.550", location: None, context: None }
+- **From Github issue #29::DateTimeA**
+  - Expected: `@2017-03-12T01:00:00-07:00`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}DateTime" }
+- **From Github issue #29::DateTimeB**
+  - Expected: `@2017-03-12T03:00:00-06:00`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}DateTime" }
+- **From Github issue #29::DateTimeC**
+  - Expected: `@2017-11-05T01:30:00-06:00`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}DateTime" }
+- **From Github issue #29::DateTimeD**
+  - Expected: `@2017-11-05T01:15:00-07:00`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}DateTime" }
+- **From Github issue #29::DateTimeE**
+  - Expected: `@2017-03-12T00:00:00-07:00`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}DateTime" }
+- **From Github issue #29::DateTimeF**
+  - Expected: `@2017-03-13T00:00:00-06:00`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}DateTime" }
+- **From Github issue #29::DifferenceInHoursA**
+  - Expected: `1`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'b' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: difference in hours between @2017-03-12T01:00:00-07:00 and @2017-03-12T03:00:00-06:00", location: None, context: None }
+- **From Github issue #29::DifferenceInMinutesA**
+  - Expected: `45`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'b' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: difference in minutes between @2017-11-05T01:30:00-06:00 and @2017-11-05T01:15:00-07:00", location: None, context: None }
+- **From Github issue #29::DifferenceInDaysA**
+  - Expected: `1`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'b' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: difference in days between @2017-03-12T00:00:00-07:00 and @2017-03-13T00:00:00-06:00", location: None, context: None }
+- **From Github issue #29::DifferenceInHoursAA**
+  - Expected: `1`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'b' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: difference in hours between DateTime(2017, 3, 12, 1, 0, 0, 0, -7.0) and DateTime(2017, 3, 12, 3, 0, 0, 0, -6.0)", location: None, context: None }
+- **From Github issue #29::DifferenceInMinutesAA**
+  - Expected: `45`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'b' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: difference in minutes between DateTime(2017, 11, 5, 1, 30, 0, 0, -6.0) and DateTime(2017, 11, 5, 1, 15, 0, 0, -7.0)", location: None, context: None }
+- **From Github issue #29::DifferenceInDaysAA**
+  - Expected: `1`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'b' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: difference in days between DateTime(2017, 3, 12, 0, 0, 0, 0, -7.0) and DateTime(2017, 3, 13, 0, 0, 0, 0, -6.0)", location: None, context: None }
+- **Duration::DateTimeDurationBetweenYear**
+  - Expected: `Interval[ 4, 5 ]`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'b' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: years between DateTime(2005) and DateTime(2010)", location: None, context: None }
+- **Duration::DateTimeDurationBetweenYearOffset**
+  - Expected: `4`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'b' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: years between DateTime(2005, 5) and DateTime(2010, 4)", location: None, context: None }
+- **Duration::DateTimeDurationBetweenMonth**
+  - Expected: `0`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'b' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: months between @2014-01-31 and @2014-02-01", location: None, context: None }
+- **Duration::DateTimeDurationBetweenDaysDiffYears**
+  - Expected: `-788`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'b' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: days between DateTime(2010, 10, 12, 12, 5) and DateTime(2008, 8, 15, 8, 8)", location: None, context: None }
+- **Uncertainty tests::DateTimeDurationBetweenUncertainInterval**
+  - Expected: `Interval[ 16, 44 ]`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'b' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: days between DateTime(2014, 1, 15) and DateTime(2014, 2)", location: None, context: None }
+- **Uncertainty tests::DateTimeDurationBetweenUncertainInterval2**
+  - Expected: `Interval[ 4, 16 ]`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'b' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: months between DateTime(2005) and DateTime(2006, 5)", location: None, context: None }
+- **Uncertainty tests::DateTimeDurationBetweenUncertainAdd**
+  - Expected: `Interval[ 32, 88 ]`
+  - Actual: ``
+  - Error: Parse error: Multiple([Parse { code: ErrorCode(1), message: "Parse error: found 'b' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', or ')'", expression: "library Test version '1.0'\ndefine Result: (days between DateTime(2014, 1, 15) and DateTime(2014, 2))\n\t\t\t\t+ (days between DateTime(2014, 1, 15) and DateTime(2014, 2))", location: None, context: None }, Parse { code: ErrorCode(1), message: "Parse error: found ')' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: (days between DateTime(2014, 1, 15) and DateTime(2014, 2))\n\t\t\t\t+ (days between DateTime(2014, 1, 15) and DateTime(2014, 2))", location: None, context: None }])
+- **Uncertainty tests::DateTimeDurationBetweenUncertainSubtract**
+  - Expected: `Interval[ 0, 40 ]`
+  - Actual: ``
+  - Error: Parse error: Multiple([Parse { code: ErrorCode(1), message: "Parse error: found 'b' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', or ')'", expression: "library Test version '1.0'\ndefine Result: (days between DateTime(2014, 1, 15) and DateTime(2014, 2))\n\t\t\t\t- (months between DateTime(2005) and DateTime(2006, 5))", location: None, context: None }, Parse { code: ErrorCode(1), message: "Parse error: found ')' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: (days between DateTime(2014, 1, 15) and DateTime(2014, 2))\n\t\t\t\t- (months between DateTime(2005) and DateTime(2006, 5))", location: None, context: None }])
+- **Uncertainty tests::DateTimeDurationBetweenUncertainMultiply**
+  - Expected: `Interval[ 256, 1936 ]`
+  - Actual: ``
+  - Error: Parse error: Multiple([Parse { code: ErrorCode(1), message: "Parse error: found 'b' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', or ')'", expression: "library Test version '1.0'\ndefine Result: (days between DateTime(2014, 1, 15) and DateTime(2014, 2))\n\t\t\t\t* (days between DateTime(2014, 1, 15) and DateTime(2014, 2))", location: None, context: None }, Parse { code: ErrorCode(1), message: "Parse error: found ')' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: (days between DateTime(2014, 1, 15) and DateTime(2014, 2))\n\t\t\t\t* (days between DateTime(2014, 1, 15) and DateTime(2014, 2))", location: None, context: None }])
+- **Uncertainty tests::DateTimeDurationBetweenMonthUncertain**
+  - Expected: `true`
+  - Actual: `5`
+- **Uncertainty tests::DateTimeDurationBetweenMonthUncertain2**
+  - Expected: `null`
+  - Actual: `5`
+- **Uncertainty tests::DateTimeDurationBetweenMonthUncertain3**
+  - Expected: `false`
+  - Actual: `25`
+- **Uncertainty tests::DateTimeDurationBetweenMonthUncertain4**
+  - Expected: `true`
+  - Actual: `24`
+- **Uncertainty tests::DateTimeDurationBetweenMonthUncertain5**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'b' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: months between DateTime(2005) and DateTime(2006, 7) = 24", location: None, context: None }
+- **Uncertainty tests::DateTimeDurationBetweenMonthUncertain6**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '=' expected '-', '+', '\"not\"', '\"exists\"', '\"null\"', '\"true\"', '\"false\"', '@', int, ''', '\"if\"', '\"Interval\"', '\"Tuple\"', '[', '{', '(', '\"', or identifier", expression: "library Test version '1.0'\ndefine Result: = 5", location: None, context: None }
+- **Uncertainty tests::DateTimeDurationBetweenMonthUncertain7**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '=' expected '-', '+', '\"not\"', '\"exists\"', '\"null\"', '\"true\"', '\"false\"', '@', int, ''', '\"if\"', '\"Interval\"', '\"Tuple\"', '[', '{', '(', '\"', or identifier", expression: "library Test version '1.0'\ndefine Result: = 24", location: None, context: None }
+- **Uncertainty tests::DateTime1**
+  - Expected: `@2012-03-10T10:20:00`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}DateTime" }
+- **Uncertainty tests::DateTime2**
+  - Expected: `@2013-03-10T09:20:00`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}DateTime" }
+- **Uncertainty tests::DurationInYears**
+  - Expected: `1`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'b' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: years between (date from @2012-03-10T10:20:00) and (date from @2013-03-10T09:20:00)", location: None, context: None }
+- **Uncertainty tests::DurationInWeeks**
+  - Expected: `1`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'b' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: weeks between @2012-03-10T22:05:09 and @2012-03-20T07:19:33", location: None, context: None }
+- **Uncertainty tests::DurationInWeeks2**
+  - Expected: `1`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'b' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: weeks between @2012-03-10T22:05:09 and @2012-03-24T07:19:33", location: None, context: None }
+- **Uncertainty tests::DurationInWeeks3**
+  - Expected: `2`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'b' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: weeks between @2012-03-10T06:05:09 and @2012-03-24T07:19:33", location: None, context: None }
+- **Uncertainty tests::TimeDurationBetweenHour**
+  - Expected: `2`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'b' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: hours between @T20:26:15.555 and @T23:25:15.555", location: None, context: None }
+- **Uncertainty tests::TimeDurationBetweenHourDiffPrecision2**
+  - Expected: `1`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'b' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: hours between @T06 and @T07:00:00", location: None, context: None }
+- **Uncertainty tests::TimeDurationBetweenMinute**
+  - Expected: `4`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'b' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: minutes between @T23:20:16.555 and @T23:25:15.555", location: None, context: None }
+- **Uncertainty tests::TimeDurationBetweenSecond**
+  - Expected: `4`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'b' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: seconds between @T23:25:10.556 and @T23:25:15.555", location: None, context: None }
+- **Uncertainty tests::TimeDurationBetweenMillis**
+  - Expected: `5`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'b' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: milliseconds between @T23:25:25.555 and @T23:25:25.560", location: None, context: None }
+- **Uncertainty tests::DurationInHoursA**
+  - Expected: `1`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'b' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: hours between @2017-03-12T01:00:00-07:00 and @2017-03-12T03:00:00-06:00", location: None, context: None }
+- **Uncertainty tests::DurationInMinutesA**
+  - Expected: `45`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'b' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: minutes between @2017-11-05T01:30:00-06:00 and @2017-11-05T01:15:00-07:00", location: None, context: None }
+- **Uncertainty tests::DurationInDaysA**
+  - Expected: `0`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'b' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: days between @2017-03-12T00:00:00-07:00 and @2017-03-13T00:00:00-06:00", location: None, context: None }
+- **Uncertainty tests::DurationInHoursAA**
+  - Expected: `1`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'b' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: hours between DateTime(2017, 3, 12, 1, 0, 0, 0, -7.0) and DateTime(2017, 3, 12, 3, 0, 0, 0, -6.0)", location: None, context: None }
+- **Uncertainty tests::DurationInMinutesAA**
+  - Expected: `45`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'b' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: minutes between DateTime(2017, 11, 5, 1, 30, 0, 0, -6.0) and DateTime(2017, 11, 5, 1, 15, 0, 0, -7.0)", location: None, context: None }
+- **Uncertainty tests::DurationInDaysAA**
+  - Expected: `0`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'b' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: days between DateTime(2017, 3, 12, 0, 0, 0, 0, -7.0) and DateTime(2017, 3, 13, 0, 0, 0, 0, -6.0)", location: None, context: None }
+- **SameAs::DateTimeSameAsYearTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2014) same year as DateTime(2014)", location: None, context: None }
+- **SameAs::DateTimeSameAsYearFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2013) same year as DateTime(2014)", location: None, context: None }
+- **SameAs::DateTimeSameAsMonthTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2014, 12) same month as DateTime(2014, 12)", location: None, context: None }
+- **SameAs::DateTimeSameAsMonthFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2014, 12) same month as DateTime(2014, 10)", location: None, context: None }
+- **SameAs::DateTimeSameAsDayTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2014, 12, 10) same day as DateTime(2014, 12, 10)", location: None, context: None }
+- **SameAs::DateTimeSameAsDayFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2014, 10, 10) same day as DateTime(2014, 10, 11)", location: None, context: None }
+- **SameAs::DateTimeSameAsHourTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2014, 12, 10, 20) same hour as DateTime(2014, 12, 10, 20)", location: None, context: None }
+- **SameAs::DateTimeSameAsHourFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2014, 10, 10, 20) same hour as DateTime(2014, 10, 10, 21)", location: None, context: None }
+- **SameAs::DateTimeSameAsMinuteTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2014, 12, 10, 20, 55) same minute as DateTime(2014, 12, 10, 20, 55)", location: None, context: None }
+- **SameAs::DateTimeSameAsMinuteFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2014, 10, 10, 20, 55) same minute as DateTime(2014, 10, 10, 21, 56)", location: None, context: None }
+- **SameAs::DateTimeSameAsSecondTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2014, 12, 10, 20, 55, 45) same second as DateTime(2014, 12, 10, 20, 55, 45)", location: None, context: None }
+- **SameAs::DateTimeSameAsSecondFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2014, 10, 10, 20, 55, 45) same second as DateTime(2014, 10, 10, 21, 55, 44)", location: None, context: None }
+- **SameAs::DateTimeSameAsMillisecondTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2014, 12, 10, 20, 55, 45, 500) same millisecond as DateTime(2014, 12, 10, 20, 55, 45, 500)", location: None, context: None }
+- **SameAs::DateTimeSameAsMillisecondFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2014, 10, 10, 20, 55, 45, 500) same millisecond as DateTime(2014, 10, 10, 21, 55, 45, 501)", location: None, context: None }
+- **SameAs::DateTimeSameAsNull**
+  - Expected: `null`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2014, 10) same day as DateTime(2014, 10, 12)", location: None, context: None }
+- **SameAs::SameAsTimezoneTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @2012-03-10T10:20:00.999+07:00 same hour as @2012-03-10T09:20:00.999+06:00", location: None, context: None }
+- **SameAs::SameAsTimezoneFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @2012-03-10T10:20:00.999+07:00 same hour as @2012-03-10T10:20:00.999+06:00", location: None, context: None }
+- **SameAs::TimeSameAsHourTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @T23:25:25.555 same hour as @T23:55:25.900", location: None, context: None }
+- **SameAs::TimeSameAsHourFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @T22:25:25.555 same hour as @T23:25:25.555", location: None, context: None }
+- **SameAs::TimeSameAsMinuteTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @T23:55:22.555 same minute as @T23:55:25.900", location: None, context: None }
+- **SameAs::TimeSameAsMinuteFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @T23:26:25.555 same minute as @T23:25:25.555", location: None, context: None }
+- **SameAs::TimeSameAsSecondTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @T23:55:25.555 same second as @T23:55:25.900", location: None, context: None }
+- **SameAs::TimeSameAsSecondFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @T23:25:35.555 same second as @T23:25:25.555", location: None, context: None }
+- **SameAs::TimeSameAsMillisTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @T23:55:25.555 same millisecond as @T23:55:25.555", location: None, context: None }
+- **SameAs::TimeSameAsMillisFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @T23:25:25.555 same millisecond as @T23:25:25.554", location: None, context: None }
+- **SameOrAfter::DateTimeSameOrAfterYearTrue1**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2014) same year or after DateTime(2014)", location: None, context: None }
+- **SameOrAfter::DateTimeSameOrAfterYearTrue2**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2016) same year or after DateTime(2014)", location: None, context: None }
+- **SameOrAfter::DateTimeSameOrAfterYearFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2013) same year or after DateTime(2014)", location: None, context: None }
+- **SameOrAfter::DateTimeSameOrAfterMonthTrue1**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2014, 12) same month or after DateTime(2014, 12)", location: None, context: None }
+- **SameOrAfter::DateTimeSameOrAfterMonthTrue2**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2014, 10) same month or after DateTime(2014, 9)", location: None, context: None }
+- **SameOrAfter::DateTimeSameOrAfterMonthFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2014, 10) same month or after DateTime(2014, 11)", location: None, context: None }
+- **SameOrAfter::DateTimeSameOrAfterDayTrue1**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2014, 12, 20) same day or after DateTime(2014, 12, 20)", location: None, context: None }
+- **SameOrAfter::DateTimeSameOrAfterDayTrue2**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2014, 10, 25) same day or after DateTime(2014, 10, 20)", location: None, context: None }
+- **SameOrAfter::DateTimeSameOrAfterDayFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2014, 10, 20) same day or after DateTime(2014, 10, 25)", location: None, context: None }
+- **SameOrAfter::DateTimeSameOrAfterHourTrue1**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2014, 12, 20, 12) same hour or after DateTime(2014, 12, 20, 12)", location: None, context: None }
+- **SameOrAfter::DateTimeSameOrAfterHourTrue2**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2014, 10, 25, 12) same hour or after DateTime(2014, 10, 25, 10)", location: None, context: None }
+- **SameOrAfter::DateTimeSameOrAfterHourFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2014, 10, 25, 12) same hour or after DateTime(2014, 10, 25, 15)", location: None, context: None }
+- **SameOrAfter::DateTimeSameOrAfterMinuteTrue1**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2014, 12, 20, 12, 30) same minute or after DateTime(2014, 12, 20, 12, 30)", location: None, context: None }
+- **SameOrAfter::DateTimeSameOrAfterMinuteTrue2**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2014, 10, 25, 10, 30) same minute or after DateTime(2014, 10, 25, 10, 25)", location: None, context: None }
+- **SameOrAfter::DateTimeSameOrAfterMinuteFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2014, 10, 25, 15, 30) same minute or after DateTime(2014, 10, 25, 15, 45)", location: None, context: None }
+- **SameOrAfter::DateTimeSameOrAfterSecondTrue1**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2014, 12, 20, 12, 30, 15) same second or after DateTime(2014, 12, 20, 12, 30, 15)", location: None, context: None }
+- **SameOrAfter::DateTimeSameOrAfterSecondTrue2**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2014, 10, 25, 10, 25, 25) same second or after DateTime(2014, 10, 25, 10, 25, 20)", location: None, context: None }
+- **SameOrAfter::DateTimeSameOrAfterSecondFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2014, 10, 25, 15, 45, 20) same second or after DateTime(2014, 10, 25, 15, 45, 21)", location: None, context: None }
+- **SameOrAfter::DateTimeSameOrAfterMillisecondTrue1**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2014, 12, 20, 12, 30, 15, 250) same millisecond or after DateTime(2014, 12, 20, 12, 30, 15, 250)", location: None, context: None }
+- **SameOrAfter::DateTimeSameOrAfterMillisecondTrue2**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2014, 10, 25, 10, 25, 20, 500) same millisecond or after DateTime(2014, 10, 25, 10, 25, 20, 499)", location: None, context: None }
+- **SameOrAfter::DateTimeSameOrAfterMillisecondFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2014, 10, 25, 15, 45, 20, 500) same millisecond or after DateTime(2014, 10, 25, 15, 45, 20, 501)", location: None, context: None }
+- **SameOrAfter::DateTimeSameOrAfterNull1**
+  - Expected: `null`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2014, 12, 20) same day or after DateTime(2014, 12)", location: None, context: None }
+- **SameOrAfter::SameOrAfterTimezoneTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @2012-03-10T10:20:00.999+07:00 same hour or after @2012-03-10T09:20:00.999+06:00", location: None, context: None }
+- **SameOrAfter::SameOrAfterTimezoneFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @2012-03-10T10:20:00.999+07:00 same hour or after @2012-03-10T10:20:00.999+06:00", location: None, context: None }
+- **SameOrAfter::TimeSameOrAfterHourTrue1**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @T23:25:25.555 same hour or after @T23:55:25.900", location: None, context: None }
+- **SameOrAfter::TimeSameOrAfterHourTrue2**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @T23:25:25.555 same hour or after @T22:55:25.900", location: None, context: None }
+- **SameOrAfter::TimeSameOrAfterHourFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @T22:25:25.555 same hour or after @T23:55:25.900", location: None, context: None }
+- **SameOrAfter::TimeSameOrAfterMinuteTrue1**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @T23:25:25.555 same minute or after @T23:25:25.900", location: None, context: None }
+- **SameOrAfter::TimeSameOrAfterMinuteTrue2**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @T23:25:25.555 same minute or after @T22:15:25.900", location: None, context: None }
+- **SameOrAfter::TimeSameOrAfterMinuteFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @T23:25:25.555 same minute or after @T23:55:25.900", location: None, context: None }
+- **SameOrAfter::TimeSameOrAfterSecondTrue1**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @T23:25:25.555 same second or after @T23:25:25.900", location: None, context: None }
+- **SameOrAfter::TimeSameOrAfterSecondTrue2**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @T23:25:35.555 same second or after @T22:25:25.900", location: None, context: None }
+- **SameOrAfter::TimeSameOrAfterSecondFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @T23:55:25.555 same second or after @T23:55:35.900", location: None, context: None }
+- **SameOrAfter::TimeSameOrAfterMillisTrue1**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @T23:25:25.555 same millisecond or after @T23:25:25.555", location: None, context: None }
+- **SameOrAfter::TimeSameOrAfterMillisTrue2**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @T23:25:25.555 same millisecond or after @T22:25:25.550", location: None, context: None }
+- **SameOrAfter::TimeSameOrAfterMillisFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @T23:55:25.555 same millisecond or after @T23:55:25.900", location: None, context: None }
+- **SameOrAfter::OnOrAfterTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @2017-12-20T11:00:00.000 on or after @2017-12-20T11:00:00.000", location: None, context: None }
+- **SameOrAfter::Issue32DateTime**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @2017-12-21T02:00:00.0 same or after @2017-12-20T11:00:00.0", location: None, context: None }
+- **SameOrBefore::DateTimeSameOrBeforeYearTrue1**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2014) same year or before DateTime(2014)", location: None, context: None }
+- **SameOrBefore::DateTimeSameOrBeforeYearTrue2**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2013) same year or before DateTime(2014)", location: None, context: None }
+- **SameOrBefore::DateTimeSameOrBeforeYearFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2015) same year or before DateTime(2014)", location: None, context: None }
+- **SameOrBefore::DateTimeSameOrBeforeMonthTrue1**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2014, 12) same month or before DateTime(2014, 12)", location: None, context: None }
+- **SameOrBefore::DateTimeSameOrBeforeMonthTrue2**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2014, 8) same month or before DateTime(2014, 9)", location: None, context: None }
+- **SameOrBefore::DateTimeSameOrBeforeMonthFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2014, 12) same month or before DateTime(2014, 11)", location: None, context: None }
+- **SameOrBefore::DateTimeSameOrBeforeDayTrue1**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2014, 12, 20) same day or before DateTime(2014, 12, 20)", location: None, context: None }
+- **SameOrBefore::DateTimeSameOrBeforeDayTrue2**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2014, 10, 15) same day or before DateTime(2014, 10, 20)", location: None, context: None }
+- **SameOrBefore::DateTimeSameOrBeforeDayFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2014, 10, 30) same day or before DateTime(2014, 10, 25)", location: None, context: None }
+- **SameOrBefore::DateTimeSameOrBeforeHourTrue1**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2014, 12, 20, 12) same hour or before DateTime(2014, 12, 20, 12)", location: None, context: None }
+- **SameOrBefore::DateTimeSameOrBeforeHourTrue2**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2014, 10, 25, 5) same hour or before DateTime(2014, 10, 25, 10)", location: None, context: None }
+- **SameOrBefore::DateTimeSameOrBeforeHourFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2014, 10, 25, 20) same hour or before DateTime(2014, 10, 25, 15)", location: None, context: None }
+- **SameOrBefore::DateTimeSameOrBeforeMinuteTrue1**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2014, 12, 20, 12, 30) same minute or before DateTime(2014, 12, 20, 12, 30)", location: None, context: None }
+- **SameOrBefore::DateTimeSameOrBeforeMinuteTrue2**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2014, 10, 25, 10, 20) same minute or before DateTime(2014, 10, 25, 10, 25)", location: None, context: None }
+- **SameOrBefore::DateTimeSameOrBeforeMinuteFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2014, 10, 25, 15, 55) same minute or before DateTime(2014, 10, 25, 15, 45)", location: None, context: None }
+- **SameOrBefore::DateTimeSameOrBeforeSecondTrue1**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2014, 12, 20, 12, 30, 15) same second or before DateTime(2014, 12, 20, 12, 30, 15)", location: None, context: None }
+- **SameOrBefore::DateTimeSameOrBeforeSecondTrue2**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2014, 10, 25, 10, 25, 15) same second or before DateTime(2014, 10, 25, 10, 25, 20)", location: None, context: None }
+- **SameOrBefore::DateTimeSameOrBeforeSecondFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2014, 10, 25, 15, 45, 25) same second or before DateTime(2014, 10, 25, 15, 45, 21)", location: None, context: None }
+- **SameOrBefore::DateTimeSameOrBeforeMillisecondTrue1**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2014, 12, 20, 12, 30, 15, 250) same millisecond or before DateTime(2014, 12, 20, 12, 30, 15, 250)", location: None, context: None }
+- **SameOrBefore::DateTimeSameOrBeforeMillisecondTrue2**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2014, 10, 25, 10, 25, 20, 450) same millisecond or before DateTime(2014, 10, 25, 10, 25, 20, 499)", location: None, context: None }
+- **SameOrBefore::DateTimeSameOrBeforeMillisecondFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2014, 10, 25, 15, 45, 20, 505) same millisecond or before DateTime(2014, 10, 25, 15, 45, 20, 501)", location: None, context: None }
+- **SameOrBefore::DateTimeSameOrBeforeNull1**
+  - Expected: `null`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: DateTime(2014, 12, 20) same minute or before DateTime(2014, 12, 20, 15)", location: None, context: None }
+- **SameOrBefore::SameOrBeforeTimezoneTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @2012-03-10T09:20:00.999+07:00 same hour or before @2012-03-10T10:20:00.999+06:00", location: None, context: None }
+- **SameOrBefore::SameOrBeforeTimezoneFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @2012-03-10T10:20:00.999+06:00 same hour or before @2012-03-10T10:20:00.999+07:00", location: None, context: None }
+- **SameOrBefore::TimeSameOrBeforeHourTrue1**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @T23:25:25.555 same hour or before @T23:55:25.900", location: None, context: None }
+- **SameOrBefore::TimeSameOrBeforeHourTrue2**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @T21:25:25.555 same hour or before @T22:55:25.900", location: None, context: None }
+- **SameOrBefore::TimeSameOrBeforeHourFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @T22:25:25.555 same hour or before @T21:55:25.900", location: None, context: None }
+- **SameOrBefore::TimeSameOrBeforeMinuteTrue1**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @T23:25:25.555 same minute or before @T23:25:25.900", location: None, context: None }
+- **SameOrBefore::TimeSameOrBeforeMinuteFalse0**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @T23:10:25.555 same minute or before @T22:15:25.900", location: None, context: None }
+- **SameOrBefore::TimeSameOrBeforeMinuteFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @T23:56:25.555 same minute or before @T23:55:25.900", location: None, context: None }
+- **SameOrBefore::TimeSameOrBeforeSecondTrue1**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @T23:25:25.555 same second or before @T23:25:25.900", location: None, context: None }
+- **SameOrBefore::TimeSameOrBeforeSecondFalse0**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @T23:25:35.555 same second or before @T22:25:45.900", location: None, context: None }
+- **SameOrBefore::TimeSameOrBeforeSecondFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @T23:55:45.555 same second or before @T23:55:35.900", location: None, context: None }
+- **SameOrBefore::TimeSameOrBeforeMillisTrue1**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @T23:25:25.555 same millisecond or before @T23:25:25.555", location: None, context: None }
+- **SameOrBefore::TimeSameOrBeforeMillisFalse0**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @T23:25:25.200 same millisecond or before @T22:25:25.550", location: None, context: None }
+- **SameOrBefore::TimeSameOrBeforeMillisFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @T23:55:25.966 same millisecond or before @T23:55:25.900", location: None, context: None }
+- **Subtract::DateTimeSubtract5Years**
+  - Expected: `@2000-10-10T`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedOperator { operator: "Subtract", types: "DateTime, Quantity" }
+- **Subtract::DateTimeSubtract5Months**
+  - Expected: `@2005-01-10T`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedOperator { operator: "Subtract", types: "DateTime, Quantity" }
+- **Subtract::DateTimeSubtractMonthsUnderflow**
+  - Expected: `@2004-11-10T`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedOperator { operator: "Subtract", types: "DateTime, Quantity" }
+- **Subtract::DateTimeSubtractThreeWeeks**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedOperator { operator: "Subtract", types: "DateTime, Quantity" }
+- **Subtract::DateTimeSubtractYearInWeeks**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedOperator { operator: "Subtract", types: "DateTime, Quantity" }
+- **Subtract::DateTimeLeapDaySubtractYearInWeeks**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedOperator { operator: "Subtract", types: "DateTime, Quantity" }
+- **Subtract::DateTimeLeapYearSubtractYearInWeeks**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedOperator { operator: "Subtract", types: "DateTime, Quantity" }
+- **Subtract::DateTimeSubtract5Days**
+  - Expected: `@2005-05-05T`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedOperator { operator: "Subtract", types: "DateTime, Quantity" }
+- **Subtract::DateTimeSubtractDaysUnderflow**
+  - Expected: `@2016-05-30T`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedOperator { operator: "Subtract", types: "DateTime, Quantity" }
+- **Subtract::DateTimeSubtract5Hours**
+  - Expected: `@2005-05-10T05`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedOperator { operator: "Subtract", types: "DateTime, Quantity" }
+- **Subtract::DateTimeSubtractHoursUnderflow**
+  - Expected: `@2016-06-09T23`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedOperator { operator: "Subtract", types: "DateTime, Quantity" }
+- **Subtract::DateTimeSubtract5Minutes**
+  - Expected: `@2005-05-10T05:05`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedOperator { operator: "Subtract", types: "DateTime, Quantity" }
+- **Subtract::DateTimeSubtractMinutesUnderflow**
+  - Expected: `@2016-06-10T04:59`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedOperator { operator: "Subtract", types: "DateTime, Quantity" }
+- **Subtract::DateTimeSubtract5Seconds**
+  - Expected: `@2005-05-10T05:05:05`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedOperator { operator: "Subtract", types: "DateTime, Quantity" }
+- **Subtract::DateTimeSubtract1YearInSeconds**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedOperator { operator: "Subtract", types: "DateTime, Quantity" }
+- **Subtract::DateTimeSubtract15HourPrecisionSecond**
+  - Expected: `@2016-09-30T19:20:30`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedOperator { operator: "Subtract", types: "DateTime, Quantity" }
+- **Subtract::DateTimeSubtractSecondsUnderflow**
+  - Expected: `@2016-06-10T05:04:59`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedOperator { operator: "Subtract", types: "DateTime, Quantity" }
+- **Subtract::DateTimeSubtract5Milliseconds**
+  - Expected: `@2005-05-10T05:05:05.005`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedOperator { operator: "Subtract", types: "DateTime, Quantity" }
+- **Subtract::DateTimeSubtractMillisecondsUnderflow**
+  - Expected: `@2016-06-10T05:05:04.999`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedOperator { operator: "Subtract", types: "DateTime, Quantity" }
+- **Subtract::DateTimeSubtract2YearsAsMonths**
+  - Expected: `@2012T`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedOperator { operator: "Subtract", types: "DateTime, Quantity" }
+- **Subtract::DateTimeSubtract2YearsAsMonthsRem1**
+  - Expected: `@2012T`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedOperator { operator: "Subtract", types: "DateTime, Quantity" }
+- **Subtract::DateSubtract2YearsAsMonths**
+  - Expected: `@2012`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedOperator { operator: "Subtract", types: "Date, Quantity" }
+- **Subtract::DateSubtract2YearsAsMonthsRem1**
+  - Expected: `@2012`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedOperator { operator: "Subtract", types: "Date, Quantity" }
+- **Subtract::DateSubtract33Days**
+  - Expected: `@2014-05`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedOperator { operator: "Subtract", types: "Date, Quantity" }
+- **Subtract::DateSubtract1Year**
+  - Expected: `@2013-06`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedOperator { operator: "Subtract", types: "Date, Quantity" }
+- **Subtract::TimeSubtract5Hours**
+  - Expected: `@T10:59:59.999`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **Subtract::TimeSubtract1Minute**
+  - Expected: `@T15:58:59.999`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **Subtract::TimeSubtract1Second**
+  - Expected: `@T15:59:58.999`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **Subtract::TimeSubtract1Millisecond**
+  - Expected: `@T15:59:58.999`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **Subtract::TimeSubtract5Hours1Minute**
+  - Expected: `@T10:58:59.999`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **Subtract::TimeSubtract5hoursByMinute**
+  - Expected: `@T10:59:59.999`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **Time::TimeTest2**
+  - Expected: `@T23:59:59.999`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **Today::DateTimeSameOrBeforeTodayTrue1**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Today() same day or before Today()", location: None, context: None }
+- **Today::DateTimeSameOrBeforeTodayTrue2**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Today() same day or before Today() + 1 days", location: None, context: None }
+- **Today::DateTimeSameOrBeforeTodayFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected ':', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Today() + 1 years same day or before Today()", location: None, context: None }
+- **Today::DateTimeAddTodayTrue**
+  - Expected: `true`
+  - Actual: `@2025-12-27`
+
+### CqlArithmeticFunctionsTest
+
+- Passed: 102/212
+- Failed: 94
+- Skipped: 16
+
+#### Failed Tests
+
+- **Abs::AbsLong**
+  - Expected: `1L`
+  - Actual: `1`
+- **Add::Add1L2L**
+  - Expected: `3L`
+  - Actual: `3`
+- **Add::Add1L1L**
+  - Expected: `2L`
+  - Actual: `2`
+- **Divide::Divide01**
+  - Expected: `0.0`
+  - Actual: `0`
+- **Divide::Divide11**
+  - Expected: `1.0`
+  - Actual: `1`
+- **Divide::Divide1L1L**
+  - Expected: `1.0`
+  - Actual: `1`
+- **Divide::Divide1d1d**
+  - Expected: `1.0`
+  - Actual: `1`
+- **Divide::Divide10I5I**
+  - Expected: `2.0`
+  - Actual: `2`
+- **Exp::Exp0**
+  - Expected: `1.0`
+  - Actual: `1`
+- **Exp::ExpNeg0**
+  - Expected: `1.0`
+  - Actual: `1`
+- **Exp::Exp1000**
+  - Expected: `Error (True)`
+  - Actual: `null`
+  - Error: Expected error but expression succeeded
+- **Exp::Exp1000D**
+  - Expected: `Error (True)`
+  - Actual: `null`
+  - Error: Expected error but expression succeeded
+- **HighBoundary::HighBoundaryDecimal**
+  - Expected: `1.58799999`
+  - Actual: `1.587`
+- **HighBoundary::HighBoundaryDateMonth**
+  - Expected: `@2014-12`
+  - Actual: ``
+  - Error: Evaluation error: ConversionError { from_type: "@2014", to_type: "Date" }
+- **HighBoundary::HighBoundaryDateTimeMillisecond**
+  - Expected: `@2014-01-01T08:59:59.999`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}DateTime" }
+- **HighBoundary::HighBoundaryTimeMillisecond**
+  - Expected: `@T10:30:59.999`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **Log::Log1Base2**
+  - Expected: `0.0`
+  - Actual: `0`
+- **Log::Log1Base100**
+  - Expected: `0.0`
+  - Actual: `0`
+- **Log::Log1Base100L**
+  - Expected: `0.0`
+  - Actual: `0`
+- **Log::Log16Base2**
+  - Expected: `4.0`
+  - Actual: `4`
+- **Log::LogD125Base2**
+  - Expected: `-3.0`
+  - Actual: `-3`
+- **LowBoundary::LowBoundaryDecimal**
+  - Expected: `1.58700000`
+  - Actual: `1.587`
+- **LowBoundary::LowBoundaryDateMonth**
+  - Expected: `@2014-01`
+  - Actual: ``
+  - Error: Evaluation error: ConversionError { from_type: "@2014", to_type: "Date" }
+- **LowBoundary::LowBoundaryDateTimeMillisecond**
+  - Expected: `@2014-01-01T08:00:00.000`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}DateTime" }
+- **LowBoundary::LowBoundaryTimeMillisecond**
+  - Expected: `@T10:30:00.000`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **Ln::Ln0**
+  - Expected: `Error (True)`
+  - Actual: `null`
+  - Error: Expected error but expression succeeded
+- **Ln::LnNeg0**
+  - Expected: `Error (True)`
+  - Actual: `null`
+  - Error: Expected error but expression succeeded
+- **Ln::Ln1**
+  - Expected: `0.0`
+  - Actual: `0`
+- **Ln::Ln1L**
+  - Expected: `0.0`
+  - Actual: `0`
+- **MinValue::IntegerMinValue**
+  - Expected: `-2147483648`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'I' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: minimum Integer", location: None, context: None }
+- **MinValue::LongMinValue**
+  - Expected: `-9223372036854775808L`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'L' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: minimum Long", location: None, context: None }
+- **MinValue::DecimalMinValue**
+  - Expected: `-99999999999999999999.99999999`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'D' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: minimum Decimal", location: None, context: None }
+- **MinValue::DateTimeMinValue**
+  - Expected: `@0001-01-01T00:00:00.000Z`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'D' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: minimum DateTime", location: None, context: None }
+- **MinValue::DateMinValue**
+  - Expected: `@0001-01-01`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'D' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: minimum Date", location: None, context: None }
+- **MinValue::TimeMinValue**
+  - Expected: `@T00:00:00.000`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'T' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: minimum Time", location: None, context: None }
+- **MaxValue::IntegerMaxValue**
+  - Expected: `2147483647`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'I' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: maximum Integer", location: None, context: None }
+- **MaxValue::LongMaxValue**
+  - Expected: `9223372036854775807L`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'L' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: maximum Long", location: None, context: None }
+- **MaxValue::DecimalMaxValue**
+  - Expected: `99999999999999999999.99999999`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'D' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: maximum Decimal", location: None, context: None }
+- **MaxValue::DateTimeMaxValue**
+  - Expected: `@9999-12-31T23:59:59.999Z`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'D' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: maximum DateTime", location: None, context: None }
+- **MaxValue::DateMaxValue**
+  - Expected: `@9999-12-31`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'D' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: maximum Date", location: None, context: None }
+- **MaxValue::TimeMaxValue**
+  - Expected: `@T23:59:59.999`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'T' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: maximum Time", location: None, context: None }
+- **Modulo::Modulo4LBy2L**
+  - Expected: `0L`
+  - Actual: `0`
+- **Modulo::Modulo10IBy3D**
+  - Expected: `1.0`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedOperator { operator: "Modulo", types: "Integer, Decimal" }
+- **Modulo::ModuloDResult**
+  - Expected: `0.5`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedOperator { operator: "Modulo", types: "Decimal, Integer" }
+- **Multiply::Multiply2LBy3L**
+  - Expected: `6L`
+  - Actual: `6`
+- **Multiply::Multiply1DBy2D**
+  - Expected: `2.0`
+  - Actual: `2.00`
+- **Multiply::Multiply1By1L**
+  - Expected: `1L`
+  - Actual: `1`
+- **Negate::Negate1L**
+  - Expected: `-1L`
+  - Actual: `-1`
+- **Negate::NegateMaxLong**
+  - Expected: `-9223372036854775807L`
+  - Actual: `-9223372036854775807`
+- **Negate::NegateNeg1L**
+  - Expected: `1L`
+  - Actual: `1`
+- **Negate::Negate0D**
+  - Expected: `0.0`
+  - Actual: `-0.0`
+- **Precision::PrecisionYear**
+  - Expected: `4`
+  - Actual: ``
+  - Error: Evaluation error: ConversionError { from_type: "@2014", to_type: "Date" }
+- **Precision::PrecisionDateTimeMilliseconds**
+  - Expected: `17`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}DateTime" }
+- **Precision::PrecisionTimeMinutes**
+  - Expected: `4`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **Precision::PrecisionTimeMilliseconds**
+  - Expected: `9`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **Predecessor::PredecessorNull**
+  - Expected: `null`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: predecessor of (null as Integer)", location: None, context: None }
+- **Predecessor::PredecessorOf0**
+  - Expected: `-1`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: predecessor of 0", location: None, context: None }
+- **Predecessor::PredecessorOf1**
+  - Expected: `0`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: predecessor of 1", location: None, context: None }
+- **Predecessor::PredecessorOf1L**
+  - Expected: `0L`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: predecessor of 1L", location: None, context: None }
+- **Predecessor::PredecessorOf1D**
+  - Expected: `0.99999999`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: predecessor of 1.0", location: None, context: None }
+- **Predecessor::PredecessorOf101D**
+  - Expected: `1.00999999`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: predecessor of 1.01", location: None, context: None }
+- **Predecessor::PredecessorOfJan12000**
+  - Expected: `@1999-12-31T`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: predecessor of DateTime(2000,1,1)", location: None, context: None }
+- **Predecessor::PredecessorOfNoon**
+  - Expected: `@T11:59:59.999`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: predecessor of @T12:00:00.000", location: None, context: None }
+- **Power::Power2LTo2L**
+  - Expected: `4L`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedOperator { operator: "Power", types: "Long, Long" }
+- **Power::Power2DTo2D**
+  - Expected: `4.0`
+  - Actual: `4`
+- **Power::PowerNeg2DTo2D**
+  - Expected: `4.0`
+  - Actual: `4`
+- **Power::Power2DTo2**
+  - Expected: `4.0`
+  - Actual: `4`
+- **Power::Power2To2D**
+  - Expected: `4.0`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedOperator { operator: "Power", types: "Integer, Decimal" }
+- **Power::Power2LTo3L**
+  - Expected: `8L`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedOperator { operator: "Power", types: "Long, Long" }
+- **Power::Power2DTo4D**
+  - Expected: `16.0`
+  - Actual: `16`
+- **Round::Round1**
+  - Expected: `1.0`
+  - Actual: `1`
+- **Round::Round0D5**
+  - Expected: `1.0`
+  - Actual: `0`
+- **Round::Round0D4**
+  - Expected: `0.0`
+  - Actual: `0`
+- **Round::RoundNeg0D5**
+  - Expected: `0.0`
+  - Actual: `0`
+- **Round::RoundNeg0D4**
+  - Expected: `0.0`
+  - Actual: `0`
+- **Round::RoundNeg0D6**
+  - Expected: `-1.0`
+  - Actual: `-1`
+- **Round::RoundNeg1D1**
+  - Expected: `-1.0`
+  - Actual: `-1`
+- **Round::RoundNeg1D5**
+  - Expected: `-1.0`
+  - Actual: `-2`
+- **Round::RoundNeg1D6**
+  - Expected: `-2.0`
+  - Actual: `-2`
+- **Subtract::Subtract1LAnd1L**
+  - Expected: `0L`
+  - Actual: `0`
+- **Successor::SuccessorNull**
+  - Expected: `null`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: successor of (null as Integer)", location: None, context: None }
+- **Successor::SuccessorOf0**
+  - Expected: `1`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: successor of 0", location: None, context: None }
+- **Successor::SuccessorOf1**
+  - Expected: `2`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: successor of 1", location: None, context: None }
+- **Successor::SuccessorOf1L**
+  - Expected: `2L`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: successor of 1L", location: None, context: None }
+- **Successor::SuccessorOf1D**
+  - Expected: `1.00000001`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: successor of 1.0", location: None, context: None }
+- **Successor::SuccessorOf101D**
+  - Expected: `1.01000001`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: successor of 1.01", location: None, context: None }
+- **Successor::SuccessorOfJan12000**
+  - Expected: `@2000-01-02T`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: successor of DateTime(2000,1,1)", location: None, context: None }
+- **Successor::SuccessorOfNoon**
+  - Expected: `@T12:00:00.001`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: successor of @T12:00:00.000", location: None, context: None }
+- **Truncated Divide::TruncatedDivide10LBy3L**
+  - Expected: `3L`
+  - Actual: `3`
+- **Truncated Divide::TruncatedDivide10d1By3D1**
+  - Expected: `3.0`
+  - Actual: `3`
+- **Truncated Divide::TruncatedDivideNeg10d1ByNeg3D1**
+  - Expected: `3.0`
+  - Actual: `3`
+- **Truncated Divide::TruncatedDivideNeg10d1By3D1**
+  - Expected: `-3.0`
+  - Actual: `-3`
+- **Truncated Divide::TruncatedDivide10d1ByNeg3D1**
+  - Expected: `-3.0`
+  - Actual: `-3`
+- **Truncated Divide::TruncatedDivide10By5D**
+  - Expected: `2.0`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedOperator { operator: "TruncatedDivide", types: "Integer, Decimal" }
+
+### CqlQueryTest
+
+- Passed: 0/12
+- Failed: 12
+- Skipped: 0
+
+#### Failed Tests
+
+- **SimpleQueries::NonListSource**
+  - Expected: `4`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'l' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: (4) l", location: None, context: None }
+- **SimpleQueries::NonListSourceWithReturn**
+  - Expected: `'Hello World'`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'l' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: (4) l return 'Hello World'", location: None, context: None }
+- **SimpleQueries::MultiSource**
+  - Expected: `{{ A: 2, B: 5 }, { A: 2, B: 6 }, { A: 3, B: 5 }, { A: 3, B: 6 }}`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'A' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: from ({2, 3}) A, ({5, 6}) B", location: None, context: None }
+- **Sort::IntegerDescending**
+  - Expected: `{3, 2, 1}`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'l' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: ({1, 2, 3}) l sort desc", location: None, context: None }
+- **Sort::IntegerAscending**
+  - Expected: `{1, 2, 3}`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'l' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: ({1, 3, 2}) l sort ascending", location: None, context: None }
+- **Sort::DateTimeDescending**
+  - Expected: `{@2015-01-02T00:00:00.000Z, @2014-01-02T00:00:00.000Z, @2013-01-02T00:00:00.000Z}`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'l' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: ({@2013-01-02T00:00:00.000Z, @2014-01-02T00:00:00.000Z, @2015-01-02T00:00:00.000Z}) l sort desc", location: None, context: None }
+- **Sort::DateTimeAscending**
+  - Expected: `{@2013-01-02T00:00:00.000Z, @2014-01-02T00:00:00.000Z, @2015-01-02T00:00:00.000Z}`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'l' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: ({@2013-01-02T00:00:00.000Z, @2015-01-02T00:00:00.000Z, @2014-01-02T00:00:00.000Z}) l sort ascending", location: None, context: None }
+- **Aggregate::MultiplyIntegers**
+  - Expected: `72`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'L' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: ({1, 2, 3, 3, 4}) L aggregate A starting 1: A * L", location: None, context: None }
+- **Aggregate::MultiplyIntegersAll**
+  - Expected: `72`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'L' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: ({1, 2, 3, 3, 4}) L aggregate all A starting 1: A * L", location: None, context: None }
+- **Aggregate::MultiplyIntegersDistinct**
+  - Expected: `24`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'L' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: ({1, 2, 3, 3, 4}) L aggregate distinct A starting 1: A * L", location: None, context: None }
+- **Aggregate::MultiplyIntegersNoStartingExpression**
+  - Expected: `null`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'L' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: ({1, 2, 3}) L aggregate A : A * L", location: None, context: None }
+- **Aggregate::Multi-Source**
+  - Expected: `null`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'B' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: from ({1, 2, 3}) B, (4) C aggregate A : A + B + C", location: None, context: None }
+
+### CqlTypeOperatorsTest
+
+- Passed: 6/35
+- Failed: 29
+- Skipped: 0
+
+#### Failed Tests
+
+- **As::CastAsQuantity**
+  - Expected: `45.5 'g'`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '4' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: cast 45.5 'g' as Quantity", location: None, context: None }
+- **As::AsDateTime**
+  - Expected: `@2014-01-01T`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '1' expected '.', ''', '\"years\"', '\"year\"', '\"months\"', '\"month\"', '\"weeks\"', '\"week\"', '\"days\"', '\"day\"', '\"hours\"', '\"hour\"', '\"minutes\"', '\"minute\"', '\"seconds\"', '\"second\"', '\"milliseconds\"', '\"millisecond\"', ':', 'L', 'l', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', ',', or ')'", expression: "library Test version '1.0'\ndefine Result: DateTime(2014, 01, 01) as DateTime", location: None, context: None }
+- **Convert::IntegerToDecimal**
+  - Expected: `5.0`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '5' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: convert 5 to Decimal", location: None, context: None }
+- **Convert::IntegerToString**
+  - Expected: `'5'`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '5' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: convert 5 to String", location: None, context: None }
+- **Convert::StringToIntegerError**
+  - Expected: `null`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found ''' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: convert 'foo' to Integer", location: None, context: None }
+- **Convert::StringToDateTime**
+  - Expected: `@2014-01-01T`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found ''' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: convert '2014-01-01' to DateTime", location: None, context: None }
+- **Convert::StringToTime**
+  - Expected: `@T14:30:00.000`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found ''' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: convert 'T14:30:00.0' to Time", location: None, context: None }
+- **Convert::StringToDateTimeMalformed**
+  - Expected: `null`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found ''' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: convert '2014/01/01' to DateTime", location: None, context: None }
+- **Is::IntegerIsInteger**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'i' expected ''', '\"years\"', '\"year\"', '\"months\"', '\"month\"', '\"weeks\"', '\"week\"', '\"days\"', '\"day\"', '\"hours\"', '\"hour\"', '\"minutes\"', '\"minute\"', '\"seconds\"', '\"second\"', '\"milliseconds\"', '\"millisecond\"', ':', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: 5 is Integer", location: None, context: None }
+- **Is::StringIsInteger**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'i' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: '5' is Integer", location: None, context: None }
+- **Is::ValueSetIsVocabulary**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '{' expected something else, '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: System.ValueSet{id: '123'} is Vocabulary", location: None, context: None }
+- **ToConcept::CodeToConcept1**
+  - Expected: `Concept {
+					codes: Code { code: '8480-6' }
+				}`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '{' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', ',', or ')'", expression: "library Test version '1.0'\ndefine Result: ToConcept(Code { code: '8480-6' })", location: None, context: None }
+- **ToDateTime::ToDateTime1**
+  - Expected: `@2014-01-01T`
+  - Actual: `@2014-01-01`
+- **ToDateTime::ToDateTime2**
+  - Expected: `@2014-01-01T12:05`
+  - Actual: `null`
+- **ToDateTime::ToDateTime3**
+  - Expected: `@2014-01-01T12:05:05.955`
+  - Actual: `null`
+- **ToDateTime::ToDateTime4**
+  - Expected: `@2014-01-01T12:05:05.955+01:30`
+  - Actual: `null`
+- **ToDateTime::ToDateTime5**
+  - Expected: `@2014-01-01T12:05:05.955-01:15`
+  - Actual: `null`
+- **ToDateTime::ToDateTime6**
+  - Expected: `@2014-01-01T12:05:05.955+00:00`
+  - Actual: `null`
+- **ToDateTime::ToDateTimeDate**
+  - Expected: `@2014-01-01T`
+  - Actual: ``
+  - Error: Evaluation error: ConversionError { from_type: "@2014-01-01", to_type: "Date" }
+- **ToDateTime::ToDateTimeTimeUnspecified**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'f' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: hour from ToDateTime(@2014-01-01) is null", location: None, context: None }
+- **ToQuantity::String5D5CMToQuantity**
+  - Expected: `5.5'cm'`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '\\' expected ''', or something else", expression: "library Test version '1.0'\ndefine Result: ToQuantity('5.5 \\'cm\\'')", location: None, context: None }
+- **ToString::IntegerNeg5ToString**
+  - Expected: `'-5'`
+  - Actual: `-5`
+- **ToString::Decimal18D55ToString**
+  - Expected: `'18.55'`
+  - Actual: `18.55`
+- **ToString::Quantity5D5CMToString**
+  - Expected: `'5.5 \'cm\''`
+  - Actual: `5.5 'cm'`
+- **ToString::BooleanTrueToString**
+  - Expected: `'true'`
+  - Actual: `true`
+- **ToTime::ToTime1**
+  - Expected: `@T14:30:00.000`
+  - Actual: `null`
+- **ToTime::ToTime2**
+  - Expected: `@T14:30:00.000`
+  - Actual: `null`
+- **ToTime::ToTime3**
+  - Expected: `@T14:30:00.000`
+  - Actual: `null`
+- **ToTime::ToTime4**
+  - Expected: `@T14:30:00.000`
+  - Actual: `null`
+
+### CqlStringOperatorsTest
+
+- Passed: 45/81
+- Failed: 36
+- Skipped: 0
+
+#### Failed Tests
+
+- **Combine::CombineABC**
+  - Expected: `'abc'`
+  - Actual: `abc`
+- **Combine::CombineABCSepDash**
+  - Expected: `'a-b-c'`
+  - Actual: `a-b-c`
+- **Concatenate::ConcatenateAB**
+  - Expected: `'ab'`
+  - Actual: `ab`
+- **Concatenate::ConcatenateABWithAdd**
+  - Expected: `'ab'`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedOperator { operator: "Add", types: "String, String" }
+- **Indexer::IndexerAB0**
+  - Expected: `'a'`
+  - Actual: `a`
+- **Indexer::IndexerAB1**
+  - Expected: `'b'`
+  - Actual: `b`
+- **Lower::LowerEmpty**
+  - Expected: `''`
+  - Actual: ``
+- **Lower::LowerA**
+  - Expected: `'a'`
+  - Actual: `a`
+- **Lower::LowerB**
+  - Expected: `'b'`
+  - Actual: `b`
+- **Lower::LowerAB**
+  - Expected: `'ab'`
+  - Actual: `ab`
+- **Matches::MatchesNumberFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '\\' expected ''', or something else", expression: "library Test version '1.0'\ndefine Result: Matches('Not all who wander are lost', '.*\\\\d+')", location: None, context: None }
+- **Matches::MatchesNumberTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '\\' expected ''', or something else", expression: "library Test version '1.0'\ndefine Result: Matches('Not all who wander are lost - circa 2017', '.*\\\\d+')", location: None, context: None }
+- **Matches::MatchesWordsAndSpacesTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '\\' expected ''', or something else", expression: "library Test version '1.0'\ndefine Result: Matches('Not all who wander are lost', '[\\\\w|\\\\s]+')", location: None, context: None }
+- **Matches::MatchesWordsAndSpacesFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '\\' expected ''', or something else", expression: "library Test version '1.0'\ndefine Result: Matches('Not all who wander are lost - circa 2017', '^[\\\\w\\\\s]+$')", location: None, context: None }
+- **Matches::MatchesNotWords**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '\\' expected ''', or something else", expression: "library Test version '1.0'\ndefine Result: Matches('   ', '\\\\W+')", location: None, context: None }
+- **Matches::MatchesWhiteSpace**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '\\' expected ''', or something else", expression: "library Test version '1.0'\ndefine Result: Matches(' \\n\\t', '\\\\s+')", location: None, context: None }
+- **ReplaceMatches::ReplaceMatchesAll**
+  - Expected: `'But still waters run deep'`
+  - Actual: `But still waters run deep`
+- **ReplaceMatches::ReplaceMatchesMany**
+  - Expected: `'Who put the bang in the bang she bang she bang?'`
+  - Actual: `Who put the bang in the bang she bang she bang?`
+- **ReplaceMatches::ReplaceMatchesSpaces**
+  - Expected: `'All$that$glitters$is$not$gold'`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '\\' expected ''', or something else", expression: "library Test version '1.0'\ndefine Result: ReplaceMatches('All that glitters is not gold', '\\\\s', '\\\\$')", location: None, context: None }
+- **Split::SplitABNull**
+  - Expected: `{'a,b'}`
+  - Actual: `null`
+- **Split::SplitABDash**
+  - Expected: `{'a,b'}`
+  - Actual: `List with 1 elements`
+- **Split::SplitABComma**
+  - Expected: `{'a','b'}`
+  - Actual: `List with 2 elements`
+- **Substring::SubstringAB0**
+  - Expected: `'ab'`
+  - Actual: `ab`
+- **Substring::SubstringAB1**
+  - Expected: `'b'`
+  - Actual: `b`
+- **Substring::SubstringAB0To1**
+  - Expected: `'a'`
+  - Actual: `a`
+- **Substring::SubstringABC1To1**
+  - Expected: `'b'`
+  - Actual: `b`
+- **Substring::SubstringAB0To3**
+  - Expected: `'ab'`
+  - Actual: `ab`
+- **Upper::UpperEmpty**
+  - Expected: `''`
+  - Actual: ``
+- **Upper::UpperA**
+  - Expected: `'A'`
+  - Actual: `A`
+- **Upper::UpperB**
+  - Expected: `'B'`
+  - Actual: `B`
+- **Upper::UpperAB**
+  - Expected: `'AB'`
+  - Actual: `AB`
+- **toString tests::QuantityToString**
+  - Expected: `'125 \'cm\''`
+  - Actual: `125 'cm'`
+- **toString tests::DateTimeToString1**
+  - Expected: `'2000-01-01'`
+  - Actual: `2000-01-01`
+- **toString tests::DateTimeToString2**
+  - Expected: `'2000-01-01T15:25:25.300'`
+  - Actual: `2000-01-01T15:25:25.300`
+- **toString tests::DateTimeToString3**
+  - Expected: `'2000-01-01T08:25:25.300-07:00'`
+  - Actual: `2000-01-01T08:25:25.300-07:00`
+- **toString tests::TimeToString1**
+  - Expected: `'09:30:01.003'`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+
+### CqlAggregateFunctionsTest
+
+- Passed: 33/50
+- Failed: 17
+- Skipped: 0
+
+#### Failed Tests
+
+- **Product::ProductLong**
+  - Expected: `100L`
+  - Actual: ``
+  - Error: Evaluation error: TypeMismatch { expected: "numeric", found: "List" }
+- **Count::CountTestTime**
+  - Expected: `3`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **Max::MaxTestLong**
+  - Expected: `90L`
+  - Actual: `90`
+- **Max::MaxTestString**
+  - Expected: `'zebra'`
+  - Actual: `zebra`
+- **Max::MaxTestDateTime**
+  - Expected: `@2012-10-06T`
+  - Actual: `@2012-10-06`
+- **Max::MaxTestTime**
+  - Expected: `@T20:59:59.999`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **Min::MinTestLong**
+  - Expected: `0L`
+  - Actual: `0`
+- **Min::MinTestString**
+  - Expected: `'bye'`
+  - Actual: `bye`
+- **Min::MinTestDateTime**
+  - Expected: `@2012-09-05T`
+  - Actual: `@2012-09-05`
+- **Min::MinTestTime**
+  - Expected: `@T05:59:59.999`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **Mode::ModeTestDateTime**
+  - Expected: `@2012-09-05T`
+  - Actual: `@2012-09-05`
+- **Mode::ModeTestDateTime2**
+  - Expected: `@2012-10-05T`
+  - Actual: `@2012-10-05`
+- **Mode::ModeTestTime**
+  - Expected: `@T05:59:59.999`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **PopulationStdDev::PopStdDevTest1**
+  - Expected: `1.41421356`
+  - Actual: `1.414213562373095`
+- **PopulationVariance::PopVarianceTest1**
+  - Expected: `2.0`
+  - Actual: `2`
+- **StdDev::StdDevTest1**
+  - Expected: `1.58113883`
+  - Actual: `1.58113883008419`
+- **Sum::SumTestLong**
+  - Expected: `20L`
+  - Actual: `20`
+
+### CqlTypesTest
+
+- Passed: 10/28
+- Failed: 18
+- Skipped: 0
+
+#### Failed Tests
+
+- **Any::AnyQuantity**
+  - Expected: `5.0'g'`
+  - Actual: `5.0 'g'`
+- **Any::AnyDateTime**
+  - Expected: `@2012-04-04T`
+  - Actual: `@2012-04-04`
+- **Any::AnyTime**
+  - Expected: `@T09:00:00.000`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **Any::AnyInterval**
+  - Expected: `Interval[2, 7]`
+  - Actual: `Interval[Some(Integer(2)), Some(Integer(7))]`
+- **Any::AnyList**
+  - Expected: `{1, 2, 3}`
+  - Actual: `List with 3 elements`
+- **Any::AnyTuple**
+  - Expected: `Tuple { id: 5, name: 'Chris'}`
+  - Actual: `Tuple with 2 elements`
+- **Any::AnyString**
+  - Expected: `'Chris'`
+  - Actual: `Chris`
+- **DateTime::DateTimeUpperBoundExcept**
+  - Expected: `Error (True)`
+  - Actual: `@10000-12-31T23:59:59.999`
+  - Error: Expected error but expression succeeded
+- **DateTime::DateTimeIncomplete**
+  - Expected: `@2015-02-10T`
+  - Actual: `@2015-02-10`
+- **DateTime::DateTimeUncertain**
+  - Expected: `Interval [ 18, 49 ]`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'b' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: days between DateTime(2015, 2, 10) and DateTime(2015, 3)", location: None, context: None }
+- **DateTime::DateTimeMin**
+  - Expected: `@0001-01-01T00:00:00.000`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '0' expected '.', ''', '\"years\"', '\"year\"', '\"months\"', '\"month\"', '\"weeks\"', '\"week\"', '\"days\"', '\"day\"', '\"hours\"', '\"hour\"', '\"minutes\"', '\"minute\"', '\"seconds\"', '\"second\"', '\"milliseconds\"', '\"millisecond\"', ':', 'L', 'l', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', ',', or ')'", expression: "library Test version '1.0'\ndefine Result: DateTime(0001, 1, 1, 0, 0, 0, 0)", location: None, context: None }
+- **DateTime::DateTimeTimeUnspecified**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'f' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: hour from @2015-02-10T is null", location: None, context: None }
+- **String::StringTestEscapeQuotes**
+  - Expected: `'\u0027I start with a single quote and end with a double quote\u0022'`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '\\' expected ''', or something else", expression: "library Test version '1.0'\ndefine Result: '\\'I start with a single quote and end with a double quote\\\"'", location: None, context: None }
+- **String::StringUnicodeTest**
+  - Expected: `'Hi'`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '\\' expected ''', or something else", expression: "library Test version '1.0'\ndefine Result: '\\u0048\\u0069'", location: None, context: None }
+- **Time::TimeUpperBoundMillis**
+  - Expected: `Error (Semantic)`
+  - Actual: `Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '0' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @T23:59:59.10000", location: None, context: None }`
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '0' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @T23:59:59.10000", location: None, context: None }
+- **Time::TimeProper**
+  - Expected: `@T10:25:12.863`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **Time::TimeAllMax**
+  - Expected: `@T23:59:59.999`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **Time::TimeAllMin**
+  - Expected: `@T00:00:00.000`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+
+### CqlConditionalOperatorsTest
+
+- Passed: 2/9
+- Failed: 7
+- Skipped: 0
+
+#### Failed Tests
+
+- **if-then-else::IfTrue1**
+  - Expected: `5`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 't' expected ''', '\"years\"', '\"year\"', '\"months\"', '\"month\"', '\"weeks\"', '\"week\"', '\"days\"', '\"day\"', '\"hours\"', '\"hour\"', '\"minutes\"', '\"minute\"', '\"seconds\"', '\"second\"', '\"milliseconds\"', '\"millisecond\"', ':', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: 5 then 5 else 10", location: None, context: None }
+- **standard case::StandardCase1**
+  - Expected: `5`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 't' expected ''', '\"years\"', '\"year\"', '\"months\"', '\"month\"', '\"weeks\"', '\"week\"', '\"days\"', '\"day\"', '\"hours\"', '\"hour\"', '\"minutes\"', '\"minute\"', '\"seconds\"', '\"second\"', '\"milliseconds\"', '\"millisecond\"', ':', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: 10 then 10\n\t\t\t\t\telse null\n\t\t\t\tend", location: None, context: None }
+- **standard case::StandardCase2**
+  - Expected: `5`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 't' expected ''', '\"years\"', '\"year\"', '\"months\"', '\"month\"', '\"weeks\"', '\"week\"', '\"days\"', '\"day\"', '\"hours\"', '\"hour\"', '\"minutes\"', '\"minute\"', '\"seconds\"', '\"second\"', '\"milliseconds\"', '\"millisecond\"', ':', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: 10 then 5 + 10\n\t\t\t\t\twhen 5 = 10 then 10\n\t\t\t\t\telse 10 - 5\n\t\t\t\tend", location: None, context: None }
+- **standard case::StandardCase3**
+  - Expected: `15`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'w' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: case\n\t\t\t\t\twhen null ~ 10 then null + 10\n\t\t\t\t\twhen null ~ 5 then 5\n\t\t\t\t\telse 5 + 10\n\t\t\t\tend", location: None, context: None }
+- **selected case::SelectedCase1**
+  - Expected: `12`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '5' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: case 5\n\t\t\t\t\twhen 5 then 12\n\t\t\t\t\twhen 10 then 10 + 5\n\t\t\t\t\telse 10 - 5\n\t\t\t\tend", location: None, context: None }
+- **selected case::SelectedCase2**
+  - Expected: `15`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '1' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: case 10\n\t\t\t\t\twhen 5 then 12\n\t\t\t\t\twhen 10 then 10 + 5\n\t\t\t\t\telse 10 - 5\n\t\t\t\tend", location: None, context: None }
+- **selected case::SelectedCase3**
+  - Expected: `5`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '1' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: case 10 + 5\n\t\t\t\t\twhen 5 then 12\n\t\t\t\t\twhen 10 then 10 + 5\n\t\t\t\t\telse 10 - 5\n\t\t\t\tend", location: None, context: None }
+
+### CqlIntervalOperatorsTest
+
+- Passed: 149/412
+- Failed: 263
+- Skipped: 0
+
+#### Failed Tests
+
+- **After::TimeAfterTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **After::TimeAfterFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **Before::TimeBeforeTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **Before::TimeBeforeFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **Collapse::TestCollapseNull**
+  - Expected: `{ }`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '{' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: collapse {Interval(null, null)}", location: None, context: None }
+- **Collapse::IntegerIntervalCollapse**
+  - Expected: `{Interval [ 1, 10 ], Interval [ 12, 19 ]}`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '{' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: collapse { Interval[1,5], Interval[3,7], Interval[12,19], Interval[7,10] }", location: None, context: None }
+- **Collapse::IntegerIntervalCollapse2**
+  - Expected: `{Interval [ 1, 19 ]}`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '{' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: collapse { Interval[1,2], Interval[3,7], Interval[10,19], Interval[7,10] }", location: None, context: None }
+- **Collapse::IntegerIntervalCollapse3**
+  - Expected: `{Interval [ 4, 8 ]}`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '{' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: collapse { Interval[4,6], Interval[7,8] }", location: None, context: None }
+- **Collapse::DecimalIntervalCollapse**
+  - Expected: `{Interval [ 1.0, 10.0 ], Interval [ 12.0, 19.0 ]}`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '{' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: collapse { Interval[1.0,5.0], Interval[3.0,7.0], Interval[12.0,19.0], Interval[7.0,10.0] }", location: None, context: None }
+- **Collapse::DecimalIntervalCollapse2**
+  - Expected: `{Interval [ 4.0, 8.0 ]}`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '{' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: collapse { Interval[4.0,6.0], Interval[6.00000001,8.0] }", location: None, context: None }
+- **Collapse::QuantityIntervalCollapse**
+  - Expected: `{Interval [ 1.0 'g', 10.0 'g' ], Interval [ 12.0 'g', 19.0 'g' ]}`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '{' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: collapse { Interval[1.0 'g',5.0 'g'], Interval[3.0 'g',7.0 'g'], Interval[12.0 'g',19.0 'g'], Interval[7.0 'g',10.0 'g'] }", location: None, context: None }
+- **Collapse::DateTimeCollapse**
+  - Expected: `{Interval [ @2012-01-01T, @2012-01-25T ], Interval [ @2012-05-10T, @2012-05-30T ]}`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '{' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: collapse { Interval[DateTime(2012, 1, 1), DateTime(2012, 1, 15)], Interval[DateTime(2012, 1, 10), DateTime(2012, 1, 25)], Interval[DateTime(2012, 5, 10), DateTime(2012, 5, 25)], Interval[DateTime(2012, 5, 20), DateTime(2012, 5, 30)] }", location: None, context: None }
+- **Collapse::DateTimeCollapse2**
+  - Expected: `{Interval [ @2012-01-01T, @2012-05-25T ]}`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '{' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: collapse { Interval[DateTime(2012, 1, 1), DateTime(2012, 1, 15)], Interval[DateTime(2012, 1, 16), DateTime(2012, 5, 25)] }", location: None, context: None }
+- **Collapse::TimeCollapse**
+  - Expected: `{Interval [ @T01:59:59.999, @T15:59:59.999 ], Interval [ @T17:59:59.999, @T22:59:59.999 ]}`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '{' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: collapse { Interval[@T01:59:59.999, @T10:59:59.999], Interval[@T08:59:59.999, @T15:59:59.999], Interval[@T17:59:59.999, @T20:59:59.999], Interval[@T18:59:59.999, @T22:59:59.999] }", location: None, context: None }
+- **Collapse::TimeCollapse2**
+  - Expected: `{Interval [ @T01:59:59.999, @T15:59:59.999 ]}`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '{' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: collapse { Interval[@T01:59:59.999, @T10:59:59.999], Interval[@T11:00:00.000, @T15:59:59.999] }", location: None, context: None }
+- **Expand::ExpandNull**
+  - Expected: `null`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'n' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: expand null", location: None, context: None }
+- **Expand::ExpandEmptyList**
+  - Expected: `{ }`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '{' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: expand { }", location: None, context: None }
+- **Expand::ExpandListWithNull**
+  - Expected: `{ }`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '{' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: expand { null }", location: None, context: None }
+- **Expand::ExpandPerDay**
+  - Expected: `{ Interval[@2018-01-01, @2018-01-01], Interval[@2018-01-02, @2018-01-02], Interval[@2018-01-03, @2018-01-03], Interval[@2018-01-04, @2018-01-04] }`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '{' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: expand { Interval[@2018-01-01, @2018-01-04] } per day", location: None, context: None }
+- **Expand::ExpandPerDayIntervalOverload**
+  - Expected: `{ @2018-01-01, @2018-01-02, @2018-01-03, @2018-01-04 }`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'I' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: expand Interval[@2018-01-01, @2018-01-04] per day", location: None, context: None }
+- **Expand::ExpandPer2Days**
+  - Expected: `{ Interval[@2018-01-01, @2018-01-02], Interval[@2018-01-03, @2018-01-04] }`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '{' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: expand { Interval[@2018-01-01, @2018-01-04] } per 2 days", location: None, context: None }
+- **Expand::ExpandPer2DaysIntervalOverload**
+  - Expected: `{ @2018-01-01, @2018-01-03 }`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'I' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: expand Interval[@2018-01-01, @2018-01-04] per 2 days", location: None, context: None }
+- **Expand::ExpandPerHour**
+  - Expected: `{ Interval[@T10, @T10], Interval[@T11, @T11], Interval[@T12, @T12] }`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '{' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: expand { Interval[@T10:00, @T12:30] } per hour", location: None, context: None }
+- **Expand::ExpandPerHourIntervalOverload**
+  - Expected: `{ @T10, @T11, @T12 }`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'I' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: expand Interval[@T10:00, @T12:30] per hour", location: None, context: None }
+- **Expand::ExpandPerHourOpen**
+  - Expected: `{ Interval[@T10, @T10], Interval[@T11, @T11], Interval[@T12, @T12] }`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '{' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: expand { Interval[@T10:00, @T12:30) } per hour", location: None, context: None }
+- **Expand::ExpandPerHourOpenIntervalOverload**
+  - Expected: `{ @T10, @T11, @T12 }`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'I' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: expand Interval[@T10:00, @T12:30) per hour", location: None, context: None }
+- **Expand::ExpandPer1**
+  - Expected: `{ Interval[10, 10], Interval[11, 11], Interval[12, 12] }`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '{' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: expand { Interval[10.0, 12.5] } per 1", location: None, context: None }
+- **Expand::ExpandPer1IntervalOverload**
+  - Expected: `{ 10, 11, 12 }`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'I' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: expand Interval[10.0, 12.5] per 1", location: None, context: None }
+- **Expand::ExpandPer1Open**
+  - Expected: `{ Interval[10, 10], Interval[11, 11], Interval[12, 12] }`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '{' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: expand { Interval[10.0, 12.5) } per 1", location: None, context: None }
+- **Expand::ExpandPer1OpenIntervalOverload**
+  - Expected: `{ 10, 11, 12 }`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'I' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: expand Interval[10.0, 12.5) per 1", location: None, context: None }
+- **Expand::ExpandPerMinute**
+  - Expected: `{ }`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '{' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: expand { Interval[@T10, @T10] } per minute", location: None, context: None }
+- **Expand::ExpandPerMinuteIntervalOverload**
+  - Expected: `{ }`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'I' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: expand Interval[@T10, @T10] per minute", location: None, context: None }
+- **Expand::ExpandPer0D1**
+  - Expected: `{ Interval[10.0, 10.0], Interval[10.1, 10.1], Interval[10.2, 10.2], Interval[10.3, 10.3], Interval[10.4, 10.4], Interval[10.5, 10.5], Interval[10.6, 10.6], Interval[10.7, 10.7], Interval[10.8, 10.8], Interval[10.9, 10.9] }`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '{' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: expand { Interval[10, 10] } per 0.1", location: None, context: None }
+- **Expand::ExpandPer0D1IntervalOverload**
+  - Expected: `{ 10.0, 10.1, 10.2, 10.3, 10.4, 10.5, 10.6, 10.7, 10.8, 10.9 }`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'I' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: expand Interval[10, 10] per 0.1", location: None, context: None }
+- **Expand::ExpandInterval**
+  - Expected: `{ Interval[1, 1], Interval[2, 2], Interval[3, 3], Interval[4, 4], Interval[5, 5], Interval[6, 6], Interval[7, 7], Interval[8, 8], Interval[9, 9], Interval[10, 10] }`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '{' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: expand { Interval[1, 10] }", location: None, context: None }
+- **Expand::ExpandIntegerIntervalOverload**
+  - Expected: `{ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 }`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'I' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: expand Interval[1, 10]", location: None, context: None }
+- **Expand::ExpandIntervalOpen**
+  - Expected: `{ Interval[1, 1], Interval[2, 2], Interval[3, 3], Interval[4, 4], Interval[5, 5], Interval[6, 6], Interval[7, 7], Interval[8, 8], Interval[9, 9] }`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '{' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: expand { Interval[1, 10) }", location: None, context: None }
+- **Expand::ExpandIntegerOpenIntervalOverload**
+  - Expected: `{ 1, 2, 3, 4, 5, 6, 7, 8, 9 }`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'I' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: expand Interval[1, 10)", location: None, context: None }
+- **Expand::ExpandIntervalPer2**
+  - Expected: `{ Interval[1, 2], Interval[3, 4], Interval[5, 6], Interval[7, 8], Interval[9, 10] }`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '{' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: expand { Interval[1, 10] } per 2", location: None, context: None }
+- **Expand::ExpandIntervalPer2IntervalOverload**
+  - Expected: `{ 1, 3, 5, 7, 9 }`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'I' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: expand Interval[1, 10] per 2", location: None, context: None }
+- **Expand::ExpandIntervalOpenPer2**
+  - Expected: `{ Interval[1, 2], Interval[3, 4], Interval[5, 6], Interval[7, 8] }`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '{' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: expand { Interval[1, 10) } per 2", location: None, context: None }
+- **Expand::ExpandIntervalOpenPer2IntervalOverload**
+  - Expected: `{ 1, 3, 5, 7 }`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'I' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: expand Interval[1, 10) per 2", location: None, context: None }
+- **Contains::TestNullElement1**
+  - Expected: `false`
+  - Actual: `null`
+- **Contains::TimeContainsTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **Contains::TimeContainsFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **End::IntegerIntervalEnd**
+  - Expected: `10`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: end of Interval[1, 10]", location: None, context: None }
+- **End::DecimalIntervalEnd**
+  - Expected: `10.0`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: end of Interval[1.0, 10.0]", location: None, context: None }
+- **End::QuantityIntervalEnd**
+  - Expected: `10.0'g'`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: end of Interval[1.0 'g', 10.0 'g']", location: None, context: None }
+- **End::DateTimeIntervalEnd**
+  - Expected: `@2016-05-02T00:00:00.000`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: end of Interval[@2016-05-01T00:00:00.000, @2016-05-02T00:00:00.000]", location: None, context: None }
+- **End::TimeIntervalEnd**
+  - Expected: `@T23:59:59.599`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: end of Interval[@T00:00:00.000, @T23:59:59.599]", location: None, context: None }
+- **Ends::TimeEndsTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **Ends::TimeEndsFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **Equal::TestEqualNull**
+  - Expected: `null`
+  - Actual: `false`
+- **Equal::TimeEqualTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **Equal::TimeEqualFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **Except::NullInterval**
+  - Expected: `null`
+  - Actual: `Interval[None, None]`
+- **Except::TestExceptNull**
+  - Expected: `null`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'e' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[null, null] except Interval[null, null]", location: None, context: None }
+- **Except::IntegerIntervalExcept1to3**
+  - Expected: `Interval [ 1, 3 ]`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'e' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[1, 10] except Interval[4, 10]", location: None, context: None }
+- **Except::IntegerIntervalExceptNull**
+  - Expected: `null`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'e' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[1, 10] except Interval[3, 7]", location: None, context: None }
+- **Except::DecimalIntervalExcept1to3**
+  - Expected: `Interval [ 1.0, 3.99999999 ]`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'e' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[1.0, 10.0] except Interval[4.0, 10.0]", location: None, context: None }
+- **Except::DecimalIntervalExceptNull**
+  - Expected: `null`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'e' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[1.0, 10.0] except Interval[3.0, 7.0]", location: None, context: None }
+- **Except::QuantityIntervalExcept1to4**
+  - Expected: `Interval [ 1.0 'g', 4.99999999 'g' ]`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'e' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[1.0 'g', 10.0 'g'] except Interval[5.0 'g', 10.0 'g']", location: None, context: None }
+- **Except::Except12**
+  - Expected: `Interval [ 1, 2 ]`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'e' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[1, 4] except Interval[3, 6]", location: None, context: None }
+- **Except::ExceptDateTimeInterval**
+  - Expected: `Interval [ @2012-01-05T, @2012-01-06T ]`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'e' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[DateTime(2012, 1, 5), DateTime(2012, 1, 15)] except Interval[DateTime(2012, 1, 7), DateTime(2012, 1, 15)]", location: None, context: None }
+- **Except::ExceptDateTime2**
+  - Expected: `Interval [ @2012-01-13T, @2012-01-16T ]`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'e' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[DateTime(2012, 1, 7), DateTime(2012, 1, 16)] except Interval[DateTime(2012, 1, 5), DateTime(2012, 1, 12)]", location: None, context: None }
+- **Except::ExceptTimeInterval**
+  - Expected: `Interval [ @T05:59:59.999, @T08:59:59.998 ]`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'e' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[@T05:59:59.999, @T10:59:59.999] except Interval[@T08:59:59.999, @T10:59:59.999]", location: None, context: None }
+- **Except::ExceptTime2**
+  - Expected: `Interval [ @T11:00:00.000, @T11:59:59.999 ]`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'e' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[@T08:59:59.999, @T11:59:59.999] except Interval[@T05:59:59.999, @T10:59:59.999]", location: None, context: None }
+- **In::TestInNullBoundaries**
+  - Expected: `false`
+  - Actual: `true`
+- **In::TimeInTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **In::TimeInFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **In::TimeInNull**
+  - Expected: `null`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **In::TestPeriod1**
+  - Expected: `Interval [ @2017-12-20T11:00:00, @2017-12-21T21:00:00 ]`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}DateTime" }
+- **In::TestPeriod2**
+  - Expected: `Interval [ @2017-12-20T10:30:00, @2017-12-20T12:00:00 ]`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}DateTime" }
+- **In::Issue32Interval**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[@2017-12-20T10:30:00, @2017-12-20T12:00:00]\n\t\t\t\tstarts 1 day or less on or after day of start of\n\t\t\t\tInterval[@2017-12-20T11:00:00, @2017-12-21T21:00:00]", location: None, context: None }
+- **Includes::TimeIncludesTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **Includes::TimeIncludesFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **Included In::TestIncludedInNull**
+  - Expected: `null`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'i' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: null included in Interval[1, 10]", location: None, context: None }
+- **Included In::IntegerIntervalIncludedInTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'i' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[4, 10] included in Interval[1, 10]", location: None, context: None }
+- **Included In::IntegerIntervalIncludedInFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'i' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[44, 50] included in Interval[1, 10]", location: None, context: None }
+- **Included In::DecimalIntervalIncludedInTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'i' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[4.0, 10.0] included in Interval[1.0, 10.0]", location: None, context: None }
+- **Included In::DecimalIntervalIncludedInFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'i' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[11.0, 20.0] included in Interval[1.0, 10.0]", location: None, context: None }
+- **Included In::QuantityIntervalIncludedInTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'i' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[5.0 'g', 10.0 'g'] included in Interval[1.0 'g', 10.0 'g']", location: None, context: None }
+- **Included In::QuantityIntervalIncludedInFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'i' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[11.0 'g', 20.0 'g'] included in Interval[1.0 'g', 10.0 'g']", location: None, context: None }
+- **Included In::DateTimeIncludedInTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'i' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[DateTime(2012, 1, 7), DateTime(2012, 1, 14)] included in Interval[DateTime(2012, 1, 5), DateTime(2012, 1, 15)]", location: None, context: None }
+- **Included In::DateTimeIncludedInFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'i' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[DateTime(2012, 1, 4), DateTime(2012, 1, 14)] included in Interval[DateTime(2012, 1, 5), DateTime(2012, 1, 15)]", location: None, context: None }
+- **Included In::TimeIncludedInTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'i' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[@T06:59:59.999, @T09:59:59.999] included in Interval[@T05:59:59.999, @T10:59:59.999]", location: None, context: None }
+- **Included In::TimeIncludedInFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'i' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[@T04:59:59.999, @T09:59:59.999] included in Interval[@T05:59:59.999, @T10:59:59.999]", location: None, context: None }
+- **Included In::DateTimeIncludedInNull**
+  - Expected: `null`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'i' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval [@2017-09-01T00:00:00, @2017-09-01T00:00:00] included in Interval [@2017-09-01T00:00:00.000, @2017-12-30T23:59:59.999]", location: None, context: None }
+- **Included In::DateTimeIncludedInPrecisionTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'i' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval [@2017-09-01T00:00:00, @2017-09-01T00:00:00] included in day of Interval [@2017-09-01T00:00:00.000, @2017-12-30T23:59:59.999]", location: None, context: None }
+- **Included In::DateTimeIncludedInPrecisionNull**
+  - Expected: `null`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'i' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval [@2017-09-01T00:00:00, @2017-09-01T00:00:00] included in millisecond of Interval [@2017-09-01T00:00:00.000, @2017-12-30T23:59:59.999]", location: None, context: None }
+- **Intersect::TestIntersectNull**
+  - Expected: `Interval[5, null)`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'i' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[1, 10] intersect Interval[5, null)", location: None, context: None }
+- **Intersect::TestIntersectNull1**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '=' expected '-', '+', '\"not\"', '\"exists\"', '\"null\"', '\"true\"', '\"false\"', '@', int, ''', '\"if\"', '\"Interval\"', '\"Tuple\"', '[', '{', '(', '\"', or identifier", expression: "library Test version '1.0'\ndefine Result: = 10", location: None, context: None }
+- **Intersect::TestIntersectNull2**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '=' expected '-', '+', '\"not\"', '\"exists\"', '\"null\"', '\"true\"', '\"false\"', '@', int, ''', '\"if\"', '\"Interval\"', '\"Tuple\"', '[', '{', '(', '\"', or identifier", expression: "library Test version '1.0'\ndefine Result: = 5", location: None, context: None }
+- **Intersect::TestIntersectNull3**
+  - Expected: `false`
+  - Actual: `10`
+- **Intersect::TestIntersectNull4**
+  - Expected: `false`
+  - Actual: `5`
+- **Intersect::IntegerIntervalIntersectTest4to10**
+  - Expected: `Interval [ 4, 10 ]`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'i' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[1, 10] intersect Interval[4, 10]", location: None, context: None }
+- **Intersect::IntegerIntervalIntersectTestNull**
+  - Expected: `null`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'i' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[1, 10] intersect Interval[11, 20]", location: None, context: None }
+- **Intersect::DecimalIntervalIntersectTest4to10**
+  - Expected: `Interval [ 4.0, 10.0 ]`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'i' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[1.0, 10.0] intersect Interval[4.0, 10.0]", location: None, context: None }
+- **Intersect::DecimalIntervalIntersectTestNull**
+  - Expected: `null`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'i' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[1.0, 10.0] intersect Interval[11.0, 20.0]", location: None, context: None }
+- **Intersect::QuantityIntervalIntersectTest5to10**
+  - Expected: `Interval [ 5.0 'g', 10.0 'g' ]`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'i' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[1.0 'g', 10.0 'g'] intersect Interval[5.0 'g', 10.0 'g']", location: None, context: None }
+- **Intersect::QuantityIntervalIntersectTestNull**
+  - Expected: `null`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'i' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[1.0 'g', 10.0 'g'] intersect Interval[11.0 'g', 20.0 'g']", location: None, context: None }
+- **Intersect::DateTimeIntersect**
+  - Expected: `Interval [ @2012-01-07T, @2012-01-10T ]`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'i' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[DateTime(2012, 1, 7), DateTime(2012, 1, 14)] intersect Interval[DateTime(2012, 1, 7), DateTime(2012, 1, 10)]", location: None, context: None }
+- **Intersect::TimeIntersect**
+  - Expected: `Interval [ @T04:59:59.999, @T06:59:59.999 ]`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'i' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[@T04:59:59.999, @T09:59:59.999] intersect Interval[@T04:59:59.999, @T06:59:59.999]", location: None, context: None }
+- **Equivalent::TimeEquivalentTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **Equivalent::TimeEquivalentFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **Meets::DecimalIntervalMeetsTrue**
+  - Expected: `true`
+  - Actual: `false`
+- **Meets::QuantityIntervalMeetsTrue**
+  - Expected: `true`
+  - Actual: `false`
+- **Meets::DateTimeMeetsTrue**
+  - Expected: `true`
+  - Actual: `false`
+- **Meets::TimeMeetsTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **Meets::TimeMeetsFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **MeetsBefore::TestMeetsBeforeNull**
+  - Expected: `null`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'I' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval(null, 5] meets before Interval(null, 25]", location: None, context: None }
+- **MeetsBefore::IntegerIntervalMeetsBeforeTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'I' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[1, 10] meets before Interval[11, 20]", location: None, context: None }
+- **MeetsBefore::IntegerIntervalMeetsBeforeFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'I' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[1, 10] meets before Interval[44, 50]", location: None, context: None }
+- **MeetsBefore::DecimalIntervalMeetsBeforeTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'I' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[3.50000001, 5.00000011] meets before Interval[5.00000012, 8.50]", location: None, context: None }
+- **MeetsBefore::DecimalIntervalMeetsBeforeFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'I' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[8.01, 15.00000001] meets before Interval[15.00000000, 18.50]", location: None, context: None }
+- **MeetsBefore::QuantityIntervalMeetsBeforeTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'I' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[3.50000001 'g', 5.00000011 'g'] meets before Interval[5.00000012 'g', 8.50 'g']", location: None, context: None }
+- **MeetsBefore::QuantityIntervalMeetsBeforeFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'I' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[8.01 'g', 15.00000001 'g'] meets before Interval[15.00000000 'g', 18.50 'g']", location: None, context: None }
+- **MeetsBefore::DateTimeMeetsBeforeTrue**
+  - Expected: `true`
+  - Actual: `false`
+- **MeetsBefore::TimeMeetsBeforeTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **MeetsBefore::TimeMeetsBeforeFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **MeetsAfter::TestMeetsAfterNull**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'I' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval(null, 5] meets after Interval[11, null)", location: None, context: None }
+- **MeetsAfter::IntegerIntervalMeetsAfterTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'I' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[11, 20] meets after Interval[1, 10]", location: None, context: None }
+- **MeetsAfter::IntegerIntervalMeetsAfterFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'I' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[44, 50] meets after Interval[1, 10]", location: None, context: None }
+- **MeetsAfter::DecimalIntervalMeetsAfterTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'I' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[55.00000123, 128.032156] meets after Interval[12.00258, 55.00000122]", location: None, context: None }
+- **MeetsAfter::DecimalIntervalMeetsAfterFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'I' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[55.00000124, 150.222222] meets after Interval[12.00258, 55.00000122]", location: None, context: None }
+- **MeetsAfter::QuantityIntervalMeetsAfterTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'I' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[55.00000123 'g', 128.032156 'g'] meets after Interval[12.00258 'g', 55.00000122 'g']", location: None, context: None }
+- **MeetsAfter::QuantityIntervalMeetsAfterFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'I' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[55.00000124 'g', 150.222222 'g'] meets after Interval[12.00258 'g', 55.00000122 'g']", location: None, context: None }
+- **MeetsAfter::DateTimeMeetsAfterTrue**
+  - Expected: `true`
+  - Actual: `false`
+- **MeetsAfter::TimeMeetsAfterTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **MeetsAfter::TimeMeetsAfterFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **NotEqual::TimeNotEqualTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **NotEqual::TimeNotEqualFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **OnOrAfter::TestOnOrAfterNull**
+  - Expected: `null`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found ')' expected '-', '+', '\"not\"', '\"exists\"', '\"null\"', '\"true\"', '\"false\"', '@', int, ''', '\"if\"', '\"Interval\"', '\"Tuple\"', '[', '{', '(', '\"', or identifier", expression: "library Test version '1.0'\ndefine Result: )", location: None, context: None }
+- **OnOrAfter::TestOnOrAfterDateTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[@2012-12-01, @2013-12-01] on or after month of @2012-11-15", location: None, context: None }
+- **OnOrAfter::TestOnOrAfterDateFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @2012-11-15 on or after month of Interval[@2012-12-01, @2013-12-01]", location: None, context: None }
+- **OnOrAfter::TestOnOrAfterTimeTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[@T10:00:00.000, @T19:59:59.999] on or after hour of Interval[@T08:00:00.000, @T09:59:59.999]", location: None, context: None }
+- **OnOrAfter::TestOnOrAfterTimeFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[@T10:00:00.000, @T19:59:59.999] on or after hour of Interval[@T08:00:00.000, @T11:59:59.999]", location: None, context: None }
+- **OnOrAfter::TestOnOrAfterIntegerTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[6, 10] on or after 6", location: None, context: None }
+- **OnOrAfter::TestOnOrAfterDecimalFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected ''', '\"years\"', '\"year\"', '\"months\"', '\"month\"', '\"weeks\"', '\"week\"', '\"days\"', '\"day\"', '\"hours\"', '\"hour\"', '\"minutes\"', '\"minute\"', '\"seconds\"', '\"second\"', '\"milliseconds\"', '\"millisecond\"', ':', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: 2.5 on or after Interval[1.666, 2.50000001]", location: None, context: None }
+- **OnOrAfter::TestOnOrAfterQuantityTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected ':', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: 2.5 'mg' on or after Interval[1.666 'mg', 2.50000000 'mg']", location: None, context: None }
+- **OnOrBefore::TestOnOrBeforeNull**
+  - Expected: `null`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found ')' expected '-', '+', '\"not\"', '\"exists\"', '\"null\"', '\"true\"', '\"false\"', '@', int, ''', '\"if\"', '\"Interval\"', '\"Tuple\"', '[', '{', '(', '\"', or identifier", expression: "library Test version '1.0'\ndefine Result: )", location: None, context: None }
+- **OnOrBefore::TestOnOrBeforeDateTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[@2012-10-01, @2012-11-01] on or before month of @2012-11-15", location: None, context: None }
+- **OnOrBefore::TestOnOrBeforeDateFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @2012-11-15 on or before month of Interval[@2012-10-01, @2013-12-01]", location: None, context: None }
+- **OnOrBefore::TestOnOrBeforeTimeTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[@T05:00:00.000, @T07:59:59.999] on or before hour of Interval[@T08:00:00.000, @T09:59:59.999]", location: None, context: None }
+- **OnOrBefore::TestOnOrBeforeTimeFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[@T10:00:00.000, @T19:59:59.999] on or before hour of Interval[@T08:00:00.000, @T11:59:59.999]", location: None, context: None }
+- **OnOrBefore::TestOnOrBeforeIntegerTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[4, 6] on or before 6", location: None, context: None }
+- **OnOrBefore::TestOnOrBeforeDecimalFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected ''', '\"years\"', '\"year\"', '\"months\"', '\"month\"', '\"weeks\"', '\"week\"', '\"days\"', '\"day\"', '\"hours\"', '\"hour\"', '\"minutes\"', '\"minute\"', '\"seconds\"', '\"second\"', '\"milliseconds\"', '\"millisecond\"', ':', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: 1.6667 on or before Interval[1.666, 2.50000001]", location: None, context: None }
+- **OnOrBefore::TestOnOrBeforeQuantityTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected ':', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: 1.666 'mg' on or before Interval[1.666 'mg', 2.50000000 'mg']", location: None, context: None }
+- **Overlaps::IntegerIntervalExclusiveOverlapsFalse4**
+  - Expected: `false`
+  - Actual: `true`
+- **Overlaps::TimeOverlapsTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **Overlaps::TimeOverlapsFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **OverlapsBefore::TestOverlapsBeforeNull**
+  - Expected: `null`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'I' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[null, null] overlaps before Interval[1, 10]", location: None, context: None }
+- **OverlapsBefore::IntegerIntervalOverlapsBeforeTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'I' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[1, 10] overlaps before Interval[4, 10]", location: None, context: None }
+- **OverlapsBefore::IntegerIntervalOverlapsBeforeFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'I' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[4, 10] overlaps before Interval[1, 10]", location: None, context: None }
+- **OverlapsBefore::IntegerIntervalOverlapsBeforeFalse2**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'I' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[4, 10] overlaps before Interval[4, 10]", location: None, context: None }
+- **OverlapsBefore::IntegerIntervalExclusiveOverlapsBeforeTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'I' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[4, 10] overlaps before Interval(4, 10]", location: None, context: None }
+- **OverlapsBefore::IntegerIntervalExclusiveOverlapsBeforeTrue2**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'I' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval(3, 10] overlaps before Interval(4, 10]", location: None, context: None }
+- **OverlapsBefore::IntegerIntervalExclusiveOverlapsBeforeTrue3**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'I' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval(3, 10] overlaps before Interval[5, 10]", location: None, context: None }
+- **OverlapsBefore::IntegerIntervalExclusiveOverlapsBeforeFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'I' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval(3, 10] overlaps before Interval(3, 10]", location: None, context: None }
+- **OverlapsBefore::IntegerIntervalExclusiveOverlapsBeforeFalse2**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'I' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval(3, 10] overlaps before Interval[4, 10]", location: None, context: None }
+- **OverlapsBefore::IntegerIntervalExclusiveOverlapsBeforeFalse3**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'I' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[4, 10] overlaps before Interval(3, 10]", location: None, context: None }
+- **OverlapsBefore::DecimalIntervalOverlapsBeforeTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'I' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[1.0, 10.0] overlaps before Interval[4.0, 10.0]", location: None, context: None }
+- **OverlapsBefore::DecimalIntervalOverlapsBeforeFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'I' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[4.0, 10.0] overlaps before Interval[1.0, 10.0]", location: None, context: None }
+- **OverlapsBefore::QuantityIntervalOverlapsBeforeTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'I' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[1.0 'g', 10.0 'g'] overlaps before Interval[5.0 'g', 10.0 'g']", location: None, context: None }
+- **OverlapsBefore::QuantityIntervalOverlapsBeforeFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'I' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[5.0 'g', 10.0 'g'] overlaps before Interval[1.0 'g', 10.0 'g']", location: None, context: None }
+- **OverlapsBefore::TimeOverlapsBeforeTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **OverlapsBefore::TimeOverlapsBeforeFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **OverlapsAfter::TestOverlapsAfterNull**
+  - Expected: `null`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'I' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[null, null] overlaps after Interval[1, 10]", location: None, context: None }
+- **OverlapsAfter::IntegerIntervalOverlapsAfterTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'I' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[4, 15] overlaps after Interval[1, 10]", location: None, context: None }
+- **OverlapsAfter::IntegerIntervalOverlapsAfterFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'I' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[4, 10] overlaps after Interval[1, 10]", location: None, context: None }
+- **OverlapsAfter::IntegerIntervalOverlapsAfterFalse2**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'I' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[4, 10] overlaps after Interval[4, 10]", location: None, context: None }
+- **OverlapsAfter::IntegerIntervalExclusiveOverlapsAfterTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'I' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[4, 11) overlaps after Interval[4, 9]", location: None, context: None }
+- **OverlapsAfter::IntegerIntervalExclusiveOverlapsAfterTrue2**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'I' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[4, 11) overlaps after Interval[4, 10)", location: None, context: None }
+- **OverlapsAfter::IntegerIntervalExclusiveOverlapsAfterTrue3**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'I' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[4, 10] overlaps after Interval[4, 10)", location: None, context: None }
+- **OverlapsAfter::IntegerIntervalExclusiveOverlapsAfterFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'I' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[4, 11) overlaps after Interval[4, 11)", location: None, context: None }
+- **OverlapsAfter::IntegerIntervalExclusiveOverlapsAfterFalse2**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'I' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[4, 11) overlaps after Interval[4, 10]", location: None, context: None }
+- **OverlapsAfter::IntegerIntervalExclusiveOverlapsAfterFalse3**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'I' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[4, 10] overlaps after Interval[4, 11)", location: None, context: None }
+- **OverlapsAfter::DecimalIntervalOverlapsAfterTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'I' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[4.0, 15.0] overlaps after Interval[1.0, 10.0]", location: None, context: None }
+- **OverlapsAfter::DecimalIntervalOverlapsAfterFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'I' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[4.0, 10.0] overlaps after Interval[1.0, 10.0]", location: None, context: None }
+- **OverlapsAfter::QuantityIntervalOverlapsAfterTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'I' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[5.0 'g', 15.0 'g'] overlaps after Interval[1.0 'g', 10.0 'g']", location: None, context: None }
+- **OverlapsAfter::QuantityIntervalOverlapsAfterFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'I' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[5.0 'g', 10.0 'g'] overlaps after Interval[1.0 'g', 10.0 'g']", location: None, context: None }
+- **OverlapsAfter::TimeOverlapsAfterTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **OverlapsAfter::TimeOverlapsAfterFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **PointFrom::TestPointFromNull**
+  - Expected: `null`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'f' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: point from Interval[null, null]", location: None, context: None }
+- **PointFrom::TestPointFromInteger**
+  - Expected: `1`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'f' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: point from Interval[1, 1]", location: None, context: None }
+- **PointFrom::TestPointFromDecimal**
+  - Expected: `1.0`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'f' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: point from Interval[1.0, 1.0]", location: None, context: None }
+- **PointFrom::TestPointFromQuantity**
+  - Expected: `1.0'cm'`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'f' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: point from Interval[1.0 'cm', 1.0 'cm']", location: None, context: None }
+- **ProperContains::TimeProperContainsTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'p' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[@T12:00:00.000, @T21:59:59.999] properly includes @T12:00:00.001", location: None, context: None }
+- **ProperContains::TimeProperContainsFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'p' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[@T12:00:00.000, @T21:59:59.999] properly includes @T12:00:00.000", location: None, context: None }
+- **ProperContains::TimeProperContainsNull**
+  - Expected: `null`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'p' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[@T12:00:00.001, @T21:59:59.999] properly includes @T12:00:00", location: None, context: None }
+- **ProperContains::TimeProperContainsPrecisionTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'p' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[@T12:00:00.000, @T21:59:59.999] properly includes second of @T12:00:01", location: None, context: None }
+- **ProperContains::TimeProperContainsPrecisionFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'p' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[@T12:00:00.001, @T21:59:59.999] properly includes second of @T12:00:00", location: None, context: None }
+- **ProperContains::TimeProperContainsPrecisionNull**
+  - Expected: `null`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'p' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[@T12:00:00.001, @T21:59:59.999] properly includes millisecond of @T12:00:00", location: None, context: None }
+- **ProperIn::TimeProperInTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'p' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @T12:00:00.001 properly included in Interval[@T12:00:00.000, @T21:59:59.999]", location: None, context: None }
+- **ProperIn::TimeProperInFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'p' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @T12:00:00.000 properly included in  Interval[@T12:00:00.000, @T21:59:59.999]", location: None, context: None }
+- **ProperIn::TimeProperInNull**
+  - Expected: `null`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'p' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @T12:00:00 properly included in Interval[@T12:00:00.001, @T21:59:59.999]", location: None, context: None }
+- **ProperIn::TimeProperInPrecisionTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'p' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @T12:00:01 properly included in second of Interval[@T12:00:00.000, @T21:59:59.999]", location: None, context: None }
+- **ProperIn::TimeProperInPrecisionFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'p' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @T12:00:00 properly included in second of Interval[@T12:00:00.001, @T21:59:59.999]", location: None, context: None }
+- **ProperIn::TimeProperInPrecisionNull**
+  - Expected: `null`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'p' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @T12:00:00 properly included in millisecond of Interval[@T12:00:00.001, @T21:59:59.999]", location: None, context: None }
+- **ProperlyIncludes::NullBoundariesProperlyIncludesIntegerInterval**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'p' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[null as Integer, null as Integer] properly includes Interval[1, 10]", location: None, context: None }
+- **ProperlyIncludes::IntegerIntervalProperlyIncludesTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'p' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[1, 10] properly includes Interval[4, 10]", location: None, context: None }
+- **ProperlyIncludes::IntegerIntervalProperlyIncludesFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'p' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[1, 10] properly includes Interval[4, 15]", location: None, context: None }
+- **ProperlyIncludes::DecimalIntervalProperlyIncludesTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'p' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[1.0, 10.0] properly includes Interval[4.0, 10.0]", location: None, context: None }
+- **ProperlyIncludes::DecimalIntervalProperlyIncludesFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'p' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[1.0, 10.0] properly includes Interval[4.0, 15.0]", location: None, context: None }
+- **ProperlyIncludes::QuantityIntervalProperlyIncludesTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'p' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[1.0 'g', 10.0 'g'] properly includes Interval[5.0 'g', 10.0 'g']", location: None, context: None }
+- **ProperlyIncludes::QuantityIntervalProperlyIncludesFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'p' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[1.0 'g', 10.0 'g'] properly includes Interval[5.0 'g', 15.0 'g']", location: None, context: None }
+- **ProperlyIncludes::DateTimeProperlyIncludesTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'p' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[DateTime(2012, 1, 15), DateTime(2012, 1, 28)] properly includes Interval[DateTime(2012, 1, 16), DateTime(2012, 1, 27)]", location: None, context: None }
+- **ProperlyIncludes::DateTimeProperlyIncludesFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'p' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[DateTime(2012, 1, 15), DateTime(2012, 1, 28)] properly includes Interval[DateTime(2012, 1, 16), DateTime(2012, 1, 29)]", location: None, context: None }
+- **ProperlyIncludes::TimeProperlyIncludesTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'p' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[@T12:00:00.000, @T21:59:59.999] properly includes Interval[@T12:01:01.000, @T21:59:59.998]", location: None, context: None }
+- **ProperlyIncludes::TimeProperlyIncludesFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'p' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[@T12:00:00.000, @T21:59:59.999] properly includes Interval[@T12:01:01.000, @T22:00:00.000]", location: None, context: None }
+- **ProperlyIncludedIn::IntegerIntervalProperlyIncludedInNullBoundaries**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'p' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[1, 10] properly included in Interval[null, null]", location: None, context: None }
+- **ProperlyIncludedIn::IntegerIntervalProperlyIncludedInTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'p' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[4, 10] properly included in Interval[1, 10]", location: None, context: None }
+- **ProperlyIncludedIn::IntegerIntervalProperlyIncludedInFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'p' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[4, 15] properly included in Interval[1, 10]", location: None, context: None }
+- **ProperlyIncludedIn::DecimalIntervalProperlyIncludedInTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'p' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[4.0, 10.0] properly included in Interval[1.0, 10.0]", location: None, context: None }
+- **ProperlyIncludedIn::DecimalIntervalProperlyIncludedInFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'p' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[4.0, 15.0] properly included in Interval[1.0, 10.0]", location: None, context: None }
+- **ProperlyIncludedIn::QuantityIntervalProperlyIncludedInTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'p' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[5.0 'g', 10.0 'g'] properly included in Interval[1.0 'g', 10.0 'g']", location: None, context: None }
+- **ProperlyIncludedIn::QuantityIntervalProperlyIncludedInFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'p' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[1.0 'g', 10.0 'g'] properly included in Interval[5.0 'g', 15.0 'g']", location: None, context: None }
+- **ProperlyIncludedIn::DateTimeProperlyIncludedInTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'p' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[DateTime(2012, 1, 16), DateTime(2012, 1, 27)] properly included in Interval[DateTime(2012, 1, 15), DateTime(2012, 1, 28)]", location: None, context: None }
+- **ProperlyIncludedIn::DateTimeProperlyIncludedInFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'p' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[DateTime(2012, 1, 16), DateTime(2012, 1, 29)] properly included in Interval[DateTime(2012, 1, 15), DateTime(2012, 1, 28)]", location: None, context: None }
+- **ProperlyIncludedIn::TimeProperlyIncludedInTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'p' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[@T12:01:01.000, @T21:59:59.998] properly included in Interval[@T12:00:00.000, @T21:59:59.999]", location: None, context: None }
+- **ProperlyIncludedIn::TimeProperlyIncludedInFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'p' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[@T12:01:01.000, @T22:00:00.000] properly included in Interval[@T12:00:00.000, @T21:59:59.999]", location: None, context: None }
+- **Start::IntegerIntervalStart**
+  - Expected: `1`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: start of Interval[1, 10]", location: None, context: None }
+- **Start::DecimalIntervalStart**
+  - Expected: `1.0`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: start of Interval[1.0, 10.0]", location: None, context: None }
+- **Start::QuantityIntervalStart**
+  - Expected: `1.0'g'`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: start of Interval[1.0 'g', 10.0 'g']", location: None, context: None }
+- **Start::DateTimeIntervalStart**
+  - Expected: `@2016-05-01T00:00:00.000`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: start of Interval[@2016-05-01T00:00:00.000, @2016-05-02T00:00:00.000]", location: None, context: None }
+- **Start::TimeIntervalStart**
+  - Expected: `@T00:00:00.000`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: start of Interval[@T00:00:00.000, @T23:59:59.599]", location: None, context: None }
+- **Starts::TimeStartsTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **Starts::TimeStartsFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **Union::TestUnionNull**
+  - Expected: `null`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'u' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[null, null] union Interval[1, 10]", location: None, context: None }
+- **Union::IntegerIntervalUnion1To15**
+  - Expected: `Interval [ 1, 15 ]`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'u' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[1, 10] union Interval[4, 15]", location: None, context: None }
+- **Union::IntegerIntervalUnionNull**
+  - Expected: `null`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'u' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[1, 10] union Interval[44, 50]", location: None, context: None }
+- **Union::DecimalIntervalUnion1To15**
+  - Expected: `Interval [ 1.0, 15.0 ]`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'u' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[1.0, 10.0] union Interval[4.0, 15.0]", location: None, context: None }
+- **Union::DecimalIntervalUnionNull**
+  - Expected: `null`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'u' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[1.0, 10.0] union Interval[14.0, 15.0]", location: None, context: None }
+- **Union::QuantityIntervalUnion1To15**
+  - Expected: `Interval [ 1.0 'g', 15.0 'g' ]`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'u' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[1.0 'g', 10.0 'g'] union Interval[5.0 'g', 15.0 'g']", location: None, context: None }
+- **Union::QuantityIntervalUnionNull**
+  - Expected: `null`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'u' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[1.0 'g', 10.0 'g'] union Interval[14.0 'g', 15.0 'g']", location: None, context: None }
+- **Union::DateTimeUnion**
+  - Expected: `Interval [ @2012-01-05T, @2012-01-28T ]`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'u' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[DateTime(2012, 1, 5), DateTime(2012, 1, 25)] union Interval[DateTime(2012, 1, 25), DateTime(2012, 1, 28)]", location: None, context: None }
+- **Union::DateTimeUnionNull**
+  - Expected: `null`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'u' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[DateTime(2012, 1, 5), DateTime(2012, 1, 25)] union Interval[DateTime(2012, 1, 27), DateTime(2012, 1, 28)]", location: None, context: None }
+- **Union::TimeUnion**
+  - Expected: `Interval [ @T05:59:59.999, @T20:59:59.999 ]`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'u' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[@T05:59:59.999, @T15:59:59.999] union Interval[@T10:59:59.999, @T20:59:59.999]", location: None, context: None }
+- **Union::TimeUnionNull**
+  - Expected: `null`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'u' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: Interval[@T05:59:59.999, @T15:59:59.999] union Interval[@T16:59:59.999, @T20:59:59.999]", location: None, context: None }
+- **Width::IntegerIntervalTestWidth9**
+  - Expected: `9`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: width of Interval[1, 10]", location: None, context: None }
+- **Width::IntervalTestWidthNull**
+  - Expected: `null`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found ')' expected '-', '+', '\"not\"', '\"exists\"', '\"null\"', '\"true\"', '\"false\"', '@', int, ''', '\"if\"', '\"Interval\"', '\"Tuple\"', '[', '{', '(', '\"', or identifier", expression: "library Test version '1.0'\ndefine Result: )", location: None, context: None }
+- **Width::DecimalIntervalTestWidth11**
+  - Expected: `11.0`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: width of Interval[4.0, 15.0]", location: None, context: None }
+- **Width::QuantityIntervalTestWidth5**
+  - Expected: `5.0'g'`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'o' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: width of Interval[5.0 'g', 10.0 'g']", location: None, context: None }
+- **Interval::IntegerIntervalTest**
+  - Expected: `Interval[1, 10]`
+  - Actual: `Interval[Some(Integer(1)), Some(Integer(10))]`
+- **Interval::IntegerIntervalTest2**
+  - Expected: `Interval[11, 20]`
+  - Actual: `Interval[Some(Integer(11)), Some(Integer(20))]`
+- **Interval::IntegerIntervalTest3**
+  - Expected: `Interval[44, 50]`
+  - Actual: `Interval[Some(Integer(44)), Some(Integer(50))]`
+- **Interval::IntegerIntervalTest4**
+  - Expected: `Interval[4, 10]`
+  - Actual: `Interval[Some(Integer(4)), Some(Integer(10))]`
+- **Interval::IntegerIntervalTest5**
+  - Expected: `Interval[4, 15]`
+  - Actual: `Interval[Some(Integer(4)), Some(Integer(15))]`
+- **Interval::DecimalIntervalTest**
+  - Expected: `Interval[1.0, 10.0]`
+  - Actual: `Interval[Some(Decimal(1.0)), Some(Decimal(10.0))]`
+- **Interval::DecimalIntervalTest2**
+  - Expected: `Interval[11.0, 20.0]`
+  - Actual: `Interval[Some(Decimal(11.0)), Some(Decimal(20.0))]`
+- **Interval::DecimalIntervalTest3**
+  - Expected: `Interval[4.0, 10.0]`
+  - Actual: `Interval[Some(Decimal(4.0)), Some(Decimal(10.0))]`
+- **Interval::DecimalIntervalTest4**
+  - Expected: `Interval[4.0, 15.0]`
+  - Actual: `Interval[Some(Decimal(4.0)), Some(Decimal(15.0))]`
+- **Interval::DecimalIntervalTest5**
+  - Expected: `Interval[14.0, 15.0]`
+  - Actual: `Interval[Some(Decimal(14.0)), Some(Decimal(15.0))]`
+- **Interval::QuantityIntervalTest**
+  - Expected: `Interval[1.0 'g', 10.0 'g']`
+  - Actual: `Interval[Some(Quantity(CqlQuantity { value: 1.0, unit: Some("g") })), Some(Quantity(CqlQuantity { value: 10.0, unit: Some("g") }))]`
+- **Interval::QuantityIntervalTest2**
+  - Expected: `Interval[11.0 'g', 20.0 'g']`
+  - Actual: `Interval[Some(Quantity(CqlQuantity { value: 11.0, unit: Some("g") })), Some(Quantity(CqlQuantity { value: 20.0, unit: Some("g") }))]`
+- **Interval::QuantityIntervalTest3**
+  - Expected: `Interval[5.0 'g', 10.0 'g']`
+  - Actual: `Interval[Some(Quantity(CqlQuantity { value: 5.0, unit: Some("g") })), Some(Quantity(CqlQuantity { value: 10.0, unit: Some("g") }))]`
+- **Interval::QuantityIntervalTest4**
+  - Expected: `Interval[5.0 'g', 15.0 'g']`
+  - Actual: `Interval[Some(Quantity(CqlQuantity { value: 5.0, unit: Some("g") })), Some(Quantity(CqlQuantity { value: 15.0, unit: Some("g") }))]`
+- **Interval::QuantityIntervalTest5**
+  - Expected: `Interval[14.0 'g', 15.0 'g']`
+  - Actual: `Interval[Some(Quantity(CqlQuantity { value: 14.0, unit: Some("g") })), Some(Quantity(CqlQuantity { value: 15.0, unit: Some("g") }))]`
+- **Interval::DateTimeIntervalTest**
+  - Expected: `Interval[@2016-05-01T00:00:00.000, @2016-05-02T00:00:00.000]`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}DateTime" }
+- **Interval::TimeIntervalTest**
+  - Expected: `Interval[@T00:00:00.000, @T23:59:59.599]`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **Interval::CollapseIntervalTestInteger**
+  - Expected: `{Interval[1, 10], Interval[11, 20], Interval[44, 50]}`
+  - Actual: `List with 3 elements`
+- **Interval::InvalidIntegerInterval**
+  - Expected: `Error (True)`
+  - Actual: `Interval[Some(Integer(5)), Some(Integer(3))]`
+  - Error: Expected error but expression succeeded
+- **Interval::InvalidIntegerIntervalA**
+  - Expected: `Error (True)`
+  - Actual: `Interval[Some(Integer(5)), Some(Integer(5))]`
+  - Error: Expected error but expression succeeded
+
+### CqlListOperatorsTest
+
+- Passed: 71/212
+- Failed: 141
+- Skipped: 0
+
+#### Failed Tests
+
+- **Sort::simpleSortAsc**
+  - Expected: `{1, 1, 2, 4, 5, 6}`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: ({4, 5, 1, 6, 2, 1}) sL sort asc", location: None, context: None }
+- **Sort::simpleSortDesc**
+  - Expected: `{6, 5, 4, 2, 1, 1}`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: ({4, 5, 1, 6, 2, 1}) sL sort desc", location: None, context: None }
+- **Sort::simpleSortStringAsc**
+  - Expected: `{'Armadillo', 'Wolf', 'aardvark', 'alligator', 'back', 'iguana', 'zebra'}`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: ({'back', 'aardvark', 'alligator', 'zebra', 'iguana', 'Wolf', 'Armadillo'}) sls sort asc", location: None, context: None }
+- **Sort::simpleSortStringDesc**
+  - Expected: `{'zebra', 'iguana', 'back', 'alligator', 'aardvark', 'Wolf', 'Armadillo'}`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: ({'back', 'aardvark', 'alligator', 'zebra', 'iguana', 'Wolf', 'Armadillo'}) sls sort desc", location: None, context: None }
+- **Sort::SortDatesAsc**
+  - Expected: `{ @2012-01-01T, @2012-01-01T12, @2012-10-05T, @2012-10-05T10 }`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'S' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: ({ DateTime(2012, 10, 5, 10), DateTime(2012, 1, 1), DateTime(2012, 1, 1, 12), DateTime(2012, 10, 5) }) S sort asc", location: None, context: None }
+- **Sort::SortDatesDesc**
+  - Expected: `{ @2012-10-05T10, @2012-10-05T, @2012-01-01T12, @2012-01-01T }`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'S' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: ({ DateTime(2012, 10, 5, 10), DateTime(2012, 1, 1), DateTime(2012, 1, 1, 12), DateTime(2012, 10, 5) }) S sort desc", location: None, context: None }
+- **Sort::intList**
+  - Expected: `{3, 2, 1}`
+  - Actual: `List with 3 elements`
+- **Sort::decimalList**
+  - Expected: `{3.8, 2.4, 1.9}`
+  - Actual: `List with 3 elements`
+- **Sort::quantityList**
+  - Expected: `{19.99 '[lb_av]', 17.33 '[lb_av]', 10.66 '[lb_av]'}`
+  - Actual: `List with 3 elements`
+- **Sort::dateTimeList**
+  - Expected: `{@2016T, @2015T, @2010T}`
+  - Actual: `List with 3 elements`
+- **Sort::timeList**
+  - Expected: `{@T15:59:59.999, @T15:12:59.999, @T15:12:13.999}`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **Contains::ContainsABNullHasNull**
+  - Expected: `true`
+  - Actual: `null`
+- **Contains::ContainsTimeTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **Contains::ContainsTimeFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **Contains::ContainsNullLeft**
+  - Expected: `false`
+  - Actual: `null`
+- **Descendents::DescendentsEmptyList**
+  - Expected: `null`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '(' expected something else, '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: (null).descendents()", location: None, context: None }
+- **Distinct::DistinctEmptyList**
+  - Expected: `{}`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '{' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: distinct {}", location: None, context: None }
+- **Distinct::DistinctNullNullNull**
+  - Expected: `{ null }`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '{' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: distinct { null, null, null}", location: None, context: None }
+- **Distinct::DistinctANullANull**
+  - Expected: `{'a', null}`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '{' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: distinct { 'a', null, 'a', null}", location: None, context: None }
+- **Distinct::Distinct112233**
+  - Expected: `{1,2,3}`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '{' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: distinct { 1, 1, 2, 2, 3, 3}", location: None, context: None }
+- **Distinct::Distinct123123**
+  - Expected: `{1,2,3}`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '{' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: distinct { 1, 2, 3, 1, 2, 3}", location: None, context: None }
+- **Distinct::DistinctAABBCC**
+  - Expected: `{'a','b','c'}`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '{' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: distinct { 'a', 'a', 'b', 'b', 'c', 'c'}", location: None, context: None }
+- **Distinct::DistinctABCABC**
+  - Expected: `{'a','b','c'}`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '{' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: distinct { 'a', 'b', 'c', 'a', 'b', 'c'}", location: None, context: None }
+- **Distinct::DistinctDateTime**
+  - Expected: `{ @2012-10-05T, @2012-01-01T }`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '{' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: distinct { DateTime(2012, 10, 5), DateTime(2012, 1, 1), DateTime(2012, 1, 1)}", location: None, context: None }
+- **Distinct::DistinctTime**
+  - Expected: `{ @T15:59:59.999, @T20:59:59.999 }`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '{' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: distinct { @T15:59:59.999, @T20:59:59.999 }", location: None, context: None }
+- **Equal::EqualNullNull**
+  - Expected: `true`
+  - Actual: `false`
+- **Equal::EqualEmptyListNull**
+  - Expected: `null`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '=' expected '-', '+', '\"not\"', '\"exists\"', '\"null\"', '\"true\"', '\"false\"', '@', int, ''', '\"if\"', '\"Interval\"', '\"Tuple\"', '[', '{', '(', '\"', or identifier", expression: "library Test version '1.0'\ndefine Result: = null", location: None, context: None }
+- **Equal::EqualNullEmptyList**
+  - Expected: `null`
+  - Actual: ``
+  - Error: Evaluation error: UndefinedAlias { name: "String" }
+- **Equal::EqualTimeTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **Equal::EqualTimeFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **Except::ExceptEmptyListAndEmptyList**
+  - Expected: `{}`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'e' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: {} except {}", location: None, context: None }
+- **Except::Except1234And23**
+  - Expected: `{ 1, 4 }`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'e' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: { 1, 2, 3, 4 } except { 2, 3 }", location: None, context: None }
+- **Except::Except23And1234**
+  - Expected: `{}`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'e' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: { 2, 3 } except { 1, 2, 3, 4 }", location: None, context: None }
+- **Except::ExceptDateTimeList**
+  - Expected: `{@2012-05-10T}`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'e' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: { DateTime(2012, 5, 10), DateTime(2014, 12, 10), DateTime(2010, 1, 1)} except {DateTime(2014, 12, 10), DateTime(2010, 1, 1) }", location: None, context: None }
+- **Except::ExceptTimeList**
+  - Expected: `{@T15:59:59.999}`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'e' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: { @T15:59:59.999, @T20:59:59.999, @T12:59:59.999 } except { @T20:59:59.999, @T12:59:59.999 }", location: None, context: None }
+- **Except::ExceptNullRight**
+  - Expected: `{1, 4}`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'e' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: { 1, 4 } except null", location: None, context: None }
+- **Exists::ExistsListNull**
+  - Expected: `false`
+  - Actual: `true`
+- **Exists::ExistsTime**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **Flatten::FlattenEmpty**
+  - Expected: `{}`
+  - Actual: `List with 0 elements`
+- **Flatten::FlattenListNullAndNull**
+  - Expected: `{null, null}`
+  - Actual: `List with 2 elements`
+- **Flatten::FlattenList12And34**
+  - Expected: `{1,2,3,4}`
+  - Actual: `List with 4 elements`
+- **Flatten::FlattenDateTime**
+  - Expected: `{ @2012-05-10T, @2014-12-10T }`
+  - Actual: `List with 2 elements`
+- **Flatten::FlattenTime**
+  - Expected: `{ @T15:59:59.999, @T20:59:59.999 }`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **First::FirstDateTime**
+  - Expected: `@2012-05-10T`
+  - Actual: `@2012-05-10`
+- **First::FirstTime**
+  - Expected: `@T15:59:59.999`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **In::InNullEmpty**
+  - Expected: `false`
+  - Actual: `null`
+- **In::InNullAnd1Null**
+  - Expected: `true`
+  - Actual: `null`
+- **In::In1Null**
+  - Expected: `false`
+  - Actual: `null`
+- **In::InTimeTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **In::InTimeFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **Includes::IncludesListNullAndListNull**
+  - Expected: `true`
+  - Actual: `false`
+- **Includes::IncludesTimeTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **Includes::IncludesTimeFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **IncludedIn::IncludedInEmptyAndEmpty**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'i' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: {} included in {}", location: None, context: None }
+- **IncludedIn::IncludedInListNullAndListNull**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'i' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: { null } included in { null }", location: None, context: None }
+- **IncludedIn::IncludedInEmptyAnd123**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'i' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: {} included in { 1, 2, 3 }", location: None, context: None }
+- **IncludedIn::IncludedIn2And123**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'i' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: { 2 } included in { 1, 2, 3 }", location: None, context: None }
+- **IncludedIn::IncludedIn4And123**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'i' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: { 4 } included in { 1, 2, 3 }", location: None, context: None }
+- **IncludedIn::IncludedInDateTimeTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'i' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: { DateTime(2012, 5, 10)} included in {DateTime(2001, 9, 11), DateTime(2012, 5, 10), DateTime(2014, 12, 10)}", location: None, context: None }
+- **IncludedIn::IncludedInDateTimeFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'i' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: {DateTime(2012, 5, 11)} included in {DateTime(2001, 9, 11), DateTime(2012, 5, 10), DateTime(2014, 12, 10)}", location: None, context: None }
+- **IncludedIn::IncludedInTimeTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'i' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @T15:59:59.999 included in { @T02:29:15.156, @T15:59:59.999, @T20:59:59.999 }", location: None, context: None }
+- **IncludedIn::IncludedInTimeFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'i' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @T16:59:59.999 included in { @T02:29:15.156, @T15:59:59.999, @T20:59:59.999 }", location: None, context: None }
+- **IncludedIn::IncludedInNullLeft**
+  - Expected: `null`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'i' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: null included in {2}", location: None, context: None }
+- **IncludedIn::IncludedInNullRight**
+  - Expected: `null`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'i' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: {'s', 'a', 'm'} included in null", location: None, context: None }
+- **Indexer::IndexerNull1List**
+  - Expected: `null`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found ')' expected '-', '+', '\"not\"', '\"exists\"', '\"null\"', '\"true\"', '\"false\"', '@', int, ''', '\"if\"', '\"Interval\"', '\"Tuple\"', '[', '{', '(', '\"', or identifier", expression: "library Test version '1.0'\ndefine Result: )[1]", location: None, context: None }
+- **Indexer::IndexerDateTime**
+  - Expected: `@2012-05-10T`
+  - Actual: `@2012-05-10`
+- **Indexer::IndexerTime**
+  - Expected: `@T15:59:59.999`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **IndexOf::IndexOfEmptyNull**
+  - Expected: `null`
+  - Actual: `-1`
+- **IndexOf::IndexOfNullIn1Null**
+  - Expected: `null`
+  - Actual: `-1`
+- **IndexOf::IndexOfTime**
+  - Expected: `1`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **Intersect::IntersectEmptyListAndEmptyList**
+  - Expected: `{}`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'i' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: {} intersect {}", location: None, context: None }
+- **Intersect::Intersect1234And23**
+  - Expected: `{ 2, 3 }`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'i' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: { 1, 2, 3, 4 } intersect { 2, 3 }", location: None, context: None }
+- **Intersect::Intersect23And1234**
+  - Expected: `{ 2, 3 }`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'i' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: {2, 3} intersect { 1, 2, 3, 4 }", location: None, context: None }
+- **Intersect::IntersectDateTime**
+  - Expected: `{@2012-05-10T, @2014-12-10T}`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'i' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: { DateTime(2001, 9, 11), DateTime(2012, 5, 10), DateTime(2014, 12, 10) } intersect { DateTime(2012, 5, 10), DateTime(2014, 12, 10), DateTime(2000, 5, 5) }", location: None, context: None }
+- **Intersect::IntersectTime**
+  - Expected: `{@T15:59:59.999, @T20:59:59.999}`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'i' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: { @T02:29:15.156, @T15:59:59.999, @T20:59:59.999 } intersect { @T01:29:15.156, @T15:59:59.999, @T20:59:59.999 }", location: None, context: None }
+- **Last::LastDateTime**
+  - Expected: `@2014-12-10T`
+  - Actual: `@2014-12-10`
+- **Last::LastTime**
+  - Expected: `@T20:59:59.999`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **Length::LengthTime**
+  - Expected: `6`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **Length::LengthNullList**
+  - Expected: `0`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found ')' expected '-', '+', '\"not\"', '\"exists\"', '\"null\"', '\"true\"', '\"false\"', '@', int, ''', '\"if\"', '\"Interval\"', '\"Tuple\"', '[', '{', '(', '\"', or identifier", expression: "library Test version '1.0'\ndefine Result: )", location: None, context: None }
+- **Equivalent::EquivalentDateTimeTrue**
+  - Expected: `true`
+  - Actual: `false`
+- **Equivalent::EquivalentTimeTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **Equivalent::EquivalentTimeNull**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **Equivalent::EquivalentTimeFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **NotEqual::NotEqualTimeTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **NotEqual::NotEqualTimeFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **ProperContains::ProperContainsNullRightFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'p' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: {'s', 'u', 'n'} properly includes null", location: None, context: None }
+- **ProperContains::ProperContainsNullRightTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'p' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: {'s', 'u', 'n', null} properly includes null", location: None, context: None }
+- **ProperContains::ProperContainsTimeTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'p' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: { @T15:59:59, @T20:59:59.999, @T20:59:49.999 } properly includes @T15:59:59", location: None, context: None }
+- **ProperContains::ProperContainsTimeNull**
+  - Expected: `null`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'p' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: { @T15:59:59.999, @T20:59:59.999, @T20:59:49.999 } properly includes @T15:59:59", location: None, context: None }
+- **ProperIn::ProperInNullRightFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'p' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: null properly included in {'s', 'u', 'n'}", location: None, context: None }
+- **ProperIn::ProperInNullRightTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'p' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: null properly included in {'s', 'u', 'n', null}", location: None, context: None }
+- **ProperIn::ProperInTimeTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'p' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @T15:59:59 properly included in { @T15:59:59, @T20:59:59.999, @T20:59:49.999 }", location: None, context: None }
+- **ProperIn::ProperInTimeNull**
+  - Expected: `null`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'p' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @T15:59:59 properly included in { @T15:59:59.999, @T20:59:59.999, @T20:59:49.999 }", location: None, context: None }
+- **ProperlyIncludes::ProperIncludesEmptyAndEmpty**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'p' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: {} properly includes {}", location: None, context: None }
+- **ProperlyIncludes::ProperIncludesListNullAndListNull**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'p' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: {null} properly includes {null}", location: None, context: None }
+- **ProperlyIncludes::ProperIncludes123AndEmpty**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'p' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: {1, 2, 3} properly includes {}", location: None, context: None }
+- **ProperlyIncludes::ProperIncludes123And2**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'p' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: {1, 2, 3} properly includes {2}", location: None, context: None }
+- **ProperlyIncludes::ProperIncludes123And4**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'p' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: {1, 2, 3} properly includes {4}", location: None, context: None }
+- **ProperlyIncludes::ProperIncludesDateTimeTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'p' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: {DateTime(2001, 9, 11), DateTime(2012, 5, 10), DateTime(2014, 12, 10)} properly includes {DateTime(2012, 5, 10), DateTime(2014, 12, 10)}", location: None, context: None }
+- **ProperlyIncludes::ProperIncludesDateTimeFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'p' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: {DateTime(2001, 9, 11), DateTime(2012, 5, 10), DateTime(2014, 12, 10)} properly includes {DateTime(2001, 9, 11), DateTime(2012, 5, 10), DateTime(2014, 12, 10)}", location: None, context: None }
+- **ProperlyIncludes::ProperIncludesTimeTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'p' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: { @T15:59:59.999, @T20:59:59.999, @T20:59:49.999 } properly includes { @T15:59:59.999, @T20:59:59.999 }", location: None, context: None }
+- **ProperlyIncludes::ProperIncludesTimeFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'p' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: { @T15:59:59.999, @T20:59:59.999, @T20:59:49.999 } properly includes { @T15:59:59.999, @T20:59:59.999, @T14:59:22.999 }", location: None, context: None }
+- **ProperlyIncludes::ProperlyIncludesNullLeft**
+  - Expected: `null`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'p' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: null properly includes {2}", location: None, context: None }
+- **ProperlyIncludedIn::ProperIncludedInEmptyAndEmpty**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'p' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: {} properly included in {}", location: None, context: None }
+- **ProperlyIncludedIn::ProperIncludedInListNullAndListNull**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'p' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: {null} properly included in {null}", location: None, context: None }
+- **ProperlyIncludedIn::ProperIncludedInEmptyAnd123**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'p' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: {} properly included in {1, 2, 3}", location: None, context: None }
+- **ProperlyIncludedIn::ProperIncludedIn2And123**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'p' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: {2} properly included in {1, 2, 3}", location: None, context: None }
+- **ProperlyIncludedIn::ProperIncludedIn4And123**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'p' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: {4} properly included in {1, 2, 3}", location: None, context: None }
+- **ProperlyIncludedIn::ProperIncludedInDateTimeTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'p' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: {DateTime(2012, 5, 10), DateTime(2014, 12, 10)} properly included in {DateTime(2001, 9, 11), DateTime(2012, 5, 10), DateTime(2014, 12, 10)}", location: None, context: None }
+- **ProperlyIncludedIn::ProperIncludedInDateTimeFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'p' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: {DateTime(2001, 9, 11), DateTime(2012, 5, 10), DateTime(2014, 12, 10)} properly included in {DateTime(2001, 9, 11), DateTime(2012, 5, 10), DateTime(2014, 12, 10)}", location: None, context: None }
+- **ProperlyIncludedIn::ProperIncludedInTimeTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'p' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: { @T15:59:59.999, @T20:59:59.999 } properly included in { @T15:59:59.999, @T20:59:59.999, @T20:59:49.999 }", location: None, context: None }
+- **ProperlyIncludedIn::ProperIncludedInTimeFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'p' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: { @T15:59:59.999, @T20:59:59.999, @T14:59:22.999 } properly included in { @T15:59:59.999, @T20:59:59.999, @T20:59:49.999 }", location: None, context: None }
+- **ProperlyIncludedIn::ProperlyIncludedInNulRight**
+  - Expected: `null`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'p' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: {'s', 'u', 'n'} properly included in null", location: None, context: None }
+- **SingletonFrom::SingletonFromEmpty**
+  - Expected: `null`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'f' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: singleton from {}", location: None, context: None }
+- **SingletonFrom::SingletonFromListNull**
+  - Expected: `null`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'f' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: singleton from {null}", location: None, context: None }
+- **SingletonFrom::SingletonFrom1**
+  - Expected: `1`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'f' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: singleton from { 1 }", location: None, context: None }
+- **SingletonFrom::SingletonFromDateTime**
+  - Expected: `@2012-05-10T`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'f' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: singleton from { DateTime(2012, 5, 10) }", location: None, context: None }
+- **SingletonFrom::SingletonFromTime**
+  - Expected: `@T15:59:59.999`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'f' expected '(', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: singleton from { @T15:59:59.999 }", location: None, context: None }
+- **Skip::SkipNull**
+  - Expected: `null`
+  - Actual: ``
+  - Error: Evaluation error: UndefinedFunction { name: "Skip" }
+- **Skip::SkipEven**
+  - Expected: `{3, 4, 5}`
+  - Actual: ``
+  - Error: Evaluation error: UndefinedFunction { name: "Skip" }
+- **Skip::SkipOdd**
+  - Expected: `{4, 5}`
+  - Actual: ``
+  - Error: Evaluation error: UndefinedFunction { name: "Skip" }
+- **Skip::SkipNone**
+  - Expected: `{1,2,3,4,5}`
+  - Actual: ``
+  - Error: Evaluation error: UndefinedFunction { name: "Skip" }
+- **Skip::SkipAll**
+  - Expected: `{}`
+  - Actual: ``
+  - Error: Evaluation error: UndefinedFunction { name: "Skip" }
+- **Tail::TailNull**
+  - Expected: `null`
+  - Actual: ``
+  - Error: Evaluation error: UndefinedFunction { name: "Tail" }
+- **Tail::TailEven**
+  - Expected: `{2,3,4}`
+  - Actual: ``
+  - Error: Evaluation error: UndefinedFunction { name: "Tail" }
+- **Tail::TailOdd**
+  - Expected: `{2,3,4,5}`
+  - Actual: ``
+  - Error: Evaluation error: UndefinedFunction { name: "Tail" }
+- **Tail::TailEmpty**
+  - Expected: `{}`
+  - Actual: ``
+  - Error: Evaluation error: UndefinedFunction { name: "Tail" }
+- **Tail::TailOneElement**
+  - Expected: `{}`
+  - Actual: ``
+  - Error: Evaluation error: UndefinedFunction { name: "Tail" }
+- **Take::TakeNull**
+  - Expected: `null`
+  - Actual: ``
+  - Error: Evaluation error: UndefinedFunction { name: "Take" }
+- **Take::TakeNullEmpty**
+  - Expected: `{}`
+  - Actual: ``
+  - Error: Evaluation error: UndefinedFunction { name: "Take" }
+- **Take::TakeEmpty**
+  - Expected: `{}`
+  - Actual: ``
+  - Error: Evaluation error: UndefinedFunction { name: "Take" }
+- **Take::TakeEven**
+  - Expected: `{1, 2}`
+  - Actual: ``
+  - Error: Evaluation error: UndefinedFunction { name: "Take" }
+- **Take::TakeOdd**
+  - Expected: `{1, 2, 3}`
+  - Actual: ``
+  - Error: Evaluation error: UndefinedFunction { name: "Take" }
+- **Take::TakeAll**
+  - Expected: `{1, 2, 3, 4}`
+  - Actual: ``
+  - Error: Evaluation error: UndefinedFunction { name: "Take" }
+- **Union::UnionEmptyAndEmpty**
+  - Expected: `{}`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'u' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: {} union {}", location: None, context: None }
+- **Union::UnionListNullAndListNull**
+  - Expected: `{null}`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'u' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: { null } union { null }", location: None, context: None }
+- **Union::Union123AndEmpty**
+  - Expected: `{1, 2, 3}`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'u' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: { 1, 2, 3 } union {}", location: None, context: None }
+- **Union::Union123And2**
+  - Expected: `{1, 2, 3}`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'u' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: { 1, 2, 3 } union { 2 }", location: None, context: None }
+- **Union::Union123And4**
+  - Expected: `{1, 2, 3, 4}`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'u' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: { 1, 2, 3 } union { 4 }", location: None, context: None }
+- **Union::UnionDateTime**
+  - Expected: `{@2001-09-11T, @2012-05-10T, @2014-12-10T}`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'u' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: { DateTime(2001, 9, 11)} union {DateTime(2012, 5, 10), DateTime(2014, 12, 10) }", location: None, context: None }
+- **Union::UnionTime**
+  - Expected: `{@T15:59:59.999, @T20:59:59.999, @T12:59:59.999, @T10:59:59.999}`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'u' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: { @T15:59:59.999, @T20:59:59.999, @T12:59:59.999 } union { @T10:59:59.999 }", location: None, context: None }
+
+### ValueLiteralsAndSelectors
+
+- Passed: 39/66
+- Failed: 27
+- Skipped: 0
+
+#### Failed Tests
+
+- **Integer::Integer2Pow31**
+  - Expected: `Error (True)`
+  - Actual: `0`
+  - Error: Expected error but expression succeeded
+- **Integer::IntegerPos2Pow31**
+  - Expected: `Error (True)`
+  - Actual: `0`
+  - Error: Expected error but expression succeeded
+- **Integer::Integer2Pow31ToInf1**
+  - Expected: `Error (True)`
+  - Actual: `0`
+  - Error: Expected error but expression succeeded
+- **Integer::IntegerPos2Pow31ToInf1**
+  - Expected: `Error (True)`
+  - Actual: `0`
+  - Error: Expected error but expression succeeded
+- **Integer::IntegerNeg2Pow31ToInf1**
+  - Expected: `Error (True)`
+  - Actual: `0`
+  - Error: Expected error but expression succeeded
+- **Decimal::DecimalNegZero**
+  - Expected: `0.0`
+  - Actual: `-0.0`
+- **Decimal::Decimal10Pow9**
+  - Expected: `1000000000.0`
+  - Actual: `1000000000`
+- **Decimal::DecimalPos10Pow9**
+  - Expected: `1000000000.0`
+  - Actual: `1000000000`
+- **Decimal::DecimalNeg10Pow9**
+  - Expected: `-1000000000.0`
+  - Actual: `-1000000000`
+- **Decimal::Decimal2Pow31ToZero1**
+  - Expected: `2147483647.0`
+  - Actual: `2147483647`
+- **Decimal::DecimalPos2Pow31ToZero1**
+  - Expected: `2147483647.0`
+  - Actual: `2147483647`
+- **Decimal::Decimal2Pow31**
+  - Expected: `2147483648.0`
+  - Actual: `2147483648`
+- **Decimal::DecimalPos2Pow31**
+  - Expected: `2147483648.0`
+  - Actual: `2147483648`
+- **Decimal::DecimalNeg2Pow31**
+  - Expected: `-2147483648.0`
+  - Actual: `-2147483648`
+- **Decimal::DecimalNegZeroStep**
+  - Expected: `0.00000000`
+  - Actual: `-0.00000000`
+- **Decimal::DecimalTwoStep**
+  - Expected: `0.00000002`
+  - Actual: `0.000000020`
+- **Decimal::DecimalPosTwoStep**
+  - Expected: `0.00000002`
+  - Actual: `0.000000020`
+- **Decimal::DecimalNegTwoStep**
+  - Expected: `-0.00000002`
+  - Actual: `-0.000000020`
+- **Decimal::DecimalTenthStep**
+  - Expected: `Error (True)`
+  - Actual: `0.000000001`
+  - Error: Expected error but expression succeeded
+- **Decimal::DecimalPosTenthStep**
+  - Expected: `Error (True)`
+  - Actual: `0.000000001`
+  - Error: Expected error but expression succeeded
+- **Decimal::DecimalNegTenthStep**
+  - Expected: `Error (True)`
+  - Actual: `-0.000000001`
+  - Error: Expected error but expression succeeded
+- **Decimal::Decimal10Pow28ToZeroOneStepDecimalMaxValue**
+  - Expected: `9999999999999999999999999999.99999999`
+  - Actual: `10000000000000000000000000000`
+- **Decimal::DecimalPos10Pow28ToZeroOneStepDecimalMaxValue**
+  - Expected: `9999999999999999999999999999.99999999`
+  - Actual: `10000000000000000000000000000`
+- **Decimal::DecimalNeg10Pow28ToZeroOneStepDecimalMinValue**
+  - Expected: `-9999999999999999999999999999.99999999`
+  - Actual: `-10000000000000000000000000000`
+- **Decimal::Decimal10Pow28**
+  - Expected: `Error (True)`
+  - Actual: `10000000000000000000000000000`
+  - Error: Expected error but expression succeeded
+- **Decimal::DecimalPos10Pow28**
+  - Expected: `Error (True)`
+  - Actual: `10000000000000000000000000000`
+  - Error: Expected error but expression succeeded
+- **Decimal::DecimalNeg10Pow28**
+  - Expected: `Error (True)`
+  - Actual: `-10000000000000000000000000000`
+  - Error: Expected error but expression succeeded
+
+### CqlLogicalOperatorsTest
+
+- Passed: 39/39
+- Failed: 0
+- Skipped: 0
+
+### CqlComparisonOperatorsTest
+
+- Passed: 70/198
+- Failed: 128
+- Skipped: 0
+
+#### Failed Tests
+
+- **Between::BetweenIntTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 'b' expected ''', '\"years\"', '\"year\"', '\"months\"', '\"month\"', '\"weeks\"', '\"week\"', '\"days\"', '\"day\"', '\"hours\"', '\"hour\"', '\"minutes\"', '\"minute\"', '\"seconds\"', '\"second\"', '\"milliseconds\"', '\"millisecond\"', ':', '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: 4 between 2 and 6", location: None, context: None }
+- **Equal::QuantityEqCM1M01**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Evaluation error: IncompatibleUnits { unit1: "cm", unit2: "m" }
+- **Equal::TupleEqJohn1John1WithBothNamesNull**
+  - Expected: `true`
+  - Actual: `false`
+- **Equal::TupleEqJohnJohnWithBothIdsNull**
+  - Expected: `true`
+  - Actual: `false`
+- **Equal::TupleEqJohn1John1WithNullName**
+  - Expected: `null`
+  - Actual: `false`
+- **Equal::TupleEqTimeTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **Equal::TupleEqTimeFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **Equal::DateTimeEqTodayYesterday**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedOperator { operator: "Subtract", types: "Date, Quantity" }
+- **Equal::DateTimeUTC**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}DateTime" }
+- **Equal::DateTimeDayCompare**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found 's' expected '.', '[', '\"as\"', '^', '*', '/', '\"div\"', '\"mod\"', '+', '-', '&', '|', '<', '>', '=', '!', '~', '\"after\"', '\"before\"', '\"meets\"', '\"overlaps\"', '\"starts\"', '\"ends\"', '\"during\"', '\"includes\"', '\"in\"', '\"contains\"', '\"and\"', '\"xor\"', '\"or\"', '\"implies\"', '\"public\"', '\"private\"', '\"define\"', or end of input", expression: "library Test version '1.0'\ndefine Result: @2022-02-22T00:00:00.000-05:00 same day as @2022-02-22T04:59:00.000Z", location: None, context: None }
+- **Equal::TimeEq10A10A**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **Equal::TimeEq10A10P**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **Greater::GreaterZZ**
+  - Expected: `false`
+  - Actual: `0`
+- **Greater::GreaterZ1**
+  - Expected: `false`
+  - Actual: `1`
+- **Greater::GreaterZNeg1**
+  - Expected: `true`
+  - Actual: `-1`
+- **Greater::GreaterDecZZ**
+  - Expected: `false`
+  - Actual: `0.0`
+- **Greater::GreaterDecZ1**
+  - Expected: `false`
+  - Actual: `1.0`
+- **Greater::GreaterDecZNeg1**
+  - Expected: `true`
+  - Actual: `-1.0`
+- **Greater::GreaterDec1Int2**
+  - Expected: `false`
+  - Actual: `2`
+- **Greater::GreaterCM0CM0**
+  - Expected: `false`
+  - Actual: `0 'cm'`
+- **Greater::GreaterCM0CM1**
+  - Expected: `false`
+  - Actual: `1 'cm'`
+- **Greater::GreaterCM0NegCM1**
+  - Expected: `true`
+  - Actual: `-1 'cm'`
+- **Greater::GreaterM1CM1**
+  - Expected: `true`
+  - Actual: `1 'cm'`
+- **Greater::GreaterM1CM10**
+  - Expected: `true`
+  - Actual: `10 'cm'`
+- **Greater::GreaterAA**
+  - Expected: `false`
+  - Actual: `a`
+- **Greater::GreaterAB**
+  - Expected: `false`
+  - Actual: `b`
+- **Greater::GreaterBA**
+  - Expected: `true`
+  - Actual: `a`
+- **Greater::GreaterAThanAA**
+  - Expected: `false`
+  - Actual: `aa`
+- **Greater::GreaterAAThanA**
+  - Expected: `true`
+  - Actual: `a`
+- **Greater::GreaterJackJill**
+  - Expected: `false`
+  - Actual: `Jill`
+- **Greater::DateTimeGreaterTrue**
+  - Expected: `true`
+  - Actual: `@2012-02-10`
+- **Greater::DateTimeGreaterFalse**
+  - Expected: `false`
+  - Actual: `@2012-02-13`
+- **Greater::TimeGreaterTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **Greater::TimeGreaterFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **Greater::UncertaintyGreaterNull**
+  - Expected: `null`
+  - Actual: `@2014-02-15`
+- **Greater::UncertaintyGreaterTrue**
+  - Expected: `true`
+  - Actual: `@2014-02-15`
+- **Greater::UncertaintyGreaterFalse**
+  - Expected: `false`
+  - Actual: `@2014-02-15`
+- **Greater Or Equal::GreaterOrEqualZZ**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '=' expected '-', '+', '\"not\"', '\"exists\"', '\"null\"', '\"true\"', '\"false\"', '@', int, ''', '\"if\"', '\"Interval\"', '\"Tuple\"', '[', '{', '(', '\"', or identifier", expression: "library Test version '1.0'\ndefine Result: = 0", location: None, context: None }
+- **Greater Or Equal::GreaterOrEqualZ1**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '=' expected '-', '+', '\"not\"', '\"exists\"', '\"null\"', '\"true\"', '\"false\"', '@', int, ''', '\"if\"', '\"Interval\"', '\"Tuple\"', '[', '{', '(', '\"', or identifier", expression: "library Test version '1.0'\ndefine Result: = 1", location: None, context: None }
+- **Greater Or Equal::GreaterOrEqualZNeg1**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '=' expected '-', '+', '\"not\"', '\"exists\"', '\"null\"', '\"true\"', '\"false\"', '@', int, ''', '\"if\"', '\"Interval\"', '\"Tuple\"', '[', '{', '(', '\"', or identifier", expression: "library Test version '1.0'\ndefine Result: = -1", location: None, context: None }
+- **Greater Or Equal::GreaterOrEqualDecZZ**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '=' expected '-', '+', '\"not\"', '\"exists\"', '\"null\"', '\"true\"', '\"false\"', '@', int, ''', '\"if\"', '\"Interval\"', '\"Tuple\"', '[', '{', '(', '\"', or identifier", expression: "library Test version '1.0'\ndefine Result: = 0.0", location: None, context: None }
+- **Greater Or Equal::GreaterOrEqualDecZ1**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '=' expected '-', '+', '\"not\"', '\"exists\"', '\"null\"', '\"true\"', '\"false\"', '@', int, ''', '\"if\"', '\"Interval\"', '\"Tuple\"', '[', '{', '(', '\"', or identifier", expression: "library Test version '1.0'\ndefine Result: = 1.0", location: None, context: None }
+- **Greater Or Equal::GreaterOrEqualDecZNeg1**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '=' expected '-', '+', '\"not\"', '\"exists\"', '\"null\"', '\"true\"', '\"false\"', '@', int, ''', '\"if\"', '\"Interval\"', '\"Tuple\"', '[', '{', '(', '\"', or identifier", expression: "library Test version '1.0'\ndefine Result: = -1.0", location: None, context: None }
+- **Greater Or Equal::GreaterOrEqualDec1Int2**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '=' expected '-', '+', '\"not\"', '\"exists\"', '\"null\"', '\"true\"', '\"false\"', '@', int, ''', '\"if\"', '\"Interval\"', '\"Tuple\"', '[', '{', '(', '\"', or identifier", expression: "library Test version '1.0'\ndefine Result: = 2", location: None, context: None }
+- **Greater Or Equal::GreaterOrEqualCM0CM0**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '=' expected '-', '+', '\"not\"', '\"exists\"', '\"null\"', '\"true\"', '\"false\"', '@', int, ''', '\"if\"', '\"Interval\"', '\"Tuple\"', '[', '{', '(', '\"', or identifier", expression: "library Test version '1.0'\ndefine Result: = 0'cm'", location: None, context: None }
+- **Greater Or Equal::GreaterOrEqualCM0CM1**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '=' expected '-', '+', '\"not\"', '\"exists\"', '\"null\"', '\"true\"', '\"false\"', '@', int, ''', '\"if\"', '\"Interval\"', '\"Tuple\"', '[', '{', '(', '\"', or identifier", expression: "library Test version '1.0'\ndefine Result: = 1'cm'", location: None, context: None }
+- **Greater Or Equal::GreaterOrEqualCM0NegCM1**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '=' expected '-', '+', '\"not\"', '\"exists\"', '\"null\"', '\"true\"', '\"false\"', '@', int, ''', '\"if\"', '\"Interval\"', '\"Tuple\"', '[', '{', '(', '\"', or identifier", expression: "library Test version '1.0'\ndefine Result: = -1'cm'", location: None, context: None }
+- **Greater Or Equal::GreaterOrEqualM1CM1**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '=' expected '-', '+', '\"not\"', '\"exists\"', '\"null\"', '\"true\"', '\"false\"', '@', int, ''', '\"if\"', '\"Interval\"', '\"Tuple\"', '[', '{', '(', '\"', or identifier", expression: "library Test version '1.0'\ndefine Result: = 1'cm'", location: None, context: None }
+- **Greater Or Equal::GreaterOrEqualM1CM10**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '=' expected '-', '+', '\"not\"', '\"exists\"', '\"null\"', '\"true\"', '\"false\"', '@', int, ''', '\"if\"', '\"Interval\"', '\"Tuple\"', '[', '{', '(', '\"', or identifier", expression: "library Test version '1.0'\ndefine Result: = 10'cm'", location: None, context: None }
+- **Greater Or Equal::GreaterOrEqualAA**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '=' expected '-', '+', '\"not\"', '\"exists\"', '\"null\"', '\"true\"', '\"false\"', '@', int, ''', '\"if\"', '\"Interval\"', '\"Tuple\"', '[', '{', '(', '\"', or identifier", expression: "library Test version '1.0'\ndefine Result: = 'a'", location: None, context: None }
+- **Greater Or Equal::GreaterOrEqualAB**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '=' expected '-', '+', '\"not\"', '\"exists\"', '\"null\"', '\"true\"', '\"false\"', '@', int, ''', '\"if\"', '\"Interval\"', '\"Tuple\"', '[', '{', '(', '\"', or identifier", expression: "library Test version '1.0'\ndefine Result: = 'b'", location: None, context: None }
+- **Greater Or Equal::GreaterOrEqualBA**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '=' expected '-', '+', '\"not\"', '\"exists\"', '\"null\"', '\"true\"', '\"false\"', '@', int, ''', '\"if\"', '\"Interval\"', '\"Tuple\"', '[', '{', '(', '\"', or identifier", expression: "library Test version '1.0'\ndefine Result: = 'a'", location: None, context: None }
+- **Greater Or Equal::GreaterOrEqualAThanAA**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '=' expected '-', '+', '\"not\"', '\"exists\"', '\"null\"', '\"true\"', '\"false\"', '@', int, ''', '\"if\"', '\"Interval\"', '\"Tuple\"', '[', '{', '(', '\"', or identifier", expression: "library Test version '1.0'\ndefine Result: = 'aa'", location: None, context: None }
+- **Greater Or Equal::GreaterOrEqualAAThanA**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '=' expected '-', '+', '\"not\"', '\"exists\"', '\"null\"', '\"true\"', '\"false\"', '@', int, ''', '\"if\"', '\"Interval\"', '\"Tuple\"', '[', '{', '(', '\"', or identifier", expression: "library Test version '1.0'\ndefine Result: = 'a'", location: None, context: None }
+- **Greater Or Equal::GreaterOrEqualJackJill**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '=' expected '-', '+', '\"not\"', '\"exists\"', '\"null\"', '\"true\"', '\"false\"', '@', int, ''', '\"if\"', '\"Interval\"', '\"Tuple\"', '[', '{', '(', '\"', or identifier", expression: "library Test version '1.0'\ndefine Result: = 'Jill'", location: None, context: None }
+- **Greater Or Equal::DateTimeGreaterEqTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '=' expected '-', '+', '\"not\"', '\"exists\"', '\"null\"', '\"true\"', '\"false\"', '@', int, ''', '\"if\"', '\"Interval\"', '\"Tuple\"', '[', '{', '(', '\"', or identifier", expression: "library Test version '1.0'\ndefine Result: = DateTime(2012, 2, 10, 0, 0, 0, 0)", location: None, context: None }
+- **Greater Or Equal::DateTimeGreaterEqTrue2**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '=' expected '-', '+', '\"not\"', '\"exists\"', '\"null\"', '\"true\"', '\"false\"', '@', int, ''', '\"if\"', '\"Interval\"', '\"Tuple\"', '[', '{', '(', '\"', or identifier", expression: "library Test version '1.0'\ndefine Result: = DateTime(2012, 2, 12, 0, 0, 0, 0)", location: None, context: None }
+- **Greater Or Equal::DateTimeGreaterEqFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '=' expected '-', '+', '\"not\"', '\"exists\"', '\"null\"', '\"true\"', '\"false\"', '@', int, ''', '\"if\"', '\"Interval\"', '\"Tuple\"', '[', '{', '(', '\"', or identifier", expression: "library Test version '1.0'\ndefine Result: = DateTime(2012, 2, 13, 0, 0, 0, 0)", location: None, context: None }
+- **Greater Or Equal::TimeGreaterEqTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '=' expected '-', '+', '\"not\"', '\"exists\"', '\"null\"', '\"true\"', '\"false\"', '@', int, ''', '\"if\"', '\"Interval\"', '\"Tuple\"', '[', '{', '(', '\"', or identifier", expression: "library Test version '1.0'\ndefine Result: = @T10:00:00.000", location: None, context: None }
+- **Greater Or Equal::TimeGreaterEqTrue2**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '=' expected '-', '+', '\"not\"', '\"exists\"', '\"null\"', '\"true\"', '\"false\"', '@', int, ''', '\"if\"', '\"Interval\"', '\"Tuple\"', '[', '{', '(', '\"', or identifier", expression: "library Test version '1.0'\ndefine Result: = @T10:00:00.000", location: None, context: None }
+- **Greater Or Equal::TimeGreaterEqFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '=' expected '-', '+', '\"not\"', '\"exists\"', '\"null\"', '\"true\"', '\"false\"', '@', int, ''', '\"if\"', '\"Interval\"', '\"Tuple\"', '[', '{', '(', '\"', or identifier", expression: "library Test version '1.0'\ndefine Result: = @T10:00:00.001", location: None, context: None }
+- **Greater Or Equal::UncertaintyGreaterEqualNull**
+  - Expected: `null`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '=' expected '-', '+', '\"not\"', '\"exists\"', '\"null\"', '\"true\"', '\"false\"', '@', int, ''', '\"if\"', '\"Interval\"', '\"Tuple\"', '[', '{', '(', '\"', or identifier", expression: "library Test version '1.0'\ndefine Result: = DateTime(2014, 2, 15)", location: None, context: None }
+- **Greater Or Equal::UncertaintyGreaterEqualTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '=' expected '-', '+', '\"not\"', '\"exists\"', '\"null\"', '\"true\"', '\"false\"', '@', int, ''', '\"if\"', '\"Interval\"', '\"Tuple\"', '[', '{', '(', '\"', or identifier", expression: "library Test version '1.0'\ndefine Result: = DateTime(2014, 2, 15)", location: None, context: None }
+- **Greater Or Equal::UncertaintyGreaterEqualFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '=' expected '-', '+', '\"not\"', '\"exists\"', '\"null\"', '\"true\"', '\"false\"', '@', int, ''', '\"if\"', '\"Interval\"', '\"Tuple\"', '[', '{', '(', '\"', or identifier", expression: "library Test version '1.0'\ndefine Result: = DateTime(2014, 2, 15)", location: None, context: None }
+- **Less::LessZZ**
+  - Expected: `false`
+  - Actual: `0`
+- **Less::LessZ1**
+  - Expected: `true`
+  - Actual: `1`
+- **Less::LessZNeg1**
+  - Expected: `false`
+  - Actual: `-1`
+- **Less::LessDecZZ**
+  - Expected: `false`
+  - Actual: `0.0`
+- **Less::LessDecZ1**
+  - Expected: `true`
+  - Actual: `1.0`
+- **Less::LessDecZNeg1**
+  - Expected: `false`
+  - Actual: `-1.0`
+- **Less::LessDec1Int2**
+  - Expected: `true`
+  - Actual: `2`
+- **Less::LessCM0CM0**
+  - Expected: `false`
+  - Actual: `0 'cm'`
+- **Less::LessCM0CM1**
+  - Expected: `true`
+  - Actual: `1 'cm'`
+- **Less::LessCM0NegCM1**
+  - Expected: `false`
+  - Actual: `-1 'cm'`
+- **Less::LessM1CM1**
+  - Expected: `false`
+  - Actual: `1 'cm'`
+- **Less::LessM1CM10**
+  - Expected: `false`
+  - Actual: `10 'cm'`
+- **Less::LessAA**
+  - Expected: `false`
+  - Actual: `a`
+- **Less::LessAB**
+  - Expected: `true`
+  - Actual: `b`
+- **Less::LessBA**
+  - Expected: `false`
+  - Actual: `a`
+- **Less::LessAThanAA**
+  - Expected: `true`
+  - Actual: `aa`
+- **Less::LessAAThanA**
+  - Expected: `false`
+  - Actual: `a`
+- **Less::LessJackJill**
+  - Expected: `true`
+  - Actual: `Jill`
+- **Less::DateTimeLessTrue**
+  - Expected: `true`
+  - Actual: `@2012-02-10`
+- **Less::DateTimeLessFalse**
+  - Expected: `false`
+  - Actual: `@2012-02-13`
+- **Less::TimeLessTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **Less::TimeLessFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **Less::UncertaintyLessNull**
+  - Expected: `null`
+  - Actual: `@2014-02-15`
+- **Less::UncertaintyLessTrue**
+  - Expected: `true`
+  - Actual: `@2014-02-15`
+- **Less::UncertaintyLessFalse**
+  - Expected: `false`
+  - Actual: `@2014-02-15`
+- **Less Or Equal::LessOrEqualZZ**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '=' expected '-', '+', '\"not\"', '\"exists\"', '\"null\"', '\"true\"', '\"false\"', '@', int, ''', '\"if\"', '\"Interval\"', '\"Tuple\"', '[', '{', '(', '\"', or identifier", expression: "library Test version '1.0'\ndefine Result: = 0", location: None, context: None }
+- **Less Or Equal::LessOrEqualZ1**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '=' expected '-', '+', '\"not\"', '\"exists\"', '\"null\"', '\"true\"', '\"false\"', '@', int, ''', '\"if\"', '\"Interval\"', '\"Tuple\"', '[', '{', '(', '\"', or identifier", expression: "library Test version '1.0'\ndefine Result: = 1", location: None, context: None }
+- **Less Or Equal::LessOrEqualZNeg1**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '=' expected '-', '+', '\"not\"', '\"exists\"', '\"null\"', '\"true\"', '\"false\"', '@', int, ''', '\"if\"', '\"Interval\"', '\"Tuple\"', '[', '{', '(', '\"', or identifier", expression: "library Test version '1.0'\ndefine Result: = -1", location: None, context: None }
+- **Less Or Equal::LessOrEqualDecZZ**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '=' expected '-', '+', '\"not\"', '\"exists\"', '\"null\"', '\"true\"', '\"false\"', '@', int, ''', '\"if\"', '\"Interval\"', '\"Tuple\"', '[', '{', '(', '\"', or identifier", expression: "library Test version '1.0'\ndefine Result: = 0.0", location: None, context: None }
+- **Less Or Equal::LessOrEqualDecZ1**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '=' expected '-', '+', '\"not\"', '\"exists\"', '\"null\"', '\"true\"', '\"false\"', '@', int, ''', '\"if\"', '\"Interval\"', '\"Tuple\"', '[', '{', '(', '\"', or identifier", expression: "library Test version '1.0'\ndefine Result: = 1.0", location: None, context: None }
+- **Less Or Equal::LessOrEqualDecZNeg1**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '=' expected '-', '+', '\"not\"', '\"exists\"', '\"null\"', '\"true\"', '\"false\"', '@', int, ''', '\"if\"', '\"Interval\"', '\"Tuple\"', '[', '{', '(', '\"', or identifier", expression: "library Test version '1.0'\ndefine Result: = -1.0", location: None, context: None }
+- **Less Or Equal::LessOrEqualDec1Int2**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '=' expected '-', '+', '\"not\"', '\"exists\"', '\"null\"', '\"true\"', '\"false\"', '@', int, ''', '\"if\"', '\"Interval\"', '\"Tuple\"', '[', '{', '(', '\"', or identifier", expression: "library Test version '1.0'\ndefine Result: = 2", location: None, context: None }
+- **Less Or Equal::LessOrEqualCM0CM0**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '=' expected '-', '+', '\"not\"', '\"exists\"', '\"null\"', '\"true\"', '\"false\"', '@', int, ''', '\"if\"', '\"Interval\"', '\"Tuple\"', '[', '{', '(', '\"', or identifier", expression: "library Test version '1.0'\ndefine Result: = 0'cm'", location: None, context: None }
+- **Less Or Equal::LessOrEqualCM0CM1**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '=' expected '-', '+', '\"not\"', '\"exists\"', '\"null\"', '\"true\"', '\"false\"', '@', int, ''', '\"if\"', '\"Interval\"', '\"Tuple\"', '[', '{', '(', '\"', or identifier", expression: "library Test version '1.0'\ndefine Result: = 1'cm'", location: None, context: None }
+- **Less Or Equal::LessOrEqualCM0NegCM1**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '=' expected '-', '+', '\"not\"', '\"exists\"', '\"null\"', '\"true\"', '\"false\"', '@', int, ''', '\"if\"', '\"Interval\"', '\"Tuple\"', '[', '{', '(', '\"', or identifier", expression: "library Test version '1.0'\ndefine Result: = -1'cm'", location: None, context: None }
+- **Less Or Equal::LessOrEqualM1CM1**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '=' expected '-', '+', '\"not\"', '\"exists\"', '\"null\"', '\"true\"', '\"false\"', '@', int, ''', '\"if\"', '\"Interval\"', '\"Tuple\"', '[', '{', '(', '\"', or identifier", expression: "library Test version '1.0'\ndefine Result: = 1'cm'", location: None, context: None }
+- **Less Or Equal::LessOrEqualM1CM10**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '=' expected '-', '+', '\"not\"', '\"exists\"', '\"null\"', '\"true\"', '\"false\"', '@', int, ''', '\"if\"', '\"Interval\"', '\"Tuple\"', '[', '{', '(', '\"', or identifier", expression: "library Test version '1.0'\ndefine Result: = 10'cm'", location: None, context: None }
+- **Less Or Equal::LessOrEqualAA**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '=' expected '-', '+', '\"not\"', '\"exists\"', '\"null\"', '\"true\"', '\"false\"', '@', int, ''', '\"if\"', '\"Interval\"', '\"Tuple\"', '[', '{', '(', '\"', or identifier", expression: "library Test version '1.0'\ndefine Result: = 'a'", location: None, context: None }
+- **Less Or Equal::LessOrEqualAB**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '=' expected '-', '+', '\"not\"', '\"exists\"', '\"null\"', '\"true\"', '\"false\"', '@', int, ''', '\"if\"', '\"Interval\"', '\"Tuple\"', '[', '{', '(', '\"', or identifier", expression: "library Test version '1.0'\ndefine Result: = 'b'", location: None, context: None }
+- **Less Or Equal::LessOrEqualBA**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '=' expected '-', '+', '\"not\"', '\"exists\"', '\"null\"', '\"true\"', '\"false\"', '@', int, ''', '\"if\"', '\"Interval\"', '\"Tuple\"', '[', '{', '(', '\"', or identifier", expression: "library Test version '1.0'\ndefine Result: = 'a'", location: None, context: None }
+- **Less Or Equal::LessOrEqualAThanAA**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '=' expected '-', '+', '\"not\"', '\"exists\"', '\"null\"', '\"true\"', '\"false\"', '@', int, ''', '\"if\"', '\"Interval\"', '\"Tuple\"', '[', '{', '(', '\"', or identifier", expression: "library Test version '1.0'\ndefine Result: = 'aa'", location: None, context: None }
+- **Less Or Equal::LessOrEqualAAThanA**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '=' expected '-', '+', '\"not\"', '\"exists\"', '\"null\"', '\"true\"', '\"false\"', '@', int, ''', '\"if\"', '\"Interval\"', '\"Tuple\"', '[', '{', '(', '\"', or identifier", expression: "library Test version '1.0'\ndefine Result: = 'a'", location: None, context: None }
+- **Less Or Equal::LessOrEqualJackJill**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '=' expected '-', '+', '\"not\"', '\"exists\"', '\"null\"', '\"true\"', '\"false\"', '@', int, ''', '\"if\"', '\"Interval\"', '\"Tuple\"', '[', '{', '(', '\"', or identifier", expression: "library Test version '1.0'\ndefine Result: = 'Jill'", location: None, context: None }
+- **Less Or Equal::DateTimeLessEqTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '=' expected '-', '+', '\"not\"', '\"exists\"', '\"null\"', '\"true\"', '\"false\"', '@', int, ''', '\"if\"', '\"Interval\"', '\"Tuple\"', '[', '{', '(', '\"', or identifier", expression: "library Test version '1.0'\ndefine Result: = DateTime(2012, 2, 10, 0, 0, 0, 0)", location: None, context: None }
+- **Less Or Equal::DateTimeLessEqTrue2**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '=' expected '-', '+', '\"not\"', '\"exists\"', '\"null\"', '\"true\"', '\"false\"', '@', int, ''', '\"if\"', '\"Interval\"', '\"Tuple\"', '[', '{', '(', '\"', or identifier", expression: "library Test version '1.0'\ndefine Result: = DateTime(2012, 2, 12, 0, 0, 0, 0)", location: None, context: None }
+- **Less Or Equal::DateTimeLessEqFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '=' expected '-', '+', '\"not\"', '\"exists\"', '\"null\"', '\"true\"', '\"false\"', '@', int, ''', '\"if\"', '\"Interval\"', '\"Tuple\"', '[', '{', '(', '\"', or identifier", expression: "library Test version '1.0'\ndefine Result: = DateTime(2012, 2, 12, 0, 0, 0, 0)", location: None, context: None }
+- **Less Or Equal::TimeLessEqTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '=' expected '-', '+', '\"not\"', '\"exists\"', '\"null\"', '\"true\"', '\"false\"', '@', int, ''', '\"if\"', '\"Interval\"', '\"Tuple\"', '[', '{', '(', '\"', or identifier", expression: "library Test version '1.0'\ndefine Result: = @T10:00:00.002", location: None, context: None }
+- **Less Or Equal::TimeLessEqTrue2**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '=' expected '-', '+', '\"not\"', '\"exists\"', '\"null\"', '\"true\"', '\"false\"', '@', int, ''', '\"if\"', '\"Interval\"', '\"Tuple\"', '[', '{', '(', '\"', or identifier", expression: "library Test version '1.0'\ndefine Result: = @T10:00:00.000", location: None, context: None }
+- **Less Or Equal::TimeLessEqFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '=' expected '-', '+', '\"not\"', '\"exists\"', '\"null\"', '\"true\"', '\"false\"', '@', int, ''', '\"if\"', '\"Interval\"', '\"Tuple\"', '[', '{', '(', '\"', or identifier", expression: "library Test version '1.0'\ndefine Result: = @T10:00:00.001", location: None, context: None }
+- **Less Or Equal::UncertaintyLessEqualNull**
+  - Expected: `null`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '=' expected '-', '+', '\"not\"', '\"exists\"', '\"null\"', '\"true\"', '\"false\"', '@', int, ''', '\"if\"', '\"Interval\"', '\"Tuple\"', '[', '{', '(', '\"', or identifier", expression: "library Test version '1.0'\ndefine Result: = DateTime(2014, 2, 15)", location: None, context: None }
+- **Less Or Equal::UncertaintyLessEqualTrue**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '=' expected '-', '+', '\"not\"', '\"exists\"', '\"null\"', '\"true\"', '\"false\"', '@', int, ''', '\"if\"', '\"Interval\"', '\"Tuple\"', '[', '{', '(', '\"', or identifier", expression: "library Test version '1.0'\ndefine Result: = DateTime(2014, 2, 15)", location: None, context: None }
+- **Less Or Equal::UncertaintyLessEqualFalse**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: found '=' expected '-', '+', '\"not\"', '\"exists\"', '\"null\"', '\"true\"', '\"false\"', '@', int, ''', '\"if\"', '\"Interval\"', '\"Tuple\"', '[', '{', '(', '\"', or identifier", expression: "library Test version '1.0'\ndefine Result: = DateTime(2014, 2, 15)", location: None, context: None }
+- **Equivalent::EquivEqCM1M01**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Evaluation error: IncompatibleUnits { unit1: "cm", unit2: "m" }
+- **Equivalent::EquivTupleJohnJohnWithNulls**
+  - Expected: `true`
+  - Actual: `false`
+- **Equivalent::EquivDateTimeTodayYesterday**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedOperator { operator: "Subtract", types: "Date, Quantity" }
+- **Equivalent::EquivTime10A10A**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **Equivalent::EquivTime10A10P**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **Not Equal::QuantityNotEqCM1M01**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Evaluation error: IncompatibleUnits { unit1: "cm", unit2: "m" }
+- **Not Equal::TupleNotEqJohn1John1WithBothNamesNull**
+  - Expected: `false`
+  - Actual: `true`
+- **Not Equal::TupleNotEqMatchingNamesWithNullIDs**
+  - Expected: `false`
+  - Actual: `true`
+- **Not Equal::TupleNotEqJohn1John1WithNullName**
+  - Expected: `null`
+  - Actual: `true`
+- **Not Equal::DateTimeNotEqTodayYesterday**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedOperator { operator: "Subtract", types: "Date, Quantity" }
+- **Not Equal::TimeNotEq10A10A**
+  - Expected: `false`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+- **Not Equal::TimeNotEq10A10P**
+  - Expected: `true`
+  - Actual: ``
+  - Error: Evaluation error: UnsupportedExpression { expr_type: "Literal type: {urn:hl7-org:elm-types:r1}Time" }
+

@@ -35,3 +35,7 @@ pub use octofhir_cql_types as types;
 pub use octofhir_cql_ast::{Expression, Library};
 pub use octofhir_cql_diagnostics::{CqlError, Result};
 pub use octofhir_cql_parser::parse;
+
+// CLI module (only available with cli feature)
+#[cfg(feature = "cli")]
+pub mod cli;

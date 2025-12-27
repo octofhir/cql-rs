@@ -9,9 +9,10 @@ use crate::combinators::{
     ratio_literal_parser, string_parser, temporal_literal_parser,
 };
 use octofhir_cql_ast::{
-    BinaryOp, BinaryOpExpr, Expression, FunctionRefExpr, Identifier, IdentifierRef, IfExpr,
-    IndexerExpr, ListExpr, Literal, NamedTypeSpecifier, PropertyAccess, Retrieve, Spanned,
-    TypeSpecifier, UnaryOp, UnaryOpExpr,
+    AsCastExpr, BinaryOp, BinaryOpExpr, Expression, FunctionRefExpr, Identifier, IdentifierRef,
+    IfExpr, IndexerExpr, IntervalExpr, IntervalOp, IntervalOpExpr, ListExpr, Literal,
+    NamedTypeSpecifier, PropertyAccess, Retrieve, Spanned, TupleElement, TupleExpr, TypeSpecifier,
+    UnaryOp, UnaryOpExpr,
 };
 use octofhir_cql_diagnostics::Span;
 
@@ -29,6 +30,7 @@ fn make_span(s: SimpleSpan<usize>) -> Span {
 enum PostfixOp {
     Property(Identifier),
     Indexer(Spanned<Expression>),
+    AsCast(Identifier),
 }
 
 /// Parse a CQL expression
@@ -56,6 +58,78 @@ pub fn expression_parser<'a>(
                     .delimited_by(just('['), just(']'))
                     .map_with(|_, e| error_expr(make_span(e.span()))),
             ));
+
+        // Interval constructor: Interval[low, high], Interval(low, high), etc.
+        // Brackets mean closed (inclusive), parentheses mean open (exclusive)
+        let interval = text::keyword("Interval")
+            .padded()
+            .ignore_then(choice((
+                // [low, high] - closed-closed
+                just('[')
+                    .ignore_then(expr.clone().padded())
+                    .then_ignore(just(',').padded())
+                    .then(expr.clone().padded())
+                    .then_ignore(just(']'))
+                    .map(|(low, high)| (low, true, high, true)),
+                // [low, high) - closed-open
+                just('[')
+                    .ignore_then(expr.clone().padded())
+                    .then_ignore(just(',').padded())
+                    .then(expr.clone().padded())
+                    .then_ignore(just(')'))
+                    .map(|(low, high)| (low, true, high, false)),
+                // (low, high] - open-closed
+                just('(')
+                    .ignore_then(expr.clone().padded())
+                    .then_ignore(just(',').padded())
+                    .then(expr.clone().padded())
+                    .then_ignore(just(']'))
+                    .map(|(low, high)| (low, false, high, true)),
+                // (low, high) - open-open
+                just('(')
+                    .ignore_then(expr.clone().padded())
+                    .then_ignore(just(',').padded())
+                    .then(expr.clone().padded())
+                    .then_ignore(just(')'))
+                    .map(|(low, high)| (low, false, high, false)),
+            )))
+            .map_with(|(low, low_closed, high, high_closed), e| {
+                let span = make_span(e.span());
+                Spanned::new(
+                    Expression::Interval(IntervalExpr {
+                        low: Some(Box::new(low)),
+                        low_closed,
+                        high: Some(Box::new(high)),
+                        high_closed,
+                    }),
+                    span,
+                )
+            });
+
+        // Tuple element: name : value
+        let tuple_element = identifier_parser()
+            .padded()
+            .then_ignore(just(':').padded())
+            .then(expr.clone())
+            .map(|(name, value)| TupleElement {
+                name,
+                value: Box::new(value),
+            });
+
+        // Tuple constructor: Tuple { name: value, ... }
+        let tuple = text::keyword("Tuple")
+            .padded()
+            .ignore_then(
+                tuple_element
+                    .separated_by(just(',').padded())
+                    .allow_trailing()
+                    .collect::<Vec<_>>()
+                    .delimited_by(just('{').padded(), just('}').padded()),
+            )
+            .map_with(|elements, e| {
+                let span = make_span(e.span());
+                Spanned::new(Expression::Tuple(TupleExpr { elements }), span)
+            });
 
         // List expression: { expr, expr, ... } with recovery
         let list = expr
@@ -156,6 +230,10 @@ pub fn expression_parser<'a>(
                         span,
                     )
                 }),
+            // Interval constructor - must be before identifier parser
+            interval,
+            // Tuple constructor - must be before identifier parser
+            tuple,
             // Retrieve expression
             retrieve,
             // List expression
@@ -199,7 +277,7 @@ pub fn expression_parser<'a>(
                 }),
         ));
 
-        // Postfix operations: property access (.name), indexer ([expr])
+        // Postfix operations: property access (.name), indexer ([expr]), type cast (as Type)
         let postfix = atom.foldl(
             choice((
                 // Property access: .name
@@ -211,6 +289,11 @@ pub fn expression_parser<'a>(
                 expr.clone()
                     .delimited_by(just('[').padded(), just(']').padded())
                     .map(|idx| PostfixOp::Indexer(idx)),
+                // Type cast: as Type
+                text::keyword("as")
+                    .padded()
+                    .ignore_then(identifier_parser())
+                    .map(|type_name| PostfixOp::AsCast(type_name)),
             ))
             .repeated(),
             |base, op| {
@@ -232,6 +315,21 @@ pub fn expression_parser<'a>(
                             Expression::Indexer(IndexerExpr {
                                 source: Box::new(base),
                                 index: Box::new(index),
+                            }),
+                            new_span,
+                        )
+                    }
+                    PostfixOp::AsCast(type_name) => {
+                        let new_span = Span::new(base_span.start, base_span.end + type_name.name.len() + 4);
+                        let type_spec = TypeSpecifier::Named(NamedTypeSpecifier {
+                            namespace: None,
+                            name: type_name.name.clone(),
+                        });
+                        Spanned::new(
+                            Expression::As(AsCastExpr {
+                                operand: Box::new(base),
+                                as_type: Spanned::new(type_spec, new_span),
+                                strict: false,
                             }),
                             new_span,
                         )
@@ -557,6 +655,135 @@ pub fn expression_parser<'a>(
                             left: Box::new(left),
                             op: BinaryOp::Equivalent,
                             right: Box::new(right),
+                        }),
+                        span,
+                    )
+                },
+            ),
+            // Interval operators - precedence 6
+            infix(
+                left(6),
+                text::keyword("after").padded(),
+                |left: Spanned<Expression>, _, right: Spanned<Expression>, e| {
+                    let span = make_span(e.span());
+                    Spanned::new(
+                        Expression::IntervalOp(IntervalOpExpr {
+                            left: Box::new(left),
+                            op: IntervalOp::After,
+                            right: Box::new(right),
+                            precision: None,
+                        }),
+                        span,
+                    )
+                },
+            ),
+            infix(
+                left(6),
+                text::keyword("before").padded(),
+                |left: Spanned<Expression>, _, right: Spanned<Expression>, e| {
+                    let span = make_span(e.span());
+                    Spanned::new(
+                        Expression::IntervalOp(IntervalOpExpr {
+                            left: Box::new(left),
+                            op: IntervalOp::Before,
+                            right: Box::new(right),
+                            precision: None,
+                        }),
+                        span,
+                    )
+                },
+            ),
+            infix(
+                left(6),
+                text::keyword("meets").padded(),
+                |left: Spanned<Expression>, _, right: Spanned<Expression>, e| {
+                    let span = make_span(e.span());
+                    Spanned::new(
+                        Expression::IntervalOp(IntervalOpExpr {
+                            left: Box::new(left),
+                            op: IntervalOp::Meets,
+                            right: Box::new(right),
+                            precision: None,
+                        }),
+                        span,
+                    )
+                },
+            ),
+            infix(
+                left(6),
+                text::keyword("overlaps").padded(),
+                |left: Spanned<Expression>, _, right: Spanned<Expression>, e| {
+                    let span = make_span(e.span());
+                    Spanned::new(
+                        Expression::IntervalOp(IntervalOpExpr {
+                            left: Box::new(left),
+                            op: IntervalOp::Overlaps,
+                            right: Box::new(right),
+                            precision: None,
+                        }),
+                        span,
+                    )
+                },
+            ),
+            infix(
+                left(6),
+                text::keyword("starts").padded(),
+                |left: Spanned<Expression>, _, right: Spanned<Expression>, e| {
+                    let span = make_span(e.span());
+                    Spanned::new(
+                        Expression::IntervalOp(IntervalOpExpr {
+                            left: Box::new(left),
+                            op: IntervalOp::Starts,
+                            right: Box::new(right),
+                            precision: None,
+                        }),
+                        span,
+                    )
+                },
+            ),
+            infix(
+                left(6),
+                text::keyword("ends").padded(),
+                |left: Spanned<Expression>, _, right: Spanned<Expression>, e| {
+                    let span = make_span(e.span());
+                    Spanned::new(
+                        Expression::IntervalOp(IntervalOpExpr {
+                            left: Box::new(left),
+                            op: IntervalOp::Ends,
+                            right: Box::new(right),
+                            precision: None,
+                        }),
+                        span,
+                    )
+                },
+            ),
+            infix(
+                left(6),
+                text::keyword("during").padded(),
+                |left: Spanned<Expression>, _, right: Spanned<Expression>, e| {
+                    let span = make_span(e.span());
+                    Spanned::new(
+                        Expression::IntervalOp(IntervalOpExpr {
+                            left: Box::new(left),
+                            op: IntervalOp::During,
+                            right: Box::new(right),
+                            precision: None,
+                        }),
+                        span,
+                    )
+                },
+            ),
+            infix(
+                left(6),
+                text::keyword("includes").padded(),
+                |left: Spanned<Expression>, _, right: Spanned<Expression>, e| {
+                    let span = make_span(e.span());
+                    Spanned::new(
+                        Expression::IntervalOp(IntervalOpExpr {
+                            left: Box::new(left),
+                            op: IntervalOp::Includes,
+                            right: Box::new(right),
+                            precision: None,
                         }),
                         span,
                     )
