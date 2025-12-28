@@ -1,0 +1,209 @@
+{
+  "source": "operator_logic_test.go",
+  "functions": {
+    "TestLogicOperators": [
+      {
+        "name": "true and true",
+        "cql": "true and true",
+        "expected": true
+      },
+      {
+        "name": "true and false",
+        "cql": "true and false",
+        "expected": false
+      },
+      {
+        "name": "true and null",
+        "cql": "true and null",
+        "expected": null
+      },
+      {
+        "name": "null and true",
+        "cql": "null and true",
+        "expected": null
+      },
+      {
+        "name": "false and true",
+        "cql": "false and true",
+        "expected": false
+      },
+      {
+        "name": "false and false",
+        "cql": "false and false",
+        "expected": false
+      },
+      {
+        "name": "false and null",
+        "cql": "false and null",
+        "expected": false
+      },
+      {
+        "name": "null and false",
+        "cql": "null and false",
+        "expected": false
+      },
+      {
+        "name": "null and null",
+        "cql": "null and null",
+        "expected": null
+      },
+      {
+        "name": "true or true",
+        "cql": "true or true",
+        "expected": true
+      },
+      {
+        "name": "true or false",
+        "cql": "true or false",
+        "expected": true
+      },
+      {
+        "name": "true or null",
+        "cql": "true or null",
+        "expected": true
+      },
+      {
+        "name": "null or true",
+        "cql": "null or true",
+        "expected": true
+      },
+      {
+        "name": "false or true",
+        "cql": "false or true",
+        "expected": true
+      },
+      {
+        "name": "false or false",
+        "cql": "false or false",
+        "expected": false
+      },
+      {
+        "name": "false or null",
+        "cql": "false or null",
+        "expected": null
+      },
+      {
+        "name": "null or false",
+        "cql": "null or false",
+        "expected": null
+      },
+      {
+        "name": "null or null",
+        "cql": "null or null",
+        "expected": null
+      },
+      {
+        "name": "true xor true",
+        "cql": "true xor true",
+        "expected": false
+      },
+      {
+        "name": "true xor false",
+        "cql": "true xor false",
+        "expected": true
+      },
+      {
+        "name": "true xor null",
+        "cql": "true xor null",
+        "expected": null
+      },
+      {
+        "name": "null xor true",
+        "cql": "null xor true",
+        "expected": null
+      },
+      {
+        "name": "false xor true",
+        "cql": "false xor true",
+        "expected": true
+      },
+      {
+        "name": "false xor false",
+        "cql": "false xor false",
+        "expected": false
+      },
+      {
+        "name": "false xor null",
+        "cql": "false xor null",
+        "expected": null
+      },
+      {
+        "name": "null xor false",
+        "cql": "null xor false",
+        "expected": null
+      },
+      {
+        "name": "null xor null",
+        "cql": "null xor null",
+        "expected": null
+      },
+      {
+        "name": "true implies true",
+        "cql": "true implies true",
+        "expected": true
+      },
+      {
+        "name": "true implies false",
+        "cql": "true implies false",
+        "expected": false
+      },
+      {
+        "name": "true implies null",
+        "cql": "true implies null",
+        "expected": null
+      },
+      {
+        "name": "null implies true",
+        "cql": "null implies true",
+        "expected": true
+      },
+      {
+        "name": "false implies true",
+        "cql": "false implies true",
+        "expected": true
+      },
+      {
+        "name": "false implies false",
+        "cql": "false implies false",
+        "expected": true
+      },
+      {
+        "name": "false implies null",
+        "cql": "false implies null",
+        "expected": true
+      },
+      {
+        "name": "null implies false",
+        "cql": "null implies false",
+        "expected": null
+      },
+      {
+        "name": "null implies null",
+        "cql": "null implies null",
+        "expected": null
+      }
+    ],
+    "TestNot": [
+      {
+        "name": "not true",
+        "cql": "not true",
+        "expected": false
+      },
+      {
+        "name": "not false",
+        "cql": "not false",
+        "expected": true
+      },
+      {
+        "name": "not null",
+        "cql": "not null",
+        "expected": null
+      },
+      {
+        "name": "Not(true) functional form",
+        "cql": "Not(true)",
+        "expected": false
+      }
+    ]
+  }
+}

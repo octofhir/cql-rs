@@ -612,8 +612,8 @@ pub enum Expression {
     ProperIn(BinaryExpression),
     ProperIncludes(BinaryExpression),
     ProperIncludedIn(BinaryExpression),
-    Before(BinaryExpression),
-    After(BinaryExpression),
+    Before(BeforeExpression),
+    After(AfterExpression),
     Meets(BinaryExpression),
     MeetsBefore(BinaryExpression),
     MeetsAfter(BinaryExpression),
@@ -1196,6 +1196,28 @@ pub struct SameOrBeforeExpression {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SameOrAfterExpression {
+    #[serde(flatten)]
+    pub element: Element,
+    pub operand: Vec<Box<Expression>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub precision: Option<DateTimePrecision>,
+}
+
+/// Before expression with optional precision
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BeforeExpression {
+    #[serde(flatten)]
+    pub element: Element,
+    pub operand: Vec<Box<Expression>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub precision: Option<DateTimePrecision>,
+}
+
+/// After expression with optional precision
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AfterExpression {
     #[serde(flatten)]
     pub element: Element,
     pub operand: Vec<Box<Expression>>,

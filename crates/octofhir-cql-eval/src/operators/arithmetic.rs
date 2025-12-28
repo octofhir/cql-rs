@@ -7,7 +7,7 @@
 use crate::context::EvaluationContext;
 use crate::engine::CqlEngine;
 use crate::error::{EvalError, EvalResult};
-use chrono::Datelike;
+use chrono::{Datelike, Timelike};
 use octofhir_cql_elm::{BinaryExpression, BoundaryExpression, MinMaxValueExpression, RoundExpression, UnaryExpression};
 use octofhir_cql_types::{CqlQuantity, CqlValue, DateTimePrecision};
 use rust_decimal::prelude::*;
@@ -82,7 +82,22 @@ impl CqlEngine {
                     })
                 }
             }
-            // String concatenation is not handled by Add in CQL (use Concatenate)
+            // Date + Quantity -> Date
+            (CqlValue::Date(d), CqlValue::Quantity(q)) => {
+                add_duration_to_date(d, q)
+            }
+            // DateTime + Quantity -> DateTime
+            (CqlValue::DateTime(dt), CqlValue::Quantity(q)) => {
+                add_duration_to_datetime(dt, q)
+            }
+            // Time + Quantity -> Time
+            (CqlValue::Time(t), CqlValue::Quantity(q)) => {
+                add_duration_to_time(t, q)
+            }
+            // String + String -> String (concatenation)
+            (CqlValue::String(a), CqlValue::String(b)) => {
+                Ok(CqlValue::String(format!("{}{}", a, b)))
+            }
             _ => Err(EvalError::unsupported_operator(
                 "Add",
                 format!("{}, {}", left.get_type().name(), right.get_type().name()),
@@ -146,6 +161,18 @@ impl CqlEngine {
                         unit2: b.unit.clone().unwrap_or_default(),
                     })
                 }
+            }
+            // Date - Quantity -> Date
+            (CqlValue::Date(d), CqlValue::Quantity(q)) => {
+                subtract_duration_from_date(d, q)
+            }
+            // DateTime - Quantity -> DateTime
+            (CqlValue::DateTime(dt), CqlValue::Quantity(q)) => {
+                subtract_duration_from_datetime(dt, q)
+            }
+            // Time - Quantity -> Time
+            (CqlValue::Time(t), CqlValue::Quantity(q)) => {
+                subtract_duration_from_time(t, q)
             }
             _ => Err(EvalError::unsupported_operator(
                 "Subtract",
@@ -343,6 +370,38 @@ impl CqlEngine {
                     Ok(CqlValue::Decimal((a / b).trunc()))
                 }
             }
+            // Integer div Decimal -> Decimal
+            (CqlValue::Integer(a), CqlValue::Decimal(b)) => {
+                if b.is_zero() {
+                    Ok(CqlValue::Null)
+                } else {
+                    Ok(CqlValue::Decimal((Decimal::from(*a) / b).trunc()))
+                }
+            }
+            // Decimal div Integer -> Decimal
+            (CqlValue::Decimal(a), CqlValue::Integer(b)) => {
+                if *b == 0 {
+                    Ok(CqlValue::Null)
+                } else {
+                    Ok(CqlValue::Decimal((a / Decimal::from(*b)).trunc()))
+                }
+            }
+            // Long div Decimal -> Decimal
+            (CqlValue::Long(a), CqlValue::Decimal(b)) => {
+                if b.is_zero() {
+                    Ok(CqlValue::Null)
+                } else {
+                    Ok(CqlValue::Decimal((Decimal::from(*a) / b).trunc()))
+                }
+            }
+            // Decimal div Long -> Decimal
+            (CqlValue::Decimal(a), CqlValue::Long(b)) => {
+                if *b == 0 {
+                    Ok(CqlValue::Null)
+                } else {
+                    Ok(CqlValue::Decimal((a / Decimal::from(*b)).trunc()))
+                }
+            }
             _ => Err(EvalError::unsupported_operator(
                 "TruncatedDivide",
                 format!("{}, {}", left.get_type().name(), right.get_type().name()),
@@ -394,6 +453,38 @@ impl CqlEngine {
                     Ok(CqlValue::Decimal(a % b))
                 }
             }
+            // Integer % Decimal -> Decimal
+            (CqlValue::Integer(a), CqlValue::Decimal(b)) => {
+                if b.is_zero() {
+                    Ok(CqlValue::Null)
+                } else {
+                    Ok(CqlValue::Decimal(Decimal::from(*a) % b))
+                }
+            }
+            // Decimal % Integer -> Decimal
+            (CqlValue::Decimal(a), CqlValue::Integer(b)) => {
+                if *b == 0 {
+                    Ok(CqlValue::Null)
+                } else {
+                    Ok(CqlValue::Decimal(a % Decimal::from(*b)))
+                }
+            }
+            // Long % Decimal -> Decimal
+            (CqlValue::Long(a), CqlValue::Decimal(b)) => {
+                if b.is_zero() {
+                    Ok(CqlValue::Null)
+                } else {
+                    Ok(CqlValue::Decimal(Decimal::from(*a) % b))
+                }
+            }
+            // Decimal % Long -> Decimal
+            (CqlValue::Decimal(a), CqlValue::Long(b)) => {
+                if *b == 0 {
+                    Ok(CqlValue::Null)
+                } else {
+                    Ok(CqlValue::Decimal(a % Decimal::from(*b)))
+                }
+            }
             _ => Err(EvalError::unsupported_operator(
                 "Modulo",
                 format!("{}, {}", left.get_type().name(), right.get_type().name()),
@@ -433,6 +524,18 @@ impl CqlEngine {
                     Err(EvalError::overflow("Power"))
                 }
             }
+            // Long ^ Long -> Long
+            (CqlValue::Long(base), CqlValue::Long(exp)) => {
+                if *exp < 0 {
+                    let base_f = *base as f64;
+                    let result = base_f.powi(*exp as i32);
+                    Ok(CqlValue::Decimal(Decimal::from_f64(result).unwrap_or(Decimal::ZERO)))
+                } else if let Some(result) = base.checked_pow(*exp as u32) {
+                    Ok(CqlValue::Long(result))
+                } else {
+                    Err(EvalError::overflow("Power"))
+                }
+            }
             (CqlValue::Decimal(base), CqlValue::Integer(exp)) => {
                 // Use floating point for decimal power
                 if let Some(base_f) = base.to_f64() {
@@ -449,6 +552,34 @@ impl CqlEngine {
             (CqlValue::Decimal(base), CqlValue::Decimal(exp)) => {
                 // Use floating point for decimal power
                 if let (Some(base_f), Some(exp_f)) = (base.to_f64(), exp.to_f64()) {
+                    let result = base_f.powf(exp_f);
+                    if result.is_finite() {
+                        Ok(CqlValue::Decimal(Decimal::from_f64(result).unwrap_or(Decimal::ZERO)))
+                    } else {
+                        Err(EvalError::overflow("Power"))
+                    }
+                } else {
+                    Err(EvalError::overflow("Power"))
+                }
+            }
+            // Integer ^ Decimal -> Decimal
+            (CqlValue::Integer(base), CqlValue::Decimal(exp)) => {
+                if let Some(exp_f) = exp.to_f64() {
+                    let base_f = *base as f64;
+                    let result = base_f.powf(exp_f);
+                    if result.is_finite() {
+                        Ok(CqlValue::Decimal(Decimal::from_f64(result).unwrap_or(Decimal::ZERO)))
+                    } else {
+                        Err(EvalError::overflow("Power"))
+                    }
+                } else {
+                    Err(EvalError::overflow("Power"))
+                }
+            }
+            // Long ^ Decimal -> Decimal
+            (CqlValue::Long(base), CqlValue::Decimal(exp)) => {
+                if let Some(exp_f) = exp.to_f64() {
+                    let base_f = *base as f64;
                     let result = base_f.powf(exp_f);
                     if result.is_finite() {
                         Ok(CqlValue::Decimal(Decimal::from_f64(result).unwrap_or(Decimal::ZERO)))
@@ -489,7 +620,14 @@ impl CqlEngine {
                     .map(CqlValue::Long)
                     .ok_or_else(|| EvalError::overflow("Negate"))
             }
-            CqlValue::Decimal(d) => Ok(CqlValue::Decimal(-d)),
+            CqlValue::Decimal(d) => {
+                // Avoid -0.0, return 0.0 instead
+                if d.is_zero() {
+                    Ok(CqlValue::Decimal(Decimal::ZERO))
+                } else {
+                    Ok(CqlValue::Decimal(-d))
+                }
+            }
             CqlValue::Quantity(q) => Ok(CqlValue::Quantity(CqlQuantity {
                 value: -q.value,
                 unit: q.unit.clone(),
@@ -731,6 +869,101 @@ impl CqlEngine {
                     Ok(CqlValue::Time(octofhir_cql_types::CqlTime::new(h, m, s, milli)))
                 }
             }
+            CqlValue::DateTime(dt) => {
+                // Get the precision of the DateTime and add 1 at that precision
+                let precision = dt.precision();
+                match precision {
+                    DateTimePrecision::Year => {
+                        if dt.year == 9999 {
+                            Ok(CqlValue::Null)
+                        } else {
+                            Ok(CqlValue::DateTime(octofhir_cql_types::CqlDateTime {
+                                year: dt.year + 1,
+                                month: None,
+                                day: None,
+                                hour: None,
+                                minute: None,
+                                second: None,
+                                millisecond: None,
+                                timezone_offset: dt.timezone_offset,
+                            }))
+                        }
+                    }
+                    DateTimePrecision::Month => {
+                        let month = dt.month.unwrap_or(1);
+                        if dt.year == 9999 && month == 12 {
+                            Ok(CqlValue::Null)
+                        } else if month == 12 {
+                            Ok(CqlValue::DateTime(octofhir_cql_types::CqlDateTime {
+                                year: dt.year + 1,
+                                month: Some(1),
+                                day: None,
+                                hour: None,
+                                minute: None,
+                                second: None,
+                                millisecond: None,
+                                timezone_offset: dt.timezone_offset,
+                            }))
+                        } else {
+                            Ok(CqlValue::DateTime(octofhir_cql_types::CqlDateTime {
+                                year: dt.year,
+                                month: Some(month + 1),
+                                day: None,
+                                hour: None,
+                                minute: None,
+                                second: None,
+                                millisecond: None,
+                                timezone_offset: dt.timezone_offset,
+                            }))
+                        }
+                    }
+                    _ => {
+                        // For day or more precision, use chrono
+                        let naive_date = chrono::NaiveDate::from_ymd_opt(
+                            dt.year,
+                            dt.month.unwrap_or(1) as u32,
+                            dt.day.unwrap_or(1) as u32,
+                        );
+                        if let Some(date) = naive_date {
+                            let naive_time = chrono::NaiveTime::from_hms_milli_opt(
+                                dt.hour.unwrap_or(0) as u32,
+                                dt.minute.unwrap_or(0) as u32,
+                                dt.second.unwrap_or(0) as u32,
+                                dt.millisecond.unwrap_or(0) as u32,
+                            ).unwrap_or_default();
+                            let naive = chrono::NaiveDateTime::new(date, naive_time);
+
+                            // Add at the appropriate precision
+                            let next: chrono::NaiveDateTime = match precision {
+                                DateTimePrecision::Day =>
+                                    naive + chrono::Duration::days(1),
+                                DateTimePrecision::Hour =>
+                                    naive + chrono::Duration::hours(1),
+                                DateTimePrecision::Minute =>
+                                    naive + chrono::Duration::minutes(1),
+                                DateTimePrecision::Second =>
+                                    naive + chrono::Duration::seconds(1),
+                                DateTimePrecision::Millisecond =>
+                                    naive + chrono::Duration::milliseconds(1),
+                                _ => naive,
+                            };
+                            // Preserve original precision
+                            Ok(CqlValue::DateTime(octofhir_cql_types::CqlDateTime {
+                                year: next.year(),
+                                month: dt.month.map(|_| next.month() as u8),
+                                day: dt.day.map(|_| next.day() as u8),
+                                hour: dt.hour.map(|_| next.hour() as u8),
+                                minute: dt.minute.map(|_| next.minute() as u8),
+                                second: dt.second.map(|_| next.second() as u8),
+                                millisecond: dt.millisecond.map(|_| (next.nanosecond() / 1_000_000) as u16),
+                                timezone_offset: dt.timezone_offset,
+                            }))
+                        } else {
+                            Ok(CqlValue::Null)
+                        }
+                    }
+                }
+            }
             CqlValue::Quantity(q) => {
                 let epsilon = Decimal::new(1, 8);
                 Ok(CqlValue::Quantity(CqlQuantity {
@@ -792,6 +1025,101 @@ impl CqlEngine {
                     let s = ((prev_ms % 60_000) / 1_000) as u8;
                     let milli = (prev_ms % 1_000) as u16;
                     Ok(CqlValue::Time(octofhir_cql_types::CqlTime::new(h, m, s, milli)))
+                }
+            }
+            CqlValue::DateTime(dt) => {
+                // Get the precision of the DateTime and subtract 1 at that precision
+                let precision = dt.precision();
+                match precision {
+                    DateTimePrecision::Year => {
+                        if dt.year == 1 {
+                            Ok(CqlValue::Null)
+                        } else {
+                            Ok(CqlValue::DateTime(octofhir_cql_types::CqlDateTime {
+                                year: dt.year - 1,
+                                month: None,
+                                day: None,
+                                hour: None,
+                                minute: None,
+                                second: None,
+                                millisecond: None,
+                                timezone_offset: dt.timezone_offset,
+                            }))
+                        }
+                    }
+                    DateTimePrecision::Month => {
+                        let month = dt.month.unwrap_or(1);
+                        if dt.year == 1 && month == 1 {
+                            Ok(CqlValue::Null)
+                        } else if month == 1 {
+                            Ok(CqlValue::DateTime(octofhir_cql_types::CqlDateTime {
+                                year: dt.year - 1,
+                                month: Some(12),
+                                day: None,
+                                hour: None,
+                                minute: None,
+                                second: None,
+                                millisecond: None,
+                                timezone_offset: dt.timezone_offset,
+                            }))
+                        } else {
+                            Ok(CqlValue::DateTime(octofhir_cql_types::CqlDateTime {
+                                year: dt.year,
+                                month: Some(month - 1),
+                                day: None,
+                                hour: None,
+                                minute: None,
+                                second: None,
+                                millisecond: None,
+                                timezone_offset: dt.timezone_offset,
+                            }))
+                        }
+                    }
+                    _ => {
+                        // For day or more precision, use chrono
+                        let naive_date = chrono::NaiveDate::from_ymd_opt(
+                            dt.year,
+                            dt.month.unwrap_or(1) as u32,
+                            dt.day.unwrap_or(1) as u32,
+                        );
+                        if let Some(date) = naive_date {
+                            let naive_time = chrono::NaiveTime::from_hms_milli_opt(
+                                dt.hour.unwrap_or(0) as u32,
+                                dt.minute.unwrap_or(0) as u32,
+                                dt.second.unwrap_or(0) as u32,
+                                dt.millisecond.unwrap_or(0) as u32,
+                            ).unwrap_or_default();
+                            let naive = chrono::NaiveDateTime::new(date, naive_time);
+
+                            // Subtract at the appropriate precision
+                            let prev: chrono::NaiveDateTime = match precision {
+                                DateTimePrecision::Day =>
+                                    naive - chrono::Duration::days(1),
+                                DateTimePrecision::Hour =>
+                                    naive - chrono::Duration::hours(1),
+                                DateTimePrecision::Minute =>
+                                    naive - chrono::Duration::minutes(1),
+                                DateTimePrecision::Second =>
+                                    naive - chrono::Duration::seconds(1),
+                                DateTimePrecision::Millisecond =>
+                                    naive - chrono::Duration::milliseconds(1),
+                                _ => naive,
+                            };
+                            // Preserve original precision
+                            Ok(CqlValue::DateTime(octofhir_cql_types::CqlDateTime {
+                                year: prev.year(),
+                                month: dt.month.map(|_| prev.month() as u8),
+                                day: dt.day.map(|_| prev.day() as u8),
+                                hour: dt.hour.map(|_| prev.hour() as u8),
+                                minute: dt.minute.map(|_| prev.minute() as u8),
+                                second: dt.second.map(|_| prev.second() as u8),
+                                millisecond: dt.millisecond.map(|_| (prev.nanosecond() / 1_000_000) as u16),
+                                timezone_offset: dt.timezone_offset,
+                            }))
+                        } else {
+                            Ok(CqlValue::Null)
+                        }
+                    }
                 }
             }
             CqlValue::Quantity(q) => {
@@ -1032,6 +1360,363 @@ fn days_in_month(year: i32, month: u8) -> u8 {
 /// Check if year is leap year
 fn is_leap_year(year: i32) -> bool {
     (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0)
+}
+
+/// Calendar unit for temporal arithmetic
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum CalendarUnit {
+    Year,
+    Month,
+    Week,
+    Day,
+    Hour,
+    Minute,
+    Second,
+    Millisecond,
+}
+
+impl CalendarUnit {
+    /// Parse calendar unit from a UCUM or CQL duration unit string
+    fn from_unit_string(s: &str) -> Option<Self> {
+        match s.to_lowercase().as_str() {
+            "year" | "years" | "a" => Some(Self::Year),
+            "month" | "months" | "mo" => Some(Self::Month),
+            "week" | "weeks" | "wk" => Some(Self::Week),
+            "day" | "days" | "d" => Some(Self::Day),
+            "hour" | "hours" | "h" => Some(Self::Hour),
+            "minute" | "minutes" | "min" => Some(Self::Minute),
+            "second" | "seconds" | "s" => Some(Self::Second),
+            "millisecond" | "milliseconds" | "ms" => Some(Self::Millisecond),
+            _ => None,
+        }
+    }
+}
+
+/// Subtract a duration quantity from a date
+/// Handles partial precision dates (year-only, year-month, or full date)
+fn subtract_duration_from_date(
+    date: &octofhir_cql_types::CqlDate,
+    quantity: &CqlQuantity,
+) -> EvalResult<CqlValue> {
+    let unit_str = quantity.unit.as_deref().unwrap_or("day");
+    let calendar_unit = CalendarUnit::from_unit_string(unit_str).ok_or_else(|| {
+        EvalError::invalid_operand(
+            "Date - Quantity",
+            format!("Unknown duration unit: {}", unit_str),
+        )
+    })?;
+
+    // Convert quantity value to i64 (truncating decimals)
+    let amount = quantity.value.to_i64().unwrap_or(0);
+
+    match calendar_unit {
+        CalendarUnit::Year => {
+            // Year operations only need year precision
+            let new_year = date.year - amount as i32;
+            Ok(CqlValue::Date(octofhir_cql_types::CqlDate {
+                year: new_year,
+                month: date.month,
+                day: date.day,
+            }))
+        }
+        CalendarUnit::Month => {
+            // Month operations need at least year and month
+            if let Some(month) = date.month {
+                let total_months = date.year as i64 * 12 + month as i64 - 1 - amount;
+                let new_year = (total_months / 12) as i32;
+                let new_month = (total_months.rem_euclid(12) + 1) as u8;
+
+                // Handle day overflow if day is present
+                let new_day = if let Some(day) = date.day {
+                    let max_day = days_in_month(new_year, new_month);
+                    Some(day.min(max_day))
+                } else {
+                    None
+                };
+
+                Ok(CqlValue::Date(octofhir_cql_types::CqlDate {
+                    year: new_year,
+                    month: Some(new_month),
+                    day: new_day,
+                }))
+            } else {
+                // If no month precision, convert months to whole years
+                // e.g., 24 months = 2 years, 25 months = 2 years (truncated)
+                let years_from_months = amount / 12;
+                let new_year = date.year - years_from_months as i32;
+                Ok(CqlValue::Date(octofhir_cql_types::CqlDate {
+                    year: new_year,
+                    month: None,
+                    day: None,
+                }))
+            }
+        }
+        CalendarUnit::Week | CalendarUnit::Day => {
+            // For full-precision dates, use chrono for accurate day/week arithmetic
+            if let Some(naive_date) = date.to_naive_date() {
+                let result_date = if calendar_unit == CalendarUnit::Week {
+                    naive_date
+                        .checked_sub_signed(chrono::Duration::weeks(amount))
+                        .ok_or_else(|| EvalError::overflow("Date - weeks"))?
+                } else {
+                    naive_date
+                        .checked_sub_signed(chrono::Duration::days(amount))
+                        .ok_or_else(|| EvalError::overflow("Date - days"))?
+                };
+
+                Ok(CqlValue::Date(octofhir_cql_types::CqlDate::new(
+                    result_date.year(),
+                    result_date.month() as u8,
+                    result_date.day() as u8,
+                )))
+            } else if date.month.is_some() {
+                // Year-month precision: convert days/weeks to months
+                let days = if calendar_unit == CalendarUnit::Week { amount * 7 } else { amount };
+                // Use 30 days per month for conversion
+                let months_from_days = days / 30;
+
+                let total_months = date.year as i64 * 12 + date.month.unwrap() as i64 - 1 - months_from_days;
+                let new_year = (total_months / 12) as i32;
+                let new_month = (total_months.rem_euclid(12) + 1) as u8;
+
+                Ok(CqlValue::Date(octofhir_cql_types::CqlDate {
+                    year: new_year,
+                    month: Some(new_month),
+                    day: None,
+                }))
+            } else {
+                // Year-only precision: convert days/weeks to years
+                let days = if calendar_unit == CalendarUnit::Week { amount * 7 } else { amount };
+                let years_from_days = days / 365;
+                let new_year = date.year - years_from_days as i32;
+
+                Ok(CqlValue::Date(octofhir_cql_types::CqlDate {
+                    year: new_year,
+                    month: None,
+                    day: None,
+                }))
+            }
+        }
+        CalendarUnit::Hour => {
+            // Hours on a date - convert to days (24 hours = 1 day)
+            if let Some(naive_date) = date.to_naive_date() {
+                let days = amount / 24;
+                let result_date = naive_date
+                    .checked_sub_signed(chrono::Duration::days(days))
+                    .ok_or_else(|| EvalError::overflow("Date - hours"))?;
+                Ok(CqlValue::Date(octofhir_cql_types::CqlDate::new(
+                    result_date.year(),
+                    result_date.month() as u8,
+                    result_date.day() as u8,
+                )))
+            } else {
+                // If no day precision, hour operations don't change the date
+                Ok(CqlValue::Date(date.clone()))
+            }
+        }
+        CalendarUnit::Minute | CalendarUnit::Second | CalendarUnit::Millisecond => {
+            // Sub-day units on a date don't change the date
+            Ok(CqlValue::Date(date.clone()))
+        }
+    }
+}
+
+/// Subtract a duration quantity from a datetime
+fn subtract_duration_from_datetime(
+    datetime: &octofhir_cql_types::CqlDateTime,
+    quantity: &CqlQuantity,
+) -> EvalResult<CqlValue> {
+    let unit_str = quantity.unit.as_deref().unwrap_or("day");
+    let calendar_unit = CalendarUnit::from_unit_string(unit_str).ok_or_else(|| {
+        EvalError::invalid_operand(
+            "DateTime - Quantity",
+            format!("Unknown duration unit: {}", unit_str),
+        )
+    })?;
+
+    // Convert quantity value to i64 (truncating decimals)
+    let amount = quantity.value.to_i64().unwrap_or(0);
+
+    // Build a chrono DateTime from CqlDateTime
+    let naive_date = chrono::NaiveDate::from_ymd_opt(
+        datetime.year,
+        datetime.month.unwrap_or(1) as u32,
+        datetime.day.unwrap_or(1) as u32,
+    )
+    .ok_or_else(|| EvalError::invalid_operand("DateTime - Quantity", "Invalid date components"))?;
+
+    let naive_time = chrono::NaiveTime::from_hms_milli_opt(
+        datetime.hour.unwrap_or(0) as u32,
+        datetime.minute.unwrap_or(0) as u32,
+        datetime.second.unwrap_or(0) as u32,
+        datetime.millisecond.unwrap_or(0) as u32,
+    )
+    .ok_or_else(|| EvalError::invalid_operand("DateTime - Quantity", "Invalid time components"))?;
+
+    let naive_datetime = chrono::NaiveDateTime::new(naive_date, naive_time);
+
+    let result_datetime = match calendar_unit {
+        CalendarUnit::Year => {
+            let new_year = naive_datetime.year() - amount as i32;
+            let new_date = chrono::NaiveDate::from_ymd_opt(
+                new_year,
+                naive_datetime.month(),
+                naive_datetime.day(),
+            )
+            .or_else(|| chrono::NaiveDate::from_ymd_opt(new_year, naive_datetime.month(), 28))
+            .ok_or_else(|| EvalError::overflow("DateTime - years"))?;
+            chrono::NaiveDateTime::new(new_date, naive_datetime.time())
+        }
+        CalendarUnit::Month => {
+            // For year-only precision, convert months to whole years
+            if datetime.month.is_none() {
+                let years_from_months = amount / 12;
+                let new_year = naive_datetime.year() - years_from_months as i32;
+                let new_date = chrono::NaiveDate::from_ymd_opt(new_year, 1, 1)
+                    .ok_or_else(|| EvalError::overflow("DateTime - months"))?;
+                chrono::NaiveDateTime::new(new_date, naive_datetime.time())
+            } else {
+                let total_months =
+                    naive_datetime.year() as i64 * 12 + naive_datetime.month() as i64 - 1 - amount;
+                let new_year = (total_months / 12) as i32;
+                let new_month = (total_months.rem_euclid(12) + 1) as u32;
+
+                let new_date = chrono::NaiveDate::from_ymd_opt(new_year, new_month, naive_datetime.day())
+                    .or_else(|| {
+                        let next_month = chrono::NaiveDate::from_ymd_opt(new_year, new_month + 1, 1)
+                            .unwrap_or_else(|| chrono::NaiveDate::from_ymd_opt(new_year + 1, 1, 1).unwrap());
+                        next_month.pred_opt()
+                    })
+                    .ok_or_else(|| EvalError::overflow("DateTime - months"))?;
+                chrono::NaiveDateTime::new(new_date, naive_datetime.time())
+            }
+        }
+        CalendarUnit::Week => naive_datetime
+            .checked_sub_signed(chrono::Duration::weeks(amount))
+            .ok_or_else(|| EvalError::overflow("DateTime - weeks"))?,
+        CalendarUnit::Day => naive_datetime
+            .checked_sub_signed(chrono::Duration::days(amount))
+            .ok_or_else(|| EvalError::overflow("DateTime - days"))?,
+        CalendarUnit::Hour => naive_datetime
+            .checked_sub_signed(chrono::Duration::hours(amount))
+            .ok_or_else(|| EvalError::overflow("DateTime - hours"))?,
+        CalendarUnit::Minute => naive_datetime
+            .checked_sub_signed(chrono::Duration::minutes(amount))
+            .ok_or_else(|| EvalError::overflow("DateTime - minutes"))?,
+        CalendarUnit::Second => naive_datetime
+            .checked_sub_signed(chrono::Duration::seconds(amount))
+            .ok_or_else(|| EvalError::overflow("DateTime - seconds"))?,
+        CalendarUnit::Millisecond => naive_datetime
+            .checked_sub_signed(chrono::Duration::milliseconds(amount))
+            .ok_or_else(|| EvalError::overflow("DateTime - milliseconds"))?,
+    };
+
+    // Preserve the original precision
+    Ok(CqlValue::DateTime(octofhir_cql_types::CqlDateTime {
+        year: result_datetime.year(),
+        month: datetime.month.map(|_| result_datetime.month() as u8),
+        day: datetime.day.map(|_| result_datetime.day() as u8),
+        hour: datetime.hour.map(|_| result_datetime.hour() as u8),
+        minute: datetime.minute.map(|_| result_datetime.minute() as u8),
+        second: datetime.second.map(|_| result_datetime.second() as u8),
+        millisecond: datetime.millisecond.map(|_| (result_datetime.nanosecond() / 1_000_000) as u16),
+        timezone_offset: datetime.timezone_offset,
+    }))
+}
+
+/// Add a duration quantity to a date
+fn add_duration_to_date(
+    date: &octofhir_cql_types::CqlDate,
+    quantity: &CqlQuantity,
+) -> EvalResult<CqlValue> {
+    // Negate the quantity and use subtract
+    let negated = CqlQuantity {
+        value: -quantity.value,
+        unit: quantity.unit.clone(),
+    };
+    subtract_duration_from_date(date, &negated)
+}
+
+/// Add a duration quantity to a datetime
+fn add_duration_to_datetime(
+    datetime: &octofhir_cql_types::CqlDateTime,
+    quantity: &CqlQuantity,
+) -> EvalResult<CqlValue> {
+    // Negate the quantity and use subtract
+    let negated = CqlQuantity {
+        value: -quantity.value,
+        unit: quantity.unit.clone(),
+    };
+    subtract_duration_from_datetime(datetime, &negated)
+}
+
+/// Subtract a duration quantity from a time
+fn subtract_duration_from_time(
+    time: &octofhir_cql_types::CqlTime,
+    quantity: &CqlQuantity,
+) -> EvalResult<CqlValue> {
+    let unit_str = quantity.unit.as_deref().unwrap_or("hour");
+    let calendar_unit = CalendarUnit::from_unit_string(unit_str).ok_or_else(|| {
+        EvalError::invalid_operand(
+            "Time - Quantity",
+            format!("Unknown duration unit: {}", unit_str),
+        )
+    })?;
+
+    // Convert quantity value to i64 (truncating decimals)
+    let amount = quantity.value.to_i64().unwrap_or(0);
+
+    // Convert time to total milliseconds
+    let hour = time.hour as i64;
+    let minute = time.minute.unwrap_or(0) as i64;
+    let second = time.second.unwrap_or(0) as i64;
+    let ms = time.millisecond.unwrap_or(0) as i64;
+
+    let total_ms = ((hour * 60 + minute) * 60 + second) * 1000 + ms;
+
+    let delta_ms = match calendar_unit {
+        CalendarUnit::Hour => amount * 60 * 60 * 1000,
+        CalendarUnit::Minute => amount * 60 * 1000,
+        CalendarUnit::Second => amount * 1000,
+        CalendarUnit::Millisecond => amount,
+        _ => {
+            // Days, weeks, months, years don't affect time-only values
+            return Ok(CqlValue::Time(time.clone()));
+        }
+    };
+
+    // Subtract the duration
+    let result_ms = total_ms - delta_ms;
+
+    // Wrap around to keep within 24 hours (0-86400000 ms)
+    let ms_per_day = 24 * 60 * 60 * 1000;
+    let wrapped_ms = result_ms.rem_euclid(ms_per_day);
+
+    // Convert back to time components
+    let result_hour = (wrapped_ms / (60 * 60 * 1000)) as u8;
+    let result_minute = ((wrapped_ms / (60 * 1000)) % 60) as u8;
+    let result_second = ((wrapped_ms / 1000) % 60) as u8;
+    let result_ms = (wrapped_ms % 1000) as u16;
+
+    Ok(CqlValue::Time(octofhir_cql_types::CqlTime {
+        hour: result_hour,
+        minute: if time.minute.is_some() { Some(result_minute) } else { None },
+        second: if time.second.is_some() { Some(result_second) } else { None },
+        millisecond: if time.millisecond.is_some() { Some(result_ms) } else { None },
+    }))
+}
+
+/// Add a duration quantity to a time
+fn add_duration_to_time(
+    time: &octofhir_cql_types::CqlTime,
+    quantity: &CqlQuantity,
+) -> EvalResult<CqlValue> {
+    // Negate the quantity and use subtract
+    let negated = CqlQuantity {
+        value: -quantity.value,
+        unit: quantity.unit.clone(),
+    };
+    subtract_duration_from_time(time, &negated)
 }
 
 #[cfg(test)]

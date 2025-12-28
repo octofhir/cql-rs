@@ -1,0 +1,1326 @@
+{
+  "source": "operator_arithmetic_test.go",
+  "functions": {
+    "TestAbs": [
+      {
+        "name": "Integer",
+        "cql": "Abs(-4)",
+        "expected": 4
+      },
+      {
+        "name": "Positive Integer",
+        "cql": "Abs(2)",
+        "expected": 2
+      },
+      {
+        "name": "Minimum Integer",
+        "cql": "Abs(-2147483648)",
+        "expected": null
+      },
+      {
+        "name": "Long",
+        "cql": "Abs(-4L)",
+        "expected": {
+          "type": "Long",
+          "value": 4
+        }
+      },
+      {
+        "name": "Positive Long",
+        "cql": "Abs(2L)",
+        "expected": {
+          "type": "Long",
+          "value": 2
+        }
+      },
+      {
+        "name": "Minimum Long",
+        "cql": "Abs(-9223372036854775808L)",
+        "expected": null
+      },
+      {
+        "name": "Decimal",
+        "cql": "Abs(-1.0)",
+        "expected": 1.0
+      },
+      {
+        "name": "Positive Decimal",
+        "cql": "Abs(1.0)",
+        "expected": 1.0
+      },
+      {
+        "name": "Minimum Decimal",
+        "cql": "Abs(-99999999999999999999.99999999)",
+        "expected": 1e+20
+      },
+      {
+        "name": "Quantity",
+        "cql": "Abs(-1.0 'day')",
+        "expected": {
+          "type": "Quantity",
+          "value": 1.0,
+          "unit": "DAYUNIT"
+        }
+      },
+      {
+        "name": "Positive Quantity",
+        "cql": "Abs(1.0 'day')",
+        "expected": {
+          "type": "Quantity",
+          "value": 1.0,
+          "unit": "DAYUNIT"
+        }
+      },
+      {
+        "name": "Quantity",
+        "cql": "Abs(-99999999999999999999.99999999 'day')",
+        "expected": {
+          "type": "Quantity",
+          "value": 1e+20,
+          "unit": "DAYUNIT"
+        }
+      },
+      {
+        "name": "Null",
+        "cql": "Abs(null as Integer)",
+        "expected": null
+      }
+    ],
+    "TestCeiling": [
+      {
+        "name": "Decimal",
+        "cql": "Ceiling(41.1)",
+        "expected": 42
+      },
+      {
+        "name": "Negative",
+        "cql": "Ceiling(-2.1)",
+        "expected": -2
+      },
+      {
+        "name": "Zero",
+        "cql": "Ceiling(0.0)",
+        "expected": 0
+      },
+      {
+        "name": "Integer",
+        "cql": "Ceiling(2)",
+        "expected": 2
+      },
+      {
+        "name": "Minimum Integer",
+        "cql": "Ceiling(-2147483648)",
+        "expected": -2147483648
+      },
+      {
+        "name": "Minimum Decimal out of range",
+        "cql": "Ceiling(-99999999999999999999.99999999)",
+        "expected": null
+      },
+      {
+        "name": "Maximum Decimal out of range",
+        "cql": "Ceiling(99999999999999999999.99999999)",
+        "expected": null
+      },
+      {
+        "name": "Just less than min int32",
+        "cql": "Ceiling(-2147483648.5)",
+        "expected": -2147483648
+      },
+      {
+        "name": "More than one less than min int32",
+        "cql": "Ceiling(-2147483649.5)",
+        "expected": null
+      },
+      {
+        "name": "Just more than max int32",
+        "cql": "Ceiling(2147483647.5)",
+        "expected": null
+      },
+      {
+        "name": "equal to min int32",
+        "cql": "Ceiling(-2147483648.0)",
+        "expected": -2147483648
+      },
+      {
+        "name": "equal to max int32",
+        "cql": "Ceiling(2147483647.0)",
+        "expected": 2147483647
+      },
+      {
+        "name": "Null",
+        "cql": "Ceiling(null as Decimal)",
+        "expected": null
+      }
+    ],
+    "TestExp": [
+      {
+        "name": "Integer",
+        "cql": "Exp(4)",
+        "expected": 54.598150033144236
+      },
+      {
+        "name": "Positive Integer",
+        "cql": "Exp(2)",
+        "expected": 7.38905609893065
+      },
+      {
+        "name": "Minimum Integer",
+        "cql": "Exp(-2147483648)",
+        "expected": 0.0
+      },
+      {
+        "name": "Long",
+        "cql": "Exp(-4L)",
+        "expected": 0.01831563888873418
+      },
+      {
+        "name": "Positive Long",
+        "cql": "Exp(2L)",
+        "expected": 7.38905609893065
+      },
+      {
+        "name": "Minimum Long",
+        "cql": "Exp(-9223372036854775808L)",
+        "expected": 0.0
+      },
+      {
+        "name": "Decimal zero",
+        "cql": "Exp(0.0)",
+        "expected": 1.0
+      },
+      {
+        "name": "Decimal negative one",
+        "cql": "Exp(-1.0)",
+        "expected": 0.36787944117144233
+      },
+      {
+        "name": "Positive Decimal one",
+        "cql": "Exp(1.0)",
+        "expected": 2.718281828459045
+      },
+      {
+        "name": "Minimum Decimal",
+        "cql": "Exp(-99999999999999999999.99999999)",
+        "expected": 0.0
+      },
+      {
+        "name": "Null",
+        "cql": "Exp(null as Decimal)",
+        "expected": null
+      }
+    ],
+    "TestFloor": [
+      {
+        "name": "Decimal",
+        "cql": "Floor(42.1)",
+        "expected": 42
+      },
+      {
+        "name": "Negative",
+        "cql": "Floor(-2.1)",
+        "expected": -3
+      },
+      {
+        "name": "Zero",
+        "cql": "Floor(0.0)",
+        "expected": 0
+      },
+      {
+        "name": "Integer",
+        "cql": "Floor(2)",
+        "expected": 2
+      },
+      {
+        "name": "Minimum Integer",
+        "cql": "Floor(-2147483648)",
+        "expected": -2147483648
+      },
+      {
+        "name": "Minimum Decimal out of range",
+        "cql": "Floor(-99999999999999999999.99999999)",
+        "expected": null
+      },
+      {
+        "name": "Maximum Decimal out of range",
+        "cql": "Floor(99999999999999999999.99999999)",
+        "expected": null
+      },
+      {
+        "name": "Just less than min int32",
+        "cql": "Floor(-2147483648.5)",
+        "expected": null
+      },
+      {
+        "name": "Just more than max int32",
+        "cql": "Floor(2147483647.5)",
+        "expected": 2147483647
+      },
+      {
+        "name": "More than one more than max int32",
+        "cql": "Floor(2147483648.5)",
+        "expected": null
+      },
+      {
+        "name": "equal to min int32",
+        "cql": "Floor(-2147483648.0)",
+        "expected": -2147483648
+      },
+      {
+        "name": "equal to max int32",
+        "cql": "Floor(2147483647.0)",
+        "expected": 2147483647
+      },
+      {
+        "name": "Null",
+        "cql": "Floor(null as Decimal)",
+        "expected": null
+      }
+    ],
+    "TestLn": [
+      {
+        "name": "Decimal",
+        "cql": "Ln(1.0)",
+        "expected": 0.0
+      },
+      {
+        "name": "Negative",
+        "cql": "Ln(-2.1)",
+        "expected": null
+      },
+      {
+        "name": "Zero",
+        "cql": "Ln(0.0)",
+        "expected": null
+      },
+      {
+        "name": "Ten",
+        "cql": "Ln(10.0)",
+        "expected": 2.302585092994046
+      },
+      {
+        "name": "Integer",
+        "cql": "Ln(1)",
+        "expected": 0.0
+      },
+      {
+        "name": "Minimum Integer",
+        "cql": "Ln(-2147483648)",
+        "expected": null
+      },
+      {
+        "name": "Maximum Integer",
+        "cql": "Ln(2147483647.0)",
+        "expected": 21.487562596892644
+      },
+      {
+        "name": "Null",
+        "cql": "Ln(null as Decimal)",
+        "expected": null
+      }
+    ],
+    "TestLog": [
+      {
+        "name": "Decimal",
+        "cql": "Log(1.0, 10.0)",
+        "expected": 0.0
+      },
+      {
+        "name": "Negative value",
+        "cql": "Log(-2.1, 10.0)",
+        "expected": null
+      },
+      {
+        "name": "Negative base",
+        "cql": "Log(2.1, -10.0)",
+        "expected": null
+      },
+      {
+        "name": "Zero value",
+        "cql": "Log(0.0, 10.0)",
+        "expected": null
+      },
+      {
+        "name": "Zero base",
+        "cql": "Log(2.1, 0.0)",
+        "expected": null
+      },
+      {
+        "name": "Logarithm of 0.125 with base 2",
+        "cql": "Log(0.125, 2.0)",
+        "expected": -3.0
+      },
+      {
+        "name": "Integer of 16 with base 2",
+        "cql": "Log(16, 2)",
+        "expected": 4.0
+      },
+      {
+        "name": "Minimum Integer value",
+        "cql": "Log(-2147483648, 10)",
+        "expected": null
+      },
+      {
+        "name": "Maximum Integer value",
+        "cql": "Round(Log(2147483647, 10), 3)",
+        "expected": 9.332
+      },
+      {
+        "name": "Null value",
+        "cql": "Log(null as Decimal, 10)",
+        "expected": null
+      },
+      {
+        "name": "Null base",
+        "cql": "Log(1.0, null as Decimal)",
+        "expected": null
+      }
+    ],
+    "TestPrecision": [
+      {
+        "name": "Decimal",
+        "cql": "Precision(@2014)",
+        "expected": 4
+      },
+      {
+        "name": "Date Year",
+        "cql": "Precision(@2014)",
+        "expected": 4
+      },
+      {
+        "name": "Date Month",
+        "cql": "Precision(@2014-02)",
+        "expected": 6
+      },
+      {
+        "name": "Date Day",
+        "cql": "Precision(@2014-01-01)",
+        "expected": 8
+      },
+      {
+        "name": "DateTime Hour",
+        "cql": "Precision(@2014-01-01T10)",
+        "expected": 10
+      },
+      {
+        "name": "DateTime Minute",
+        "cql": "Precision(@2014-01-01T10:10)",
+        "expected": 12
+      },
+      {
+        "name": "DateTime Second",
+        "cql": "Precision(@2014-01-01T10:10:30)",
+        "expected": 14
+      },
+      {
+        "name": "DateTime Millisecond",
+        "cql": "Precision(@2014-01-01T10:10:30.000Z)",
+        "expected": 17
+      },
+      {
+        "name": "Time Hour",
+        "cql": "Precision(@T10)",
+        "expected": 2
+      },
+      {
+        "name": "Time Millisecond",
+        "cql": "Precision(@T01:01:00.000)",
+        "expected": 9
+      },
+      {
+        "name": "Time Millisecond",
+        "cql": "Precision(@2014-01-02T01:01:00.000Z)",
+        "expected": 17
+      },
+      {
+        "name": "Null",
+        "cql": "Precision(null as Date)",
+        "expected": null
+      }
+    ],
+    "TestAdd": [
+      {
+        "name": "Integers",
+        "cql": "1 + 2",
+        "expected": 3
+      },
+      {
+        "name": "Longs",
+        "cql": "1L + 2",
+        "expected": {
+          "type": "Long",
+          "value": 3
+        }
+      },
+      {
+        "name": "Decimals",
+        "cql": "1.5 + 2",
+        "expected": 3.5
+      },
+      {
+        "name": "Quantity",
+        "cql": "11 'day' + 9 'day'",
+        "expected": {
+          "type": "Quantity",
+          "value": 20.0,
+          "unit": "DAYUNIT"
+        }
+      },
+      {
+        "name": "Quantity with different units",
+        "cql": "1 'm' + 1 'cm'",
+        "expected": {
+          "raw": "result.Quantity{Value: 1.01, Unit: model.Unit(\"m\")}"
+        }
+      },
+      {
+        "name": "Quantity via class instances",
+        "cql": "Quantity{value: 11, unit: 'day'} + 9 'day'",
+        "expected": {
+          "type": "Quantity",
+          "value": 20.0,
+          "unit": "DAYUNIT"
+        }
+      },
+      {
+        "name": "Date Quantity",
+        "cql": "@2014 + 1 'year'",
+        "expected": {
+          "type": "Date",
+          "args": "2015, time.January, 1, 0, 0, 0, 0, defaultEvalTimestamp.Location()",
+          "precision": "YEAR"
+        }
+      },
+      {
+        "name": "Date month precision add year",
+        "cql": "@2014-01 + 1 'year'",
+        "expected": {
+          "type": "Date",
+          "args": "2015, time.January, 1, 0, 0, 0, 0, defaultEvalTimestamp.Location()",
+          "precision": "MONTH"
+        }
+      },
+      {
+        "name": "Date year precision add month",
+        "cql": "@2014 + 12 'month'",
+        "expected": {
+          "type": "Date",
+          "args": "2015, time.January, 1, 0, 0, 0, 0, defaultEvalTimestamp.Location()",
+          "precision": "YEAR"
+        }
+      },
+      {
+        "name": "Date day precision add week to day precision",
+        "cql": "@2014-01-01 + 2 'week'",
+        "expected": {
+          "type": "Date",
+          "args": "2014, time.January, 15, 0, 0, 0, 0, defaultEvalTimestamp.Location()",
+          "precision": "DAY"
+        }
+      },
+      {
+        "name": "Date year precision add 1.6 year truncates to 1",
+        "cql": "@2014-01-01 + 1.6 'year'",
+        "expected": {
+          "type": "Date",
+          "args": "2015, time.January, 1, 0, 0, 0, 0, defaultEvalTimestamp.Location()",
+          "precision": "DAY"
+        }
+      },
+      {
+        "name": "Date year precision add 6 months truncates to 0",
+        "cql": "@2014-01-01 + 6 'month'",
+        "expected": {
+          "type": "Date",
+          "args": "2014, time.July, 1, 0, 0, 0, 0, defaultEvalTimestamp.Location()",
+          "precision": "DAY"
+        }
+      },
+      {
+        "name": "Date time millisecond precision add 1.6 second does not truncate",
+        "cql": "@2014-01-01T00:00:00.000Z + 1.6 'second'",
+        "expected": {
+          "raw": "result.DateTime{Date: time.Date(2014, time.January, 1, 0, 0, 1, 600_000_000, time.UTC), Precision: \"millisecond\"}"
+        }
+      },
+      {
+        "name": "Integer Null",
+        "cql": "1 + null",
+        "expected": null
+      },
+      {
+        "name": "Null Integer",
+        "cql": "null + 2",
+        "expected": null
+      },
+      {
+        "name": "Long Null",
+        "cql": "null + 2L",
+        "expected": null
+      },
+      {
+        "name": "Null Long",
+        "cql": "1L + null",
+        "expected": null
+      },
+      {
+        "name": "Decimal Null",
+        "cql": "1.5 + null",
+        "expected": null
+      },
+      {
+        "name": "Null Decimal",
+        "cql": "null + 1.5",
+        "expected": null
+      },
+      {
+        "name": "Quantity Null",
+        "cql": "11 'day' + null",
+        "expected": null
+      },
+      {
+        "name": "Date Null",
+        "cql": "@2014 + null",
+        "expected": null
+      },
+      {
+        "name": "DateTime Null",
+        "cql": "@2014-01-01T00:00:00.000Z + null",
+        "expected": null
+      }
+    ],
+    "TestAdd_EvalErrors": [
+      {
+        "name": "Date month precision add day returns conversion error",
+        "cql": "@2014-01 + 1 'day'",
+        "expected": null
+      },
+      {
+        "name": "Date month precision add week returns conversion error",
+        "cql": "@2014-01 + 1 'week'",
+        "expected": null
+      },
+      {
+        "name": "Date month precision add minutes returns conversion error",
+        "cql": "@2014-01 + 1 'minute'",
+        "expected": null
+      }
+    ],
+    "TestSubtract": [
+      {
+        "name": "Integers",
+        "cql": "1 - 2",
+        "expected": -1
+      },
+      {
+        "name": "Longs",
+        "cql": "1L - 2",
+        "expected": {
+          "type": "Long",
+          "value": -1
+        }
+      },
+      {
+        "name": "Decimals",
+        "cql": "1 - 2.0",
+        "expected": -1.0
+      },
+      {
+        "name": "Quantity",
+        "cql": "10.1 'day' - 1.1 'day'",
+        "expected": {
+          "type": "Quantity",
+          "value": 9.0,
+          "unit": "DAYUNIT"
+        }
+      },
+      {
+        "name": "Quantity with different units",
+        "cql": "1 'm' - 1 'cm'",
+        "expected": {
+          "raw": "result.Quantity{Value: 0.99, Unit: model.Unit(\"m\")}"
+        }
+      },
+      {
+        "name": "Date Quantity",
+        "cql": "@2014 - 1 'year'",
+        "expected": {
+          "type": "Date",
+          "args": "2013, time.January, 1, 0, 0, 0, 0, defaultEvalTimestamp.Location()",
+          "precision": "YEAR"
+        }
+      }
+    ],
+    "TestMultiply": [
+      {
+        "name": "Integers",
+        "cql": "2 * 4",
+        "expected": 8
+      },
+      {
+        "name": "Longs",
+        "cql": "2 * 3L",
+        "expected": {
+          "type": "Long",
+          "value": 6
+        }
+      },
+      {
+        "name": "Decimals",
+        "cql": "2L * 2.0",
+        "expected": 4.0
+      },
+      {
+        "name": "Quantity",
+        "cql": "2 'm' * 200 'cm'",
+        "expected": {
+          "raw": "result.Quantity{Value: 400, Unit: model.Unit(\"m.cm\")}"
+        }
+      }
+    ],
+    "TestRound": [
+      {
+        "name": "Simple",
+        "cql": "Round(42.101)",
+        "expected": 42.0
+      },
+      {
+        "name": "Negative decimal",
+        "cql": "Round(-101.42)",
+        "expected": -101.0
+      },
+      {
+        "name": "Integers",
+        "cql": "Round(2)",
+        "expected": 2.0
+      },
+      {
+        "name": "Negative, round up",
+        "cql": "Round(-0.5)",
+        "expected": 0.0
+      },
+      {
+        "name": "Negative, round down",
+        "cql": "Round(-0.6)",
+        "expected": -1.0
+      },
+      {
+        "name": "Zero",
+        "cql": "Round(0.0)",
+        "expected": 0.0
+      },
+      {
+        "name": "Null",
+        "cql": "Round(null as Decimal)",
+        "expected": null
+      },
+      {
+        "name": "Simple with precision",
+        "cql": "Round(42.101, 1)",
+        "expected": 42.1
+      },
+      {
+        "name": "Negative decimal with precision round up",
+        "cql": "Round(-101.45, 1)",
+        "expected": -101.4
+      },
+      {
+        "name": "Negative decimal with precision round down",
+        "cql": "Round(-101.46, 1)",
+        "expected": -101.5
+      },
+      {
+        "name": "Precision is 0",
+        "cql": "Round(2.123, 0)",
+        "expected": 2.0
+      },
+      {
+        "name": "Precision is null",
+        "cql": "Round(2.123, null)",
+        "expected": 2.0
+      }
+    ],
+    "TestRound_EvalErrors": [
+      {
+        "name": "Round with a negative precision",
+        "cql": "Round(2.123, -1)",
+        "expected": null
+      }
+    ],
+    "TestTruncate": [
+      {
+        "name": "Simple",
+        "cql": "Truncate(42.101)",
+        "expected": 42
+      },
+      {
+        "name": "Negative decimal",
+        "cql": "Truncate(-101.42)",
+        "expected": -101
+      },
+      {
+        "name": "Integers",
+        "cql": "Truncate(2)",
+        "expected": 2
+      },
+      {
+        "name": "Zero",
+        "cql": "Truncate(0.0)",
+        "expected": 0
+      },
+      {
+        "name": "Null",
+        "cql": "Truncate(null as Decimal)",
+        "expected": null
+      }
+    ],
+    "TestTruncatedDivide": [
+      {
+        "name": "Integers",
+        "cql": "2 div 4",
+        "expected": 0
+      },
+      {
+        "name": "Longs",
+        "cql": "2 div 4L",
+        "expected": {
+          "type": "Long",
+          "value": 0
+        }
+      },
+      {
+        "name": "Decimals",
+        "cql": "5 div 2.0",
+        "expected": 2.0
+      },
+      {
+        "name": "Quantity",
+        "cql": "10.1 day div 1.1 day",
+        "expected": {
+          "type": "Quantity",
+          "value": 9.0,
+          "unit": "ONEUNIT"
+        }
+      },
+      {
+        "name": "Quantities with different units",
+        "cql": "100 'm' div 2 'cm'",
+        "expected": {
+          "raw": "result.Quantity{Value: 50, Unit: model.Unit(\"m/cm\")}"
+        }
+      },
+      {
+        "name": "Divide by zero",
+        "cql": "10 div 0",
+        "expected": null
+      }
+    ],
+    "TestDivide": [
+      {
+        "name": "Integers",
+        "cql": "2 / 4",
+        "expected": 0.5
+      },
+      {
+        "name": "Longs",
+        "cql": "2 / 4L",
+        "expected": 0.5
+      },
+      {
+        "name": "Decimals",
+        "cql": "5 / 2.0",
+        "expected": 2.5
+      },
+      {
+        "name": "Quantity",
+        "cql": "5.0 day / 2.0 day",
+        "expected": {
+          "type": "Quantity",
+          "value": 2.5,
+          "unit": "ONEUNIT"
+        }
+      },
+      {
+        "name": "Divide by zero",
+        "cql": "10 / 0",
+        "expected": null
+      }
+    ],
+    "TestMod": [
+      {
+        "name": "Integers Zero",
+        "cql": "1000 mod 200",
+        "expected": 0
+      },
+      {
+        "name": "Integers",
+        "cql": "5 mod 2",
+        "expected": 1
+      },
+      {
+        "name": "Longs Zero",
+        "cql": "1000L mod 200L",
+        "expected": {
+          "type": "Long",
+          "value": 0
+        }
+      },
+      {
+        "name": "Longs",
+        "cql": "5L mod 2L",
+        "expected": {
+          "type": "Long",
+          "value": 1
+        }
+      },
+      {
+        "name": "Decimals",
+        "cql": "10.1111 mod 2.1111",
+        "expected": 1.6667000000000005
+      },
+      {
+        "name": "Another Decimals",
+        "cql": "2.1111 mod 10.1111",
+        "expected": 2.1111
+      },
+      {
+        "name": "Quantity",
+        "cql": "10 'm' mod 2 'm'",
+        "expected": {
+          "raw": "result.Quantity{Value: 0, Unit: \"m\"}"
+        }
+      }
+    ],
+    "TestPower": [
+      {
+        "name": "Integers Zero",
+        "cql": "0 ^ 0",
+        "expected": 1
+      },
+      {
+        "name": "Integers",
+        "cql": "5 ^ 2",
+        "expected": 25
+      },
+      {
+        "name": "Left arg negative",
+        "cql": "-5 ^ 2",
+        "expected": 25
+      },
+      {
+        "name": "Right arg negative",
+        "cql": "5 ^ -2",
+        "expected": {
+          "raw": "1.0/25.0"
+        }
+      },
+      {
+        "name": "Right arg negative decimal",
+        "cql": "25 ^ -0.5",
+        "expected": {
+          "raw": ".2"
+        }
+      },
+      {
+        "name": "Right arg negative long",
+        "cql": "5 ^ -2L",
+        "expected": {
+          "raw": "1.0/25.0"
+        }
+      },
+      {
+        "name": "Longs Zero",
+        "cql": "2L ^ 2L",
+        "expected": {
+          "type": "Long",
+          "value": 4
+        }
+      },
+      {
+        "name": "Longs",
+        "cql": "5L ^ 2L",
+        "expected": {
+          "type": "Long",
+          "value": 25
+        }
+      },
+      {
+        "name": "Decimals",
+        "cql": "2.5 ^ 2.0",
+        "expected": 6.25
+      },
+      {
+        "name": "Functional Syntax",
+        "cql": "Power(2, 2)",
+        "expected": 4
+      }
+    ],
+    "TestMaximum": [
+      {
+        "name": "maximum Integer",
+        "cql": "maximum Integer",
+        "expected": {
+          "raw": "int32(2147483647)"
+        }
+      },
+      {
+        "name": "maximum Long",
+        "cql": "maximum Long",
+        "expected": {
+          "type": "Long",
+          "value": 9223372036854775807
+        }
+      },
+      {
+        "name": "maximum Decimal",
+        "cql": "maximum Decimal",
+        "expected": 1e+20
+      },
+      {
+        "name": "maximum Date",
+        "cql": "maximum Date",
+        "expected": {
+          "type": "Date",
+          "args": "9999, 12, 31, 0, 0, 0, 0, defaultEvalTimestamp.Location()",
+          "precision": "DAY"
+        }
+      },
+      {
+        "name": "maximum DateTime",
+        "cql": "maximum DateTime",
+        "expected": {
+          "type": "DateTime",
+          "args": "9999, 12, 31, 23, 59, 59, 999, defaultEvalTimestamp.Location()",
+          "precision": "MILLISECOND"
+        }
+      },
+      {
+        "name": "maximum Time",
+        "cql": "maximum Time",
+        "expected": {
+          "type": "Time",
+          "args": "0, time.January, 1, 23, 59, 59, 999000000, defaultEvalTimestamp.Location()",
+          "precision": "MILLISECOND"
+        }
+      },
+      {
+        "name": "maximum Quantity",
+        "cql": "maximum Quantity",
+        "expected": {
+          "raw": "result.Quantity{Value: float64(99999999999999999999.99999999), Unit: \"1\"}"
+        }
+      }
+    ],
+    "TestMinimum": [
+      {
+        "name": "minimum Integer",
+        "cql": "minimum Integer",
+        "expected": {
+          "raw": "int32(-2147483648)"
+        }
+      },
+      {
+        "name": "minimum Long",
+        "cql": "minimum Long",
+        "expected": {
+          "type": "Long",
+          "value": -9223372036854775808
+        }
+      },
+      {
+        "name": "minimum Decimal",
+        "cql": "minimum Decimal",
+        "expected": -1e+20
+      },
+      {
+        "name": "minimum Date",
+        "cql": "minimum Date",
+        "expected": {
+          "type": "Date",
+          "args": "1, 1, 1, 0, 0, 0, 0, defaultEvalTimestamp.Location()",
+          "precision": "DAY"
+        }
+      },
+      {
+        "name": "minimum DateTime",
+        "cql": "minimum DateTime",
+        "expected": {
+          "type": "DateTime",
+          "args": "1, 1, 1, 0, 0, 0, 0, defaultEvalTimestamp.Location()",
+          "precision": "MILLISECOND"
+        }
+      },
+      {
+        "name": "minimum Time",
+        "cql": "minimum Time",
+        "expected": {
+          "type": "Time",
+          "args": "0, time.January, 1, 0, 0, 0, 0, defaultEvalTimestamp.Location()",
+          "precision": "MILLISECOND"
+        }
+      },
+      {
+        "name": "minimum Quantity",
+        "cql": "minimum Quantity",
+        "expected": {
+          "raw": "result.Quantity{Value: float64(-99999999999999999999.99999999), Unit: \"1\"}"
+        }
+      }
+    ],
+    "TestPredecessor": [
+      {
+        "name": "predecessor of 1",
+        "cql": "predecessor of 1",
+        "expected": 0
+      },
+      {
+        "name": "predecessor of 1000000000000L",
+        "cql": "predecessor of 1000000000000L",
+        "expected": {
+          "type": "Long",
+          "value": 999999999999
+        }
+      },
+      {
+        "name": "predecessor of 1.0",
+        "cql": "predecessor of 1.0",
+        "expected": 0.99999999
+      },
+      {
+        "name": "predecessor of @2024-01-02",
+        "cql": "predecessor of @2024-01-02",
+        "expected": {
+          "type": "Date",
+          "args": "2024, 1, 1, 0, 0, 0, 0, defaultEvalTimestamp.Location()",
+          "precision": "DAY"
+        }
+      },
+      {
+        "name": "predecessor of @2024-01-01T00:00:00.001Z",
+        "cql": "predecessor of @2024-01-01T00:00:00.001Z",
+        "expected": {
+          "type": "DateTime",
+          "args": "2024, 1, 1, 0, 0, 0, 0, time.UTC",
+          "precision": "MILLISECOND"
+        }
+      },
+      {
+        "name": "predecessor of @T12:00:00.000",
+        "cql": "predecessor of @T12:00:00.000",
+        "expected": {
+          "type": "Time",
+          "args": "0, time.January, 1, 11, 59, 59, 999000000, defaultEvalTimestamp.Location()",
+          "precision": "MILLISECOND"
+        }
+      },
+      {
+        "name": "predecessor of 1.0'cm'",
+        "cql": "predecessor of 1.0'cm'",
+        "expected": {
+          "raw": "result.Quantity{Value: float64(0.99999999), Unit: \"cm\"}"
+        }
+      },
+      {
+        "name": "predecessor of (4 as Choice<Integer, String>)",
+        "cql": "predecessor of (4 as Choice<Integer, String>)",
+        "expected": {
+          "raw": "int32(3)"
+        }
+      }
+    ],
+    "TestSuccessor": [
+      {
+        "name": "successor of 1",
+        "cql": "successor of 1",
+        "expected": 2
+      },
+      {
+        "name": "successor of 1000000000000L",
+        "cql": "successor of 1000000000000L",
+        "expected": {
+          "type": "Long",
+          "value": 1000000000001
+        }
+      },
+      {
+        "name": "successor of 1.0",
+        "cql": "successor of 1.0",
+        "expected": 1.00000001
+      },
+      {
+        "name": "successor of @2024-01-01",
+        "cql": "successor of @2024-01-01",
+        "expected": {
+          "type": "Date",
+          "args": "2024, 1, 2, 0, 0, 0, 0, defaultEvalTimestamp.Location()",
+          "precision": "DAY"
+        }
+      },
+      {
+        "name": "successor of @2024-01-01T00:00:00.999Z",
+        "cql": "successor of @2024-01-01T00:00:00.999Z",
+        "expected": {
+          "type": "DateTime",
+          "args": "2024, 1, 1, 0, 0, 1, 0, time.UTC",
+          "precision": "MILLISECOND"
+        }
+      },
+      {
+        "name": "successor of @T11:59:59.999",
+        "cql": "successor of @T11:59:59.999",
+        "expected": {
+          "type": "Time",
+          "args": "0, time.January, 1, 12, 0, 0, 0, defaultEvalTimestamp.Location()",
+          "precision": "MILLISECOND"
+        }
+      },
+      {
+        "name": "successor of 1.0'cm'",
+        "cql": "successor of 1.0'cm'",
+        "expected": {
+          "raw": "result.Quantity{Value: float64(1.00000001), Unit: \"cm\"}"
+        }
+      }
+    ],
+    "TestSuccessorPredecessor_EvalErrors": [
+      {
+        "name": "successor of max value",
+        "cql": "successor of maximum Integer",
+        "expected": null
+      },
+      {
+        "name": "successor of maximum Date",
+        "cql": "successor of maximum Date",
+        "expected": null
+      },
+      {
+        "name": "successor of max date for year precision",
+        "cql": "successor of @9999",
+        "expected": null
+      },
+      {
+        "name": "predecessor of minimum Date",
+        "cql": "predecessor of minimum Date",
+        "expected": null
+      },
+      {
+        "name": "predecessor of min date for year precision",
+        "cql": "predecessor of @0001",
+        "expected": null
+      },
+      {
+        "name": "successor of maximum DateTime",
+        "cql": "successor of maximum DateTime",
+        "expected": null
+      },
+      {
+        "name": "successor of max date for day precision",
+        "cql": "successor of @9999-12-31T",
+        "expected": null
+      },
+      {
+        "name": "predecessor of minimum DateTime",
+        "cql": "predecessor of minimum DateTime",
+        "expected": null
+      },
+      {
+        "name": "predecessor of min date for day precision",
+        "cql": "predecessor of @0001-01-01T",
+        "expected": null
+      },
+      {
+        "name": "successor of maximum Time",
+        "cql": "successor of maximum Time",
+        "expected": null
+      },
+      {
+        "name": "successor of max time for minute precision",
+        "cql": "successor of @T23:59",
+        "expected": null
+      },
+      {
+        "name": "predecessor of minimum Time",
+        "cql": "predecessor of minimum Time",
+        "expected": null
+      },
+      {
+        "name": "predecessor of min time for minute precision",
+        "cql": "predecessor of @T00:00",
+        "expected": null
+      }
+    ],
+    "TestNegate": [
+      {
+        "name": "Integer",
+        "cql": "-4",
+        "expected": -4
+      },
+      {
+        "name": "Minimum Integer",
+        "cql": "-2147483648",
+        "expected": {
+          "raw": "int32(math.MinInt32)"
+        }
+      },
+      {
+        "name": "Long",
+        "cql": "-4L",
+        "expected": {
+          "type": "Long",
+          "value": -4
+        }
+      },
+      {
+        "name": "Minimum Long",
+        "cql": "-9223372036854775808L",
+        "expected": {
+          "raw": "int64(math.MinInt64)"
+        }
+      },
+      {
+        "name": "Decimal",
+        "cql": "-1.0",
+        "expected": -1.0
+      },
+      {
+        "name": "Minimum Decimal",
+        "cql": "-99999999999999999999.99999999",
+        "expected": -1e+20
+      },
+      {
+        "name": "Quantity",
+        "cql": "-1.0 'day'",
+        "expected": {
+          "type": "Quantity",
+          "value": -1.0,
+          "unit": "DAYUNIT"
+        }
+      },
+      {
+        "name": "Null",
+        "cql": "-(null as Integer)",
+        "expected": null
+      },
+      {
+        "name": "negate minimum Integer",
+        "cql": "Negate(minimum Integer)",
+        "expected": null
+      },
+      {
+        "name": "negate minimum Long",
+        "cql": "Negate(minimum Long)",
+        "expected": null
+      },
+      {
+        "name": "negate minimum Decimal",
+        "cql": "Negate(minimum Decimal)",
+        "expected": null
+      },
+      {
+        "name": "negate minimum Quantity",
+        "cql": "Negate(minimum Quantity)",
+        "expected": null
+      }
+    ]
+  }
+}

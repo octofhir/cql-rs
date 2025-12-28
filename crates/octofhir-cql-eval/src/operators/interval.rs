@@ -10,7 +10,7 @@ use crate::context::EvaluationContext;
 use crate::engine::CqlEngine;
 use crate::error::{EvalError, EvalResult};
 use crate::operators::comparison::{cql_compare, cql_equal};
-use octofhir_cql_elm::{BinaryExpression, ExpandExpression, IntervalExpression, UnaryExpression};
+use octofhir_cql_elm::{AfterExpression, BeforeExpression, BinaryExpression, ExpandExpression, IntervalExpression, UnaryExpression};
 use octofhir_cql_types::{CqlInterval, CqlList, CqlType, CqlValue};
 use std::cmp::Ordering;
 
@@ -277,6 +277,7 @@ impl CqlEngine {
 
         match (&left, &right) {
             (CqlValue::Interval(a), CqlValue::Interval(b)) => interval_proper_includes(a, b),
+            (CqlValue::List(a), CqlValue::List(b)) => list_proper_includes(a, b),
             _ => Err(EvalError::unsupported_operator(
                 "ProperIncludes",
                 format!("{}, {}", left.get_type().name(), right.get_type().name()),
@@ -294,6 +295,7 @@ impl CqlEngine {
 
         match (&left, &right) {
             (CqlValue::Interval(a), CqlValue::Interval(b)) => interval_proper_includes(b, a),
+            (CqlValue::List(a), CqlValue::List(b)) => list_proper_includes(b, a),
             _ => Err(EvalError::unsupported_operator(
                 "ProperIncludedIn",
                 format!("{}, {}", left.get_type().name(), right.get_type().name()),
@@ -302,11 +304,20 @@ impl CqlEngine {
     }
 
     /// Evaluate Before - tests if first ends before second starts
-    pub fn eval_before(&self, expr: &BinaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
-        let (left, right) = self.eval_binary_operands(expr, ctx)?;
+    pub fn eval_before(&self, expr: &BeforeExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+        if expr.operand.len() != 2 {
+            return Err(EvalError::invalid_operand("Before", "requires exactly 2 operands"));
+        }
+        let left = self.evaluate(&expr.operand[0], ctx)?;
+        let right = self.evaluate(&expr.operand[1], ctx)?;
 
         if left.is_null() || right.is_null() {
             return Ok(CqlValue::Null);
+        }
+
+        // If precision is specified, use precision-aware comparison for temporal types
+        if let Some(precision) = &expr.precision {
+            return self.temporal_before_with_precision(&left, &right, precision);
         }
 
         match (&left, &right) {
@@ -354,11 +365,20 @@ impl CqlEngine {
     }
 
     /// Evaluate After - tests if first starts after second ends
-    pub fn eval_after(&self, expr: &BinaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
-        let (left, right) = self.eval_binary_operands(expr, ctx)?;
+    pub fn eval_after(&self, expr: &AfterExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+        if expr.operand.len() != 2 {
+            return Err(EvalError::invalid_operand("After", "requires exactly 2 operands"));
+        }
+        let left = self.evaluate(&expr.operand[0], ctx)?;
+        let right = self.evaluate(&expr.operand[1], ctx)?;
 
         if left.is_null() || right.is_null() {
             return Ok(CqlValue::Null);
+        }
+
+        // If precision is specified, use precision-aware comparison for temporal types
+        if let Some(precision) = &expr.precision {
+            return self.temporal_after_with_precision(&left, &right, precision);
         }
 
         match (&left, &right) {
@@ -532,7 +552,7 @@ impl CqlEngine {
                 // a starts b if a.low = b.low and a included in b
                 match (a.low(), b.low()) {
                     (Some(al), Some(bl)) => {
-                        if cql_equal(al, bl)? && a.low_closed == b.low_closed {
+                        if cql_equal(al, bl)?.unwrap_or(false) && a.low_closed == b.low_closed {
                             interval_includes(b, a)
                         } else {
                             Ok(CqlValue::Boolean(false))
@@ -561,7 +581,7 @@ impl CqlEngine {
                 // a ends b if a.high = b.high and a included in b
                 match (a.high(), b.high()) {
                     (Some(ah), Some(bh)) => {
-                        if cql_equal(ah, bh)? && a.high_closed == b.high_closed {
+                        if cql_equal(ah, bh)?.unwrap_or(false) && a.high_closed == b.high_closed {
                             interval_includes(b, a)
                         } else {
                             Ok(CqlValue::Boolean(false))
@@ -755,7 +775,7 @@ fn interval_proper_includes(container: &CqlInterval, contained: &CqlInterval) ->
         let equal = cql_equal(
             &CqlValue::Interval(container.clone()),
             &CqlValue::Interval(contained.clone()),
-        )?;
+        )?.unwrap_or(false);
         Ok(CqlValue::Boolean(!equal))
     } else {
         Ok(includes)
@@ -792,7 +812,7 @@ fn interval_meets_before(a: &CqlInterval, b: &CqlInterval) -> EvalResult<CqlValu
                     // Check if successor of ah equals bl
                     let succ = successor_value(ah)?;
                     if let Some(s) = succ {
-                        Ok(CqlValue::Boolean(cql_equal(&s, bl)?))
+                        Ok(CqlValue::Boolean(cql_equal(&s, bl)?.unwrap_or(false)))
                     } else {
                         Ok(CqlValue::Boolean(false))
                     }
@@ -875,7 +895,7 @@ fn successor_value(value: &CqlValue) -> EvalResult<Option<CqlValue>> {
 
 fn list_contains(list: &CqlList, element: &CqlValue) -> EvalResult<CqlValue> {
     for item in list.iter() {
-        if cql_equal(item, element)? {
+        if cql_equal(item, element)?.unwrap_or(false) {
             return Ok(CqlValue::Boolean(true));
         }
     }
@@ -890,6 +910,29 @@ fn list_includes(container: &CqlList, contained: &CqlList) -> EvalResult<CqlValu
         }
     }
     Ok(CqlValue::Boolean(true))
+}
+
+/// Proper includes: container includes contained AND container has at least one element not in contained
+fn list_proper_includes(container: &CqlList, contained: &CqlList) -> EvalResult<CqlValue> {
+    // First check that container includes contained
+    for item in contained.iter() {
+        let found = list_contains(container, item)?;
+        if !matches!(found, CqlValue::Boolean(true)) {
+            return Ok(CqlValue::Boolean(false));
+        }
+    }
+
+    // Check that container has at least one element not in contained (proper subset)
+    for item in container.iter() {
+        let in_contained = list_contains(contained, item)?;
+        if !matches!(in_contained, CqlValue::Boolean(true)) {
+            // Found an element in container that's not in contained
+            return Ok(CqlValue::Boolean(true));
+        }
+    }
+
+    // All elements of container are in contained, so container equals contained
+    Ok(CqlValue::Boolean(false))
 }
 
 fn list_union(a: &CqlList, b: &CqlList) -> EvalResult<CqlValue> {
@@ -1092,11 +1135,17 @@ fn interval_except(a: &CqlInterval, b: &CqlInterval) -> EvalResult<CqlValue> {
 }
 
 fn collapse_intervals(list: &CqlList) -> EvalResult<CqlValue> {
-    // Extract intervals
+    // Extract intervals, skipping nulls
     let mut intervals: Vec<CqlInterval> = Vec::new();
     for item in list.iter() {
         match item {
-            CqlValue::Interval(i) => intervals.push(i.clone()),
+            CqlValue::Interval(i) => {
+                // Skip null intervals (both bounds null)
+                if i.low.is_none() && i.high.is_none() {
+                    continue;
+                }
+                intervals.push(i.clone());
+            }
             CqlValue::Null => continue,
             _ => return Err(EvalError::type_mismatch("Interval", item.get_type().name())),
         }
@@ -1106,16 +1155,183 @@ fn collapse_intervals(list: &CqlList) -> EvalResult<CqlValue> {
         return Ok(CqlValue::List(CqlList::new(CqlType::interval(CqlType::Any))));
     }
 
-    // Sort by low bound
-    // Simplified - would need proper sorting
     let point_type = intervals[0].point_type.clone();
 
-    // For now, just return the list as-is (proper implementation would merge)
-    let result: Vec<CqlValue> = intervals.into_iter().map(CqlValue::Interval).collect();
+    // Sort intervals by low bound
+    intervals.sort_by(|a, b| {
+        match (&a.low, &b.low) {
+            (None, None) => Ordering::Equal,
+            (None, Some(_)) => Ordering::Less, // Null low = -infinity
+            (Some(_), None) => Ordering::Greater,
+            (Some(al), Some(bl)) => {
+                cql_compare(al, bl).unwrap_or(None).unwrap_or(Ordering::Equal)
+            }
+        }
+    });
+
+    // Merge overlapping/adjacent intervals
+    let mut result: Vec<CqlInterval> = Vec::new();
+    for interval in intervals {
+        if result.is_empty() {
+            result.push(interval);
+            continue;
+        }
+
+        let last = result.last_mut().unwrap();
+
+        // Check if intervals overlap or are adjacent (can be merged)
+        let can_merge = match (&last.high, &interval.low) {
+            (None, _) => true, // last.high = +infinity, always overlaps
+            (_, None) => true, // interval.low = -infinity, always overlaps
+            (Some(last_high), Some(int_low)) => {
+                // Merge if last_high >= int_low - 1 (for integers) or last_high >= int_low
+                match cql_compare(last_high, int_low).unwrap_or(None) {
+                    Some(Ordering::Less) => {
+                        // Check if they are adjacent (for integer types)
+                        is_adjacent(last_high, int_low, last.high_closed, interval.low_closed)
+                    }
+                    Some(Ordering::Equal) => last.high_closed || interval.low_closed,
+                    Some(Ordering::Greater) => true,
+                    None => false,
+                }
+            }
+        };
+
+        if can_merge {
+            // Extend the current interval's high bound if needed
+            match (&last.high, &interval.high) {
+                (None, _) => {} // already +infinity
+                (_, None) => {
+                    last.high = None;
+                    last.high_closed = interval.high_closed;
+                }
+                (Some(lh), Some(ih)) => {
+                    match cql_compare(lh, ih).unwrap_or(None) {
+                        Some(Ordering::Less) => {
+                            last.high = interval.high.clone();
+                            last.high_closed = interval.high_closed;
+                        }
+                        Some(Ordering::Equal) => {
+                            last.high_closed = last.high_closed || interval.high_closed;
+                        }
+                        _ => {} // keep current high
+                    }
+                }
+            }
+        } else {
+            result.push(interval);
+        }
+    }
+
+    let elements: Vec<CqlValue> = result.into_iter().map(CqlValue::Interval).collect();
     Ok(CqlValue::List(CqlList {
         element_type: CqlType::interval(point_type),
-        elements: result,
+        elements,
     }))
+}
+
+/// Check if two values are adjacent (for merge purposes)
+fn is_adjacent(high: &CqlValue, low: &CqlValue, high_closed: bool, low_closed: bool) -> bool {
+    // If one boundary is open and the other is closed, they're adjacent if values differ by 1
+    match (high, low) {
+        (CqlValue::Integer(h), CqlValue::Integer(l)) => {
+            if high_closed && low_closed {
+                *h + 1 >= *l
+            } else if high_closed {
+                *h + 1 >= *l
+            } else if low_closed {
+                *h >= *l - 1
+            } else {
+                *h + 1 >= *l - 1
+            }
+        }
+        (CqlValue::Decimal(h), CqlValue::Decimal(l)) => {
+            // For decimals, consider adjacent if difference is very small
+            let diff = (*l - *h).abs();
+            diff < rust_decimal::Decimal::new(1, 7) // 0.0000001
+        }
+        (CqlValue::DateTime(h), CqlValue::DateTime(l)) => {
+            // Check if DateTime values are adjacent (within 1 day or 1 millisecond)
+            // Use the lowest precision to determine adjacency
+            if let (Some(h_month), Some(l_month)) = (h.month, l.month) {
+                if let (Some(h_day), Some(l_day)) = (h.day, l.day) {
+                    // Full date precision - check if consecutive days
+                    if h.year == l.year && h_month == l_month {
+                        high_closed && low_closed && h_day + 1 >= l_day
+                    } else if h.year == l.year && h_month + 1 == l_month && l_day == 1 {
+                        // Adjacent months
+                        true
+                    } else {
+                        false
+                    }
+                } else {
+                    // Month precision - check if consecutive months
+                    if h.year == l.year {
+                        high_closed && low_closed && h_month + 1 >= l_month
+                    } else {
+                        false
+                    }
+                }
+            } else {
+                // Year precision only
+                high_closed && low_closed && h.year + 1 >= l.year
+            }
+        }
+        (CqlValue::Date(h), CqlValue::Date(l)) => {
+            if let (Some(h_month), Some(l_month)) = (h.month, l.month) {
+                if let (Some(h_day), Some(l_day)) = (h.day, l.day) {
+                    if h.year == l.year && h_month == l_month {
+                        high_closed && low_closed && h_day + 1 >= l_day
+                    } else if h.year == l.year && h_month + 1 == l_month && l_day == 1 {
+                        true
+                    } else {
+                        false
+                    }
+                } else {
+                    if h.year == l.year {
+                        high_closed && low_closed && h_month + 1 >= l_month
+                    } else {
+                        false
+                    }
+                }
+            } else {
+                high_closed && low_closed && h.year + 1 >= l.year
+            }
+        }
+        (CqlValue::Time(h), CqlValue::Time(l)) => {
+            // Check if times are adjacent (within 1 hour or 1 minute or 1 second or 1 ms)
+            if let (Some(h_min), Some(l_min)) = (h.minute, l.minute) {
+                if let (Some(h_sec), Some(l_sec)) = (h.second, l.second) {
+                    if let (Some(h_ms), Some(l_ms)) = (h.millisecond, l.millisecond) {
+                        // Full millisecond precision
+                        if h.hour == l.hour && h_min == l_min && h_sec == l_sec {
+                            high_closed && low_closed && h_ms + 1 >= l_ms
+                        } else {
+                            false
+                        }
+                    } else {
+                        // Second precision
+                        if h.hour == l.hour && h_min == l_min {
+                            high_closed && low_closed && h_sec + 1 >= l_sec
+                        } else {
+                            false
+                        }
+                    }
+                } else {
+                    // Minute precision
+                    if h.hour == l.hour {
+                        high_closed && low_closed && h_min + 1 >= l_min
+                    } else {
+                        false
+                    }
+                }
+            } else {
+                // Hour precision
+                high_closed && low_closed && h.hour + 1 >= l.hour
+            }
+        }
+        _ => false, // For other types, only overlapping intervals merge
+    }
 }
 
 fn expand_interval(interval: &CqlInterval, _per: Option<&CqlValue>) -> EvalResult<CqlValue> {

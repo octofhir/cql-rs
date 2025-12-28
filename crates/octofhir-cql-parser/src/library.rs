@@ -1,9 +1,8 @@
-//! Library structure parser
-
-use chumsky::prelude::*;
+//! Library structure parser using winnow
 
 use crate::combinators::{
-    identifier_parser, preprocess, qualified_identifier_parser, version_specifier_parser,
+    identifier_parser, keyword, lit, padded_keyword, preprocess, qualified_identifier_parser,
+    version_specifier_parser, ws, Input, PResult,
 };
 use crate::expression::expression_parser;
 use octofhir_cql_ast::{
@@ -11,47 +10,35 @@ use octofhir_cql_ast::{
     ParameterDefinition, Spanned, Statement, UsingDefinition,
 };
 use octofhir_cql_diagnostics::{CqlError, Result, Span, CQL0001};
+use winnow::combinator::{alt, eof, opt, repeat};
+use winnow::error::ContextError;
+use winnow::prelude::*;
+
+/// Helper to create dummy span (0, 0) - placeholder until proper span tracking is implemented
+fn dummy_span<T>(inner: T) -> Spanned<T> {
+    Spanned::new(inner, Span::new(0, 0))
+}
 
 /// Parse CQL source into a Library AST
 pub fn parse(source: &str) -> Result<Library> {
     let cleaned = preprocess(source);
-    let parser = library_parser();
+    let mut input: &str = &cleaned;
 
-    parser
-        .parse(&cleaned)
-        .into_result()
-        .map_err(|errs| {
-            let errors: Vec<CqlError> = errs
-                .into_iter()
-                .map(|e| CqlError::parse(CQL0001, format!("Parse error: {}", e), source))
-                .collect();
-            if errors.len() == 1 {
-                errors.into_iter().next().unwrap()
-            } else {
-                CqlError::Multiple(errors)
-            }
-        })
+    library_parser(&mut input)
+        .map_err(|e| CqlError::parse(CQL0001, format!("Parse error: {:?}", e), source))
 }
 
 /// Parse a single CQL expression
 pub fn parse_expression(source: &str) -> Result<Spanned<octofhir_cql_ast::Expression>> {
     let cleaned = preprocess(source);
-    let parser = expression_parser().padded().then_ignore(end());
+    let mut input: &str = &cleaned;
 
-    parser
-        .parse(&cleaned)
-        .into_result()
-        .map_err(|errs| {
-            let errors: Vec<CqlError> = errs
-                .into_iter()
-                .map(|e| CqlError::parse(CQL0001, format!("Parse error: {}", e), source))
-                .collect();
-            if errors.len() == 1 {
-                errors.into_iter().next().unwrap()
-            } else {
-                CqlError::Multiple(errors)
-            }
-        })
+    let expr = expression_parser(&mut input)
+        .map_err(|e| CqlError::parse(CQL0001, format!("Parse error: {:?}", e), source))?;
+    ws(&mut input).ok();
+    eof::<_, ContextError>.parse_next(&mut input)
+        .map_err(|e| CqlError::parse(CQL0001, format!("Parse error: {:?}", e), source))?;
+    Ok(expr)
 }
 
 /// Parse CQL source with specified mode
@@ -60,184 +47,146 @@ pub fn parse_expression(source: &str) -> Result<Spanned<octofhir_cql_ast::Expres
 /// In Analysis mode: collects all errors and returns partial AST if possible
 pub fn parse_with_mode(source: &str, mode: crate::ParseMode) -> crate::ParseResult {
     let cleaned = preprocess(source);
-    let parser = library_parser();
+    let mut input: &str = &cleaned;
 
     match mode {
         crate::ParseMode::Fast => {
             // Fast mode: same as parse(), but returns ParseResult
-            match parser.parse(&cleaned).into_result() {
+            match library_parser(&mut input) {
                 Ok(library) => crate::ParseResult::success(library),
-                Err(errs) => {
-                    let errors: Vec<CqlError> = errs
-                        .into_iter()
-                        .map(|e| CqlError::parse(CQL0001, format!("Parse error: {}", e), source))
-                        .collect();
-                    crate::ParseResult::error(errors)
+                Err(e) => {
+                    let error = CqlError::parse(CQL0001, format!("Parse error: {:?}", e), source);
+                    crate::ParseResult::error(vec![error])
                 }
             }
         }
         crate::ParseMode::Analysis => {
-            // Analysis mode: collect all errors
-            let result = parser.parse(&cleaned);
-
-            // Collect all errors from the parse result
-            let errors: Vec<CqlError> = result
-                .errors()
-                .map(|e| CqlError::parse(CQL0001, format!("Parse error: {}", e), source))
-                .collect();
-
-            // Try to get a partial or complete AST
-            match result.into_output() {
-                Some(library) => crate::ParseResult {
-                    library: Some(library),
-                    errors,
-                },
-                None => crate::ParseResult {
-                    library: None,
-                    errors,
-                },
+            // Analysis mode: try to collect errors and return partial AST
+            // For now, fall back to fast mode behavior
+            // TODO: Implement proper error recovery when winnow's unstable-recover is stable
+            match library_parser(&mut input) {
+                Ok(library) => crate::ParseResult::success(library),
+                Err(e) => {
+                    let error = CqlError::parse(CQL0001, format!("Parse error: {:?}", e), source);
+                    crate::ParseResult::error(vec![error])
+                }
             }
         }
     }
 }
 
 /// Library parser
-fn library_parser<'a>() -> impl Parser<'a, &'a str, Library, extra::Err<Rich<'a, char>>> {
-    let lib_def = library_definition().or_not();
-    let using_defs = using_definition().repeated().collect::<Vec<_>>();
-    let context_defs = context_definition().repeated().collect::<Vec<_>>();
-    let param_defs = parameter_definition().repeated().collect::<Vec<_>>();
-    let expr_defs = expression_definition().repeated().collect::<Vec<_>>();
+fn library_parser<'a>(input: &mut Input<'a>) -> PResult<Library> {
+    ws.parse_next(input)?;
+    let lib_def = opt(library_definition).parse_next(input)?;
+    let usings: Vec<Spanned<UsingDefinition>> = repeat(0.., using_definition).parse_next(input)?;
+    let contexts: Vec<Spanned<ContextDefinition>> = repeat(0.., context_definition).parse_next(input)?;
+    let params: Vec<Spanned<ParameterDefinition>> = repeat(0.., parameter_definition).parse_next(input)?;
+    let exprs: Vec<Spanned<ExpressionDefinition>> = repeat(0.., expression_definition).parse_next(input)?;
+    ws.parse_next(input)?;
+    eof.parse_next(input)?;
 
-    lib_def
-        .then(using_defs)
-        .then(context_defs)
-        .then(param_defs)
-        .then(expr_defs)
-        .padded()
-        .then_ignore(end())
-        .map(|((((lib, usings), contexts), params), exprs)| {
-            let mut library = Library::new();
-            library.definition = lib;
-            library.usings = usings;
-            library.contexts = contexts;
-            library.parameters = params;
-            library.statements = exprs
-                .into_iter()
-                .map(|e| Spanned::new(Statement::ExpressionDef(e.inner), e.span))
-                .collect();
-            library
-        })
+    let mut library = Library::new();
+    library.definition = lib_def;
+    library.usings = usings;
+    library.contexts = contexts;
+    library.parameters = params;
+    library.statements = exprs
+        .into_iter()
+        .map(|e| Spanned::new(Statement::ExpressionDef(e.inner), e.span))
+        .collect();
+
+    Ok(library)
 }
 
 /// Parse library definition
-fn library_definition<'a>(
-) -> impl Parser<'a, &'a str, LibraryDefinition, extra::Err<Rich<'a, char>>> + Clone {
-    text::keyword("library")
-        .padded()
-        .ignore_then(qualified_identifier_parser())
-        .then(
-            text::keyword("version")
-                .padded()
-                .ignore_then(version_specifier_parser())
-                .or_not(),
-        )
-        .map(|(name, version)| LibraryDefinition { name, version })
+fn library_definition<'a>(input: &mut Input<'a>) -> PResult<LibraryDefinition> {
+    padded_keyword("library").parse_next(input)?;
+    let name = qualified_identifier_parser(input)?;
+    ws.parse_next(input)?;
+    let version = opt(|input: &mut Input<'a>| {
+        padded_keyword("version").parse_next(input)?;
+        version_specifier_parser(input)
+    })
+    .parse_next(input)?;
+
+    Ok(LibraryDefinition { name, version })
 }
 
 /// Parse using definition
-fn using_definition<'a>(
-) -> impl Parser<'a, &'a str, Spanned<UsingDefinition>, extra::Err<Rich<'a, char>>> + Clone {
-    text::keyword("using")
-        .padded()
-        .ignore_then(identifier_parser())
-        .then(
-            text::keyword("version")
-                .padded()
-                .ignore_then(version_specifier_parser())
-                .or_not(),
-        )
-        .map_with(|(model, version), e| {
-            Spanned::new(
-                UsingDefinition { model, version },
-                Span::from(e.span().start..e.span().end),
-            )
-        })
+fn using_definition<'a>(input: &mut Input<'a>) -> PResult<Spanned<UsingDefinition>> {
+    padded_keyword("using").parse_next(input)?;
+    let model = identifier_parser(input)?;
+    ws.parse_next(input)?;
+    let version = opt(|input: &mut Input<'a>| {
+        padded_keyword("version").parse_next(input)?;
+        version_specifier_parser(input)
+    })
+    .parse_next(input)?;
+
+    Ok(dummy_span(UsingDefinition { model, version }))
 }
 
 /// Parse context definition
-fn context_definition<'a>(
-) -> impl Parser<'a, &'a str, Spanned<ContextDefinition>, extra::Err<Rich<'a, char>>> + Clone {
-    text::keyword("context")
-        .padded()
-        .ignore_then(identifier_parser())
-        .map_with(|ctx, e| {
-            Spanned::new(
-                ContextDefinition { context: ctx },
-                Span::from(e.span().start..e.span().end),
-            )
-        })
+fn context_definition<'a>(input: &mut Input<'a>) -> PResult<Spanned<ContextDefinition>> {
+    padded_keyword("context").parse_next(input)?;
+    let context = identifier_parser(input)?;
+
+    Ok(dummy_span(ContextDefinition { context }))
+}
+
+/// Parse access modifier
+fn access_modifier<'a>(input: &mut Input<'a>) -> PResult<AccessModifier> {
+    ws.parse_next(input)?;
+    alt((
+        keyword("public").value(AccessModifier::Public),
+        keyword("private").value(AccessModifier::Private),
+    ))
+    .parse_next(input)
 }
 
 /// Parse parameter definition
-fn parameter_definition<'a>(
-) -> impl Parser<'a, &'a str, Spanned<ParameterDefinition>, extra::Err<Rich<'a, char>>> + Clone {
-    let access = choice((
-        text::keyword("public").to(AccessModifier::Public),
-        text::keyword("private").to(AccessModifier::Private),
-    ))
-    .padded()
-    .or_not()
-    .map(|a| a.unwrap_or(AccessModifier::Public));
+fn parameter_definition<'a>(input: &mut Input<'a>) -> PResult<Spanned<ParameterDefinition>> {
+    let access = opt(access_modifier)
+        .map(|a: Option<AccessModifier>| a.unwrap_or(AccessModifier::Public))
+        .parse_next(input)?;
 
-    access
-        .then_ignore(text::keyword("parameter").padded())
-        .then(identifier_parser())
-        .then(
-            text::keyword("default")
-                .padded()
-                .ignore_then(expression_parser())
-                .or_not(),
-        )
-        .map_with(|((access, name), default), e| {
-            Spanned::new(
-                ParameterDefinition {
-                    access,
-                    name,
-                    type_specifier: None,
-                    default: default.map(Box::new),
-                },
-                Span::from(e.span().start..e.span().end),
-            )
-        })
+    padded_keyword("parameter").parse_next(input)?;
+    let name = identifier_parser(input)?;
+    ws.parse_next(input)?;
+
+    let default = opt(|input: &mut Input<'a>| {
+        padded_keyword("default").parse_next(input)?;
+        expression_parser(input)
+    })
+    .parse_next(input)?;
+
+    Ok(dummy_span(ParameterDefinition {
+        access,
+        name,
+        type_specifier: None,
+        default: default.map(Box::new),
+    }))
 }
 
 /// Parse expression definition
-fn expression_definition<'a>(
-) -> impl Parser<'a, &'a str, Spanned<ExpressionDefinition>, extra::Err<Rich<'a, char>>> + Clone {
-    let access = choice((
-        text::keyword("public").to(AccessModifier::Public),
-        text::keyword("private").to(AccessModifier::Private),
-    ))
-    .padded()
-    .or_not()
-    .map(|a| a.unwrap_or(AccessModifier::Public));
+fn expression_definition<'a>(input: &mut Input<'a>) -> PResult<Spanned<ExpressionDefinition>> {
+    let access = opt(access_modifier)
+        .map(|a: Option<AccessModifier>| a.unwrap_or(AccessModifier::Public))
+        .parse_next(input)?;
 
-    access
-        .then_ignore(text::keyword("define").padded())
-        .then(identifier_parser())
-        .then_ignore(just(':').padded())
-        .then(expression_parser())
-        .map_with(|((access, name), expr), e| {
-            Spanned::new(
-                ExpressionDefinition {
-                    access,
-                    name,
-                    expression: Box::new(expr),
-                },
-                Span::from(e.span().start..e.span().end),
-            )
-        })
+    padded_keyword("define").parse_next(input)?;
+    let name = identifier_parser(input)?;
+    ws.parse_next(input)?;
+    lit(":").parse_next(input)?;
+    ws.parse_next(input)?;
+    let expr = expression_parser(input)?;
+
+    Ok(dummy_span(ExpressionDefinition {
+        access,
+        name,
+        expression: Box::new(expr),
+    }))
 }
 
 #[cfg(test)]
@@ -293,7 +242,7 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_date_literal() {
+    fn test_parse_date_lit() {
         let source = "@2024-01-15";
         let result = parse_expression(source);
         assert!(result.is_ok(), "Parse failed: {:?}", result.err());
@@ -310,7 +259,7 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_datetime_literal() {
+    fn test_parse_datetime_lit() {
         let source = "@2024-01-15T10:30:00";
         let result = parse_expression(source);
         assert!(result.is_ok(), "Parse failed: {:?}", result.err());
@@ -328,7 +277,7 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_time_literal() {
+    fn test_parse_time_lit() {
         let source = "@T14:30:00";
         let result = parse_expression(source);
         assert!(result.is_ok(), "Parse failed: {:?}", result.err());
@@ -345,7 +294,7 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_quantity_literal() {
+    fn test_parse_quantity_lit() {
         let source = "5 'mg'";
         let result = parse_expression(source);
         assert!(result.is_ok(), "Parse failed: {:?}", result.err());

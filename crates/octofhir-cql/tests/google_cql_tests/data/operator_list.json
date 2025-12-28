@@ -1,0 +1,983 @@
+{
+  "source": "operator_list_test.go",
+  "functions": {
+    "TestExists": [
+      {
+        "name": "Non Empty List",
+        "cql": "exists({1})",
+        "expected": true
+      },
+      {
+        "name": "Empty List",
+        "cql": "exists({})",
+        "expected": false
+      },
+      {
+        "name": "List Of Nulls",
+        "cql": "exists({null})",
+        "expected": false
+      },
+      {
+        "name": "Null",
+        "cql": "exists(null)",
+        "expected": false
+      },
+      {
+        "name": "Non Function Syntax",
+        "cql": "exists {1}",
+        "expected": true
+      }
+    ],
+    "TestInList": [
+      {
+        "name": "In List",
+        "cql": "1 in {1, 2}",
+        "expected": true
+      },
+      {
+        "name": "null in list",
+        "cql": "null in {1, null}",
+        "expected": true
+      },
+      {
+        "name": "Operand not in list",
+        "cql": "3 in {1, 2}",
+        "expected": false
+      },
+      {
+        "name": "Functional syntax: In list",
+        "cql": "In(1, {1, 2})",
+        "expected": true
+      }
+    ],
+    "TestIncludesListList": [
+      {
+        "name": "Includes List",
+        "cql": "{1, 2, 3} includes {1, 2}",
+        "expected": true
+      },
+      {
+        "name": "{1, 2} includes {1, 2, 3}",
+        "cql": "{1, 2} includes {1, 2, 3}",
+        "expected": false
+      },
+      {
+        "name": "null as List<Integer> includes {1, 2}",
+        "cql": "null as List<Integer> includes {1, 2}",
+        "expected": null
+      },
+      {
+        "name": "{1, 2} includes null as List<Integer>",
+        "cql": "{1, 2} includes null as List<Integer>",
+        "expected": null
+      },
+      {
+        "name": "{@2019} includes {@2019}",
+        "cql": "{@2019} includes {@2019}",
+        "expected": true
+      },
+      {
+        "name": "Functional syntax: Includes list",
+        "cql": "Includes({1, 2}, {1, 2})",
+        "expected": true
+      }
+    ],
+    "TestIncludesListPoint": [
+      {
+        "name": "Includes List",
+        "cql": "{1, 2, 3} includes 2",
+        "expected": true
+      },
+      {
+        "name": "{1, 2} includes 3",
+        "cql": "{1, 2} includes 3",
+        "expected": false
+      },
+      {
+        "name": "null as List<Integer> includes 1",
+        "cql": "null as List<Integer> includes 1",
+        "expected": null
+      },
+      {
+        "name": "{1, 2} includes null as Integer",
+        "cql": "{1, 2} includes null as Integer",
+        "expected": null
+      },
+      {
+        "name": "{@2019} includes @2019",
+        "cql": "{@2019} includes @2019",
+        "expected": true
+      },
+      {
+        "name": "Functional syntax: Includes list",
+        "cql": "Includes({1, 2}, 2)",
+        "expected": true
+      }
+    ],
+    "TestDistinctList": [
+      {
+        "name": "Distinct list",
+        "cql": "distinct {1, 2, 1}",
+        "expected": {
+          "type": "List",
+          "raw": "Value: []result.Value{\n\t\t\t\t\tnewOrFatal(t, int32(1)),\n\t\t\t\t\tnewOrFatal(t, int32(2)),\n\t\t\t\t},\n\t\t\t\tStaticType: &types.List{ElementType: types.Integer},"
+        }
+      },
+      {
+        "name": "Distinct list with null",
+        "cql": "distinct {1, null}",
+        "expected": {
+          "type": "List",
+          "raw": "Value: []result.Value{\n\t\t\t\t\tnewOrFatal(t, int32(1)),\n\t\t\t\t\tnewOrFatal(t, nil),\n\t\t\t\t},\n\t\t\t\tStaticType: &types.List{ElementType: types.Integer},"
+        }
+      },
+      {
+        "name": "distinct list with no duplicates",
+        "cql": "distinct {1, 2, 3}",
+        "expected": {
+          "type": "List",
+          "raw": "Value: []result.Value{\n\t\t\t\t\tnewOrFatal(t, int32(1)),\n\t\t\t\t\tnewOrFatal(t, int32(2)),\n\t\t\t\t\tnewOrFatal(t, int32(3)),\n\t\t\t\t},\n\t\t\t\tStaticType: &types.List{ElementType: types.Integer},"
+        }
+      },
+      {
+        "name": "Functional syntax: In list",
+        "cql": "Distinct({1, 2})",
+        "expected": {
+          "type": "List",
+          "raw": "Value: []result.Value{\n\t\t\t\t\tnewOrFatal(t, int32(1)),\n\t\t\t\t\tnewOrFatal(t, int32(2)),\n\t\t\t\t},\n\t\t\t\tStaticType: &types.List{ElementType: types.Integer},"
+        }
+      }
+    ],
+    "TestFlattenList": [
+      {
+        "name": "Flatten list",
+        "cql": "flatten {{1, 2}, {3, 4}}",
+        "expected": {
+          "type": "List",
+          "raw": "Value: []result.Value{\n\t\t\t\t\tnewOrFatal(t, int32(1)),\n\t\t\t\t\tnewOrFatal(t, int32(2)),\n\t\t\t\t\tnewOrFatal(t, int32(3)),\n\t\t\t\t\tnewOrFatal(t, int32(4)),\n\t\t\t\t},\n\t\t\t\tStaticType: &types.List{ElementType: types.Integer},"
+        }
+      },
+      {
+        "name": "Flatten list with null",
+        "cql": "flatten {{1, null}, {3, 4}}",
+        "expected": {
+          "type": "List",
+          "raw": "Value: []result.Value{\n\t\t\t\t\tnewOrFatal(t, int32(1)),\n\t\t\t\t\tnewOrFatal(t, nil),\n\t\t\t\t\tnewOrFatal(t, int32(3)),\n\t\t\t\t\tnewOrFatal(t, int32(4)),\n\t\t\t\t},\n\t\t\t\tStaticType: &types.List{ElementType: types.Integer},"
+        }
+      },
+      {
+        "name": "flatten list where a list is empty",
+        "cql": "flatten {{1, 2}, {}}",
+        "expected": {
+          "type": "List",
+          "raw": "Value: []result.Value{\n\t\t\t\t\tnewOrFatal(t, int32(1)),\n\t\t\t\t\tnewOrFatal(t, int32(2)),\n\t\t\t\t},\n\t\t\t\tStaticType: &types.List{ElementType: types.Any},"
+        }
+      },
+      {
+        "name": "flatten list where a list is null",
+        "cql": "flatten {{1, 2}, null}",
+        "expected": {
+          "type": "List",
+          "raw": "Value: []result.Value{\n\t\t\t\t\tnewOrFatal(t, int32(1)),\n\t\t\t\t\tnewOrFatal(t, int32(2)),\n\t\t\t\t},\n\t\t\t\tStaticType: &types.List{ElementType: types.Integer},"
+        }
+      },
+      {
+        "name": "flatten where argument is null",
+        "cql": "flatten null as List<List<Any>>",
+        "expected": null
+      },
+      {
+        "name": "Functional syntax: In list",
+        "cql": "Flatten({{1, 2}})",
+        "expected": {
+          "type": "List",
+          "raw": "Value: []result.Value{\n\t\t\t\t\tnewOrFatal(t, int32(1)),\n\t\t\t\t\tnewOrFatal(t, int32(2)),\n\t\t\t\t},\n\t\t\t\tStaticType: &types.List{ElementType: types.Integer},"
+        }
+      }
+    ],
+    "TestFirst": [
+      {
+        "name": "First({1, 2}) = 1",
+        "cql": "First({1, 2})",
+        "expected": {
+          "raw": "int32(1)),\n\t\t\twantSourceExpression: &model.First{\n\t\t\t\tUnaryExpression: &model.UnaryExpression{\n\t\t\t\t\tExpression: model.ResultType(types.Integer),\n\t\t\t\t\tOperand: &model.List{\n\t\t\t\t\t\tExpression: model.ResultType(&types.List{ElementType: types.Integer}),\n\t\t\t\t\t\tList: []model.IExpression{\n\t\t\t\t\t\t\tmodel.NewLiteral(\"1\", types.Integer),\n\t\t\t\t\t\t\tmodel.NewLiteral(\"2\", types.Integer),\n\t\t\t\t\t\t},\n\t\t\t\t\t},\n\t\t\t\t},\n\t\t\t},\n\t\t\twantSourceValues: []result.Value{\n\t\t\t\tnewOrFatal(t, result.List{Value: []result.Value{newOrFatal(t, int32(1)), newOrFatal(t, int32(2))}, StaticType: &types.List{ElementType: types.Integer}}"
+        }
+      },
+      {
+        "name": "First({}) = null",
+        "cql": "First({})",
+        "expected": null
+      },
+      {
+        "name": "First(null) = null",
+        "cql": "First(null)",
+        "expected": null
+      }
+    ],
+    "TestLast": [
+      {
+        "name": "Last({1, 2}) = 2",
+        "cql": "Last({1, 2})",
+        "expected": {
+          "raw": "int32(2)),\n\t\t\twantSourceExpression: &model.Last{\n\t\t\t\tUnaryExpression: &model.UnaryExpression{\n\t\t\t\t\tExpression: model.ResultType(types.Integer),\n\t\t\t\t\tOperand: &model.List{\n\t\t\t\t\t\tExpression: model.ResultType(&types.List{ElementType: types.Integer}),\n\t\t\t\t\t\tList: []model.IExpression{\n\t\t\t\t\t\t\tmodel.NewLiteral(\"1\", types.Integer),\n\t\t\t\t\t\t\tmodel.NewLiteral(\"2\", types.Integer),\n\t\t\t\t\t\t},\n\t\t\t\t\t},\n\t\t\t\t},\n\t\t\t},\n\t\t\twantSourceValues: []result.Value{\n\t\t\t\tnewOrFatal(t, result.List{Value: []result.Value{newOrFatal(t, int32(1)), newOrFatal(t, int32(2))}, StaticType: &types.List{ElementType: types.Integer}}"
+        }
+      },
+      {
+        "name": "Last({}) = null",
+        "cql": "Last({})",
+        "expected": null
+      },
+      {
+        "name": "Last(null) = null",
+        "cql": "Last(null)",
+        "expected": null
+      }
+    ],
+    "TestLengthList": [
+      {
+        "name": "Length({1, 2}) = 2",
+        "cql": "Length({1, 2})",
+        "expected": {
+          "raw": "int32(2)),\n\t\t\twantSourceExpression: &model.Length{\n\t\t\t\tUnaryExpression: &model.UnaryExpression{\n\t\t\t\t\tExpression: model.ResultType(types.Integer),\n\t\t\t\t\tOperand: &model.List{\n\t\t\t\t\t\tExpression: model.ResultType(&types.List{ElementType: types.Integer}),\n\t\t\t\t\t\tList: []model.IExpression{\n\t\t\t\t\t\t\tmodel.NewLiteral(\"1\", types.Integer),\n\t\t\t\t\t\t\tmodel.NewLiteral(\"2\", types.Integer),\n\t\t\t\t\t\t},\n\t\t\t\t\t},\n\t\t\t\t},\n\t\t\t},\n\t\t\twantSourceValues: []result.Value{\n\t\t\t\tnewOrFatal(t, result.List{Value: []result.Value{newOrFatal(t, int32(1)), newOrFatal(t, int32(2))}, StaticType: &types.List{ElementType: types.Integer}}"
+        }
+      },
+      {
+        "name": "Length({1, 2, null}) = 3",
+        "cql": "Length({1, 2, null})",
+        "expected": {
+          "raw": "int32(3)"
+        }
+      },
+      {
+        "name": "Length({}) = 0",
+        "cql": "Length({})",
+        "expected": 0
+      },
+      {
+        "name": "Length(null as List<Integer>) = 0",
+        "cql": "Length(null as List<Integer>)",
+        "expected": 0
+      }
+    ],
+    "TestIndexOf": [
+      {
+        "name": "IndexOf({1, 2}, 2) = 1",
+        "cql": "IndexOf({1, 2}, 2)",
+        "expected": {
+          "raw": "int32(1)"
+        }
+      },
+      {
+        "name": "IndexOf(List<Integer>{}, 1) = -1",
+        "cql": "IndexOf(List<Integer>{}, 1)",
+        "expected": -1
+      },
+      {
+        "name": "IndexOf(null as List<Integer>, 1) = null",
+        "cql": "IndexOf(null as List<Integer>, 1)",
+        "expected": null
+      },
+      {
+        "name": "IndexOf({1, 2}, null as Integer) = null",
+        "cql": "IndexOf({1, 2}, null as Integer)",
+        "expected": null
+      },
+      {
+        "name": "IndexOf({1, 2}, 3) = -1",
+        "cql": "IndexOf({1, 2}, 3)",
+        "expected": -1
+      },
+      {
+        "name": "IndexOf({@2010, @2011, @2012}, @2011) = 1",
+        "cql": "IndexOf({@2010, @2011, @2012}, @2011)",
+        "expected": 1
+      }
+    ],
+    "TestExcept": [
+      {
+        "name": "Except({1, 2}, {2, 3}) = {1}",
+        "cql": "Except({1, 2}, {2, 3})",
+        "expected": {
+          "type": "List",
+          "raw": "Value: []result.Value{newOrFatal(t, int32(1))}, StaticType: &types.List{ElementType: types.Integer}}),\n\t\t\twantSourceExpression: &model.Except{\n\t\t\t\tBinaryExpression: &model.BinaryExpression{\n\t\t\t\t\tOperands: []model.IExpression{\n\t\t\t\t\t\tmodel.NewList([]string{\"1\", \"2\"}, types.Integer),\n\t\t\t\t\t\tmodel.NewList([]string{\"2\", \"3\"}, types.Integer),\n\t\t\t\t\t},\n\t\t\t\t\tExpression: model.ResultType(&types.List{ElementType: types.Integer"
+        }
+      },
+      {
+        "name": "Except({1, 1}, {1, 1}) = {}",
+        "cql": "Except({1, 1}, {1, 1})",
+        "expected": {
+          "type": "List",
+          "raw": "Value: []result.Value{}, StaticType: &types.List{ElementType: types.Integer}"
+        }
+      },
+      {
+        "name": "Except({1}, {2, 3}) = {1}",
+        "cql": "Except({1}, {2, 3})",
+        "expected": {
+          "type": "List",
+          "raw": "Value: []result.Value{newOrFatal(t, int32(1))}, StaticType: &types.List{ElementType: types.Integer}"
+        }
+      },
+      {
+        "name": "Except({1, null}, {2, 3, null}) = {1}",
+        "cql": "Except({1, null}, {2, 3, null})",
+        "expected": {
+          "type": "List",
+          "raw": "Value: []result.Value{newOrFatal(t, int32(1))}, StaticType: &types.List{ElementType: types.Integer}"
+        }
+      },
+      {
+        "name": "Except(List<Integer>{}, List<Integer>{}) = {}",
+        "cql": "Except(List<Integer>{}, List<Integer>{})",
+        "expected": {
+          "type": "List",
+          "raw": "Value: []result.Value{}, StaticType: &types.List{ElementType: types.Integer}"
+        }
+      },
+      {
+        "name": "Except(null as List<Integer>, List<Integer>{}) = null",
+        "cql": "Except(null as List<Integer>, List<Integer>{})",
+        "expected": null
+      },
+      {
+        "name": "Except(List<Integer>{}, null as List<Integer>) = {}",
+        "cql": "Except(List<Integer>{}, null as List<Integer>)",
+        "expected": {
+          "type": "List",
+          "raw": "Value: []result.Value{}, StaticType: &types.List{ElementType: types.Integer}"
+        }
+      },
+      {
+        "name": "Except({1, 1}, null as List<Integer>) = {1}",
+        "cql": "Except({1, 1}, null as List<Integer>)",
+        "expected": {
+          "type": "List",
+          "raw": "Value: []result.Value{newOrFatal(t, int32(1))}, StaticType: &types.List{ElementType: types.Integer}"
+        }
+      },
+      {
+        "name": "Except({@2010, @2011, @2012}, {@2011, @2012}) = {@2010}",
+        "cql": "Except({@2010, @2011, @2012}, {@2011, @2012})",
+        "expected": {
+          "type": "List",
+          "raw": "Value: []result.Value{\n\t\t\t\t\tnewOrFatal(t, result.Date{Date: time.Date(2010, time.January, 1, 0, 0, 0, 0, defaultEvalTimestamp.Location()), Precision: model.YEAR}),\n\t\t\t\t},\n\t\t\t\tStaticType: &types.List{ElementType: types.Date},"
+        }
+      }
+    ],
+    "TestIntersect": [
+      {
+        "name": "Intersect({1, 2}, {2, 3}) = {2}",
+        "cql": "Intersect({1, 2}, {2, 3})",
+        "expected": {
+          "type": "List",
+          "raw": "Value: []result.Value{newOrFatal(t, int32(2))}, StaticType: &types.List{ElementType: types.Integer}}),\n\t\t\twantSourceExpression: &model.Intersect{\n\t\t\t\tBinaryExpression: &model.BinaryExpression{\n\t\t\t\t\tOperands: []model.IExpression{\n\t\t\t\t\t\tmodel.NewList([]string{\"1\", \"2\"}, types.Integer),\n\t\t\t\t\t\tmodel.NewList([]string{\"2\", \"3\"}, types.Integer),\n\t\t\t\t\t},\n\t\t\t\t\tExpression: model.ResultType(&types.List{ElementType: types.Integer"
+        }
+      },
+      {
+        "name": "Intersect({1, 1}, {1, 1}) = {}",
+        "cql": "Intersect({1, 1}, {1, 1})",
+        "expected": {
+          "type": "List",
+          "raw": "Value: []result.Value{newOrFatal(t, int32(1))}, StaticType: &types.List{ElementType: types.Integer}"
+        }
+      },
+      {
+        "name": "Intersect({1}, {2, 3}) = {}",
+        "cql": "Intersect({1}, {2, 3})",
+        "expected": {
+          "type": "List",
+          "raw": "Value: []result.Value{}, StaticType: &types.List{ElementType: types.Integer}"
+        }
+      },
+      {
+        "name": "Intersect({1, null}, {2, 3, null}) = {}",
+        "cql": "Intersect({1, null}, {2, 3, null})",
+        "expected": {
+          "type": "List",
+          "raw": "Value: []result.Value{newOrFatal(t, nil)}, StaticType: &types.List{ElementType: types.Integer}"
+        }
+      },
+      {
+        "name": "Intersect(List<Integer>{}, List<Integer>{}) = {}",
+        "cql": "Intersect(List<Integer>{}, List<Integer>{})",
+        "expected": {
+          "type": "List",
+          "raw": "Value: []result.Value{}, StaticType: &types.List{ElementType: types.Integer}"
+        }
+      },
+      {
+        "name": "Intersect(null as List<Integer>, List<Integer>{}) = null",
+        "cql": "Intersect(null as List<Integer>, List<Integer>{})",
+        "expected": null
+      },
+      {
+        "name": "Intersect(List<Integer>{}, null as List<Integer>) = null",
+        "cql": "Intersect(List<Integer>{}, null as List<Integer>)",
+        "expected": null
+      },
+      {
+        "name": "Intersect({@2010, @2011, @2012}, {@2011, @2012}) = {@2011, @2012}",
+        "cql": "Intersect({@2010, @2011, @2012}, {@2011, @2012})",
+        "expected": {
+          "type": "List",
+          "raw": "Value: []result.Value{\n\t\t\t\t\tnewOrFatal(t, result.Date{Date: time.Date(2011, time.January, 1, 0, 0, 0, 0, defaultEvalTimestamp.Location()), Precision: model.YEAR}),\n\t\t\t\t\tnewOrFatal(t, result.Date{Date: time.Date(2012, time.January, 1, 0, 0, 0, 0, defaultEvalTimestamp.Location()), Precision: model.YEAR}),\n\t\t\t\t},\n\t\t\t\tStaticType: &types.List{ElementType: types.Date},"
+        }
+      }
+    ],
+    "TestIncludedInListList": [
+      {
+        "name": "Included In List",
+        "cql": "{1, 2, 3} included in {1, 2}",
+        "expected": false
+      },
+      {
+        "name": "{1, 2} included in {1, 2, 3}",
+        "cql": "{1, 2} included in {1, 2, 3}",
+        "expected": true
+      },
+      {
+        "name": "{1, 2} included in {1, 2}",
+        "cql": "{1, 2} included in {1, 2}",
+        "expected": true
+      },
+      {
+        "name": "null as List<Integer> included in {1, 2}",
+        "cql": "null as List<Integer> included in {1, 2}",
+        "expected": null
+      },
+      {
+        "name": "{1, 2} included in null as List<Integer>",
+        "cql": "{1, 2} included in null as List<Integer>",
+        "expected": null
+      },
+      {
+        "name": "{@2019, @2020} included in {@2019}",
+        "cql": "{@2019, @2020} included in {@2019}",
+        "expected": false
+      },
+      {
+        "name": "Functional syntax: Included in list",
+        "cql": "IncludedIn({1, 2, 3}, {1, 2})",
+        "expected": false
+      }
+    ],
+    "TestIncludedInPointList": [
+      {
+        "name": "Included In Point",
+        "cql": "2 included in {1, 2, 3}",
+        "expected": true
+      },
+      {
+        "name": "3 included in {1, 2}",
+        "cql": "3 included in {1, 2}",
+        "expected": false
+      },
+      {
+        "name": "1 included in {1}",
+        "cql": "1 included in {1}",
+        "expected": true
+      },
+      {
+        "name": "null as Integer included in {1, 2}",
+        "cql": "null as Integer included in {1, 2}",
+        "expected": null
+      },
+      {
+        "name": "1 included in null as List<Integer>",
+        "cql": "1 included in null as List<Integer>",
+        "expected": false
+      },
+      {
+        "name": "@2019 included in {@2019, @2020}",
+        "cql": "@2019 included in {@2019, @2020}",
+        "expected": true
+      },
+      {
+        "name": "Functional syntax: Included in list",
+        "cql": "IncludedIn(1, {1, 2})",
+        "expected": true
+      }
+    ],
+    "TestProperlyIncludesListList": [
+      {
+        "name": "Properly Includes List",
+        "cql": "{1, 2, 3} properly includes {1, 2}",
+        "expected": true
+      },
+      {
+        "name": "{1, 2} properly includes {1, 2, 3}",
+        "cql": "{1, 2} properly includes {1, 2, 3}",
+        "expected": false
+      },
+      {
+        "name": "{1, 2} properly includes {1, 2}",
+        "cql": "{1, 2} properly includes {1, 2}",
+        "expected": false
+      },
+      {
+        "name": "null as List<Integer> properly includes {1, 2}",
+        "cql": "null as List<Integer> properly includes {1, 2}",
+        "expected": null
+      },
+      {
+        "name": "{1, 2} properly includes null as List<Integer>",
+        "cql": "{1, 2} properly includes null as List<Integer>",
+        "expected": null
+      },
+      {
+        "name": "{@2019, @2020} properly includes {@2019}",
+        "cql": "{@2019, @2020} properly includes {@2019}",
+        "expected": true
+      },
+      {
+        "name": "Functional syntax: Properly Includes list",
+        "cql": "ProperlyIncludes({1, 2, 3}, {1, 2})",
+        "expected": true
+      }
+    ],
+    "TestProperlyIncludesPointList": [
+      {
+        "name": "Properly Includes Point",
+        "cql": "{1, 2, 3} properly includes 2",
+        "expected": true
+      },
+      {
+        "name": "{1, 2} properly includes 3",
+        "cql": "{1, 2} properly includes 3",
+        "expected": false
+      },
+      {
+        "name": "{1} properly includes 1",
+        "cql": "{1} properly includes 1",
+        "expected": false
+      },
+      {
+        "name": "{1, 2} properly includes null as Integer",
+        "cql": "{1, 2} properly includes null as Integer",
+        "expected": false
+      },
+      {
+        "name": "null as List<Integer> properly includes 1",
+        "cql": "null as List<Integer> properly includes 1",
+        "expected": null
+      },
+      {
+        "name": "{@2019, @2020} properly includes @2019",
+        "cql": "{@2019, @2020} properly includes @2019",
+        "expected": true
+      },
+      {
+        "name": "Functional syntax: Properly Includes list",
+        "cql": "ProperlyIncludes({1, 2}, 1)",
+        "expected": true
+      }
+    ],
+    "TestProperlyIncludedInListList": [
+      {
+        "name": "Properly Included In List",
+        "cql": "{1, 2} properly included in {1, 2, 3}",
+        "expected": true
+      },
+      {
+        "name": "{1, 2, 3} properly included in {1, 2}",
+        "cql": "{1, 2, 3} properly included in {1, 2}",
+        "expected": false
+      },
+      {
+        "name": "{1, 2} properly included in {1, 2}",
+        "cql": "{1, 2} properly included in {1, 2}",
+        "expected": false
+      },
+      {
+        "name": "null as List<Integer> properly included in {1, 2}",
+        "cql": "null as List<Integer> properly included in {1, 2}",
+        "expected": null
+      },
+      {
+        "name": "{1, 2} properly included in null as List<Integer>",
+        "cql": "{1, 2} properly included in null as List<Integer>",
+        "expected": null
+      },
+      {
+        "name": "{@2019} properly included in {@2019, @2020}",
+        "cql": "{@2019} properly included in {@2019, @2020}",
+        "expected": true
+      },
+      {
+        "name": "Functional syntax: Properly Includes list",
+        "cql": "ProperlyIncludedIn({1, 2}, {1, 2, 3})",
+        "expected": true
+      }
+    ],
+    "TestProperlyIncludedInPointList": [
+      {
+        "name": "Properly Included In Point",
+        "cql": "2 properly included in {1, 2, 3}",
+        "expected": true
+      },
+      {
+        "name": "3 properly included in {1, 2}",
+        "cql": "3 properly included in {1, 2}",
+        "expected": false
+      },
+      {
+        "name": "1 properly included in {1}",
+        "cql": "1 properly included in {1}",
+        "expected": false
+      },
+      {
+        "name": "1 properly included in null as List<Integer>",
+        "cql": "1 properly included in null as List<Integer>",
+        "expected": null
+      },
+      {
+        "name": "null as Integer properly included in {1}",
+        "cql": "null as Integer properly included in {1}",
+        "expected": false
+      },
+      {
+        "name": "@2019 properly included in {@2019, @2020}",
+        "cql": "@2019 properly included in {@2019, @2020}",
+        "expected": true
+      },
+      {
+        "name": "Functional syntax: Properly Includes In list",
+        "cql": "ProperlyIncludedIn(1, {1, 2})",
+        "expected": true
+      }
+    ],
+    "TestSingletonFrom": [
+      {
+        "name": "singleton from {1} = 1",
+        "cql": "singleton from {1}",
+        "expected": 1
+      },
+      {
+        "name": "Functional syntax: SingletonFrom({1}) = 1",
+        "cql": "SingletonFrom({1})",
+        "expected": 1
+      },
+      {
+        "name": "Empty list input returns null",
+        "cql": "singleton from {}",
+        "expected": null
+      },
+      {
+        "name": "Functional syntax with empty list",
+        "cql": "SingletonFrom({})",
+        "expected": null
+      },
+      {
+        "name": "Null input returns null",
+        "cql": "singleton from null",
+        "expected": null
+      },
+      {
+        "name": "Functional syntax with null",
+        "cql": "SingletonFrom(null)",
+        "expected": null
+      }
+    ],
+    "TestListOperatorSingletonFrom_Error": [
+      {
+        "name": "Length Greater Than 1",
+        "cql": "singleton from {1, 2}",
+        "expected": null
+      },
+      {
+        "name": "Length Greater Than 1 with functional syntax",
+        "cql": "SingletonFrom({1, 2})",
+        "expected": null
+      }
+    ],
+    "TestSkip": [
+      {
+        "name": "Skip({1, 2}, 1) = {2}",
+        "cql": "Skip({1, 2}, 1)",
+        "expected": {
+          "type": "List",
+          "raw": "Value: []result.Value{newOrFatal(t, int32(2))}, StaticType: &types.List{ElementType: types.Integer}}),\n\t\t\twantSourceExpression: &model.Skip{\n\t\t\t\tBinaryExpression: &model.BinaryExpression{\n\t\t\t\t\tOperands: []model.IExpression{\n\t\t\t\t\t\tmodel.NewList([]string{\"1\", \"2\"}, types.Integer),\n\t\t\t\t\t\tmodel.NewLiteral(\"1\", types.Integer),\n\t\t\t\t\t},\n\t\t\t\t\tExpression: model.ResultType(&types.List{ElementType: types.Integer"
+        }
+      },
+      {
+        "name": "Skip({1, 2, 3}, 3) = {}",
+        "cql": "Skip({1, 2, 3}, 3)",
+        "expected": {
+          "type": "List",
+          "raw": "Value: []result.Value{}, StaticType: &types.List{ElementType: types.Integer}"
+        }
+      },
+      {
+        "name": "Skip({1, 2, 3}, 4) = {}",
+        "cql": "Skip({1, 2, 3}, 4)",
+        "expected": {
+          "type": "List",
+          "raw": "Value: []result.Value{}, StaticType: &types.List{ElementType: types.Integer}"
+        }
+      },
+      {
+        "name": "Skip({1, 2, 3}, -1) = {}",
+        "cql": "Skip({1, 2, 3}, -1)",
+        "expected": {
+          "type": "List",
+          "raw": "Value: []result.Value{}, StaticType: &types.List{ElementType: types.Integer}"
+        }
+      },
+      {
+        "name": "Skip({1, 2, null}, 1) = {2, null}",
+        "cql": "Skip({1, 2, null}, 1)",
+        "expected": {
+          "type": "List",
+          "raw": "Value: []result.Value{newOrFatal(t, int32(2)), newOrFatal(t, nil)}, StaticType: &types.List{ElementType: types.Integer}"
+        }
+      },
+      {
+        "name": "Skip(List<Integer>{}, 1) = {}",
+        "cql": "Skip(List<Integer>{}, 1)",
+        "expected": {
+          "type": "List",
+          "raw": "Value: []result.Value{}, StaticType: &types.List{ElementType: types.Integer}"
+        }
+      },
+      {
+        "name": "Skip(null as List<Integer>, 1) = null",
+        "cql": "Skip(null as List<Integer>, 1)",
+        "expected": null
+      },
+      {
+        "name": "Skip({@2010, @2011, @2012}, 2) = {@2010, @2011}",
+        "cql": "Skip({@2010, @2011, @2012}, 2)",
+        "expected": {
+          "type": "List",
+          "raw": "Value: []result.Value{newOrFatal(t, result.Date{Date: time.Date(2012, time.January, 1, 0, 0, 0, 0, defaultEvalTimestamp.Location()), Precision: model.YEAR})}, StaticType: &types.List{ElementType: types.Date}"
+        }
+      }
+    ],
+    "TestTail": [
+      {
+        "name": "Tail({1, 2}) = {2}",
+        "cql": "Tail({1, 2})",
+        "expected": {
+          "type": "List",
+          "raw": "Value: []result.Value{newOrFatal(t, int32(2))}, StaticType: &types.List{ElementType: types.Integer}}),\n\t\t\twantSourceExpression: &model.Tail{\n\t\t\t\tUnaryExpression: &model.UnaryExpression{\n\t\t\t\t\tOperand:    model.NewList([]string{\"1\", \"2\"}, types.Integer),\n\t\t\t\t\tExpression: model.ResultType(&types.List{ElementType: types.Integer"
+        }
+      },
+      {
+        "name": "Tail({1}) = {}",
+        "cql": "Tail({1})",
+        "expected": {
+          "type": "List",
+          "raw": "Value: []result.Value{}, StaticType: &types.List{ElementType: types.Integer}"
+        }
+      },
+      {
+        "name": "Tail(List<Integer>{}) = {}",
+        "cql": "Tail(List<Integer>{})",
+        "expected": {
+          "type": "List",
+          "raw": "Value: []result.Value{}, StaticType: &types.List{ElementType: types.Integer}"
+        }
+      },
+      {
+        "name": "Tail(null as List<Integer>) = null",
+        "cql": "Tail(null as List<Integer>)",
+        "expected": null
+      },
+      {
+        "name": "Tail(null as List<Integer>) = null",
+        "cql": "Tail(null as List<Integer>)",
+        "expected": null
+      },
+      {
+        "name": "Tail({@2010, @2011, @2012}) = {@2011, @2012}",
+        "cql": "Tail({@2010, @2011, @2012})",
+        "expected": {
+          "type": "List",
+          "raw": "Value: []result.Value{\n\t\t\t\t\tnewOrFatal(t, result.Date{Date: time.Date(2011, time.January, 1, 0, 0, 0, 0, defaultEvalTimestamp.Location()), Precision: model.YEAR}),\n\t\t\t\t\tnewOrFatal(t, result.Date{Date: time.Date(2012, time.January, 1, 0, 0, 0, 0, defaultEvalTimestamp.Location()), Precision: model.YEAR}),\n\t\t\t\t},\n\t\t\t\tStaticType: &types.List{ElementType: types.Date},"
+        }
+      }
+    ],
+    "TestTake": [
+      {
+        "name": "Take({1, 2}, 1) = {1}",
+        "cql": "Take({1, 2}, 1)",
+        "expected": {
+          "type": "List",
+          "raw": "Value: []result.Value{newOrFatal(t, int32(1))}, StaticType: &types.List{ElementType: types.Integer}}),\n\t\t\twantSourceExpression: &model.Take{\n\t\t\t\tBinaryExpression: &model.BinaryExpression{\n\t\t\t\t\tOperands: []model.IExpression{\n\t\t\t\t\t\tmodel.NewList([]string{\"1\", \"2\"}, types.Integer),\n\t\t\t\t\t\tmodel.NewLiteral(\"1\", types.Integer),\n\t\t\t\t\t},\n\t\t\t\t\tExpression: model.ResultType(&types.List{ElementType: types.Integer"
+        }
+      },
+      {
+        "name": "Take({1, 2, 3}, 3) = {1, 2, 3}",
+        "cql": "Take({1, 2, 3}, 3)",
+        "expected": {
+          "type": "List",
+          "raw": "Value: []result.Value{newOrFatal(t, int32(1)), newOrFatal(t, int32(2)), newOrFatal(t, int32(3))}, StaticType: &types.List{ElementType: types.Integer}"
+        }
+      },
+      {
+        "name": "Take({1, 2, 3}, 4) = {1, 2, 3}",
+        "cql": "Take({1, 2, 3}, 4)",
+        "expected": {
+          "type": "List",
+          "raw": "Value: []result.Value{newOrFatal(t, int32(1)), newOrFatal(t, int32(2)), newOrFatal(t, int32(3))}, StaticType: &types.List{ElementType: types.Integer}"
+        }
+      },
+      {
+        "name": "Take({1, 2, 3}, -1) = {}",
+        "cql": "Take({1, 2, 3}, -1)",
+        "expected": {
+          "type": "List",
+          "raw": "Value: []result.Value{}, StaticType: &types.List{ElementType: types.Integer}"
+        }
+      },
+      {
+        "name": "Take({1, 2, 3}, 0) = {}",
+        "cql": "Take({1, 2, 3}, 0)",
+        "expected": {
+          "type": "List",
+          "raw": "Value: []result.Value{}, StaticType: &types.List{ElementType: types.Integer}"
+        }
+      },
+      {
+        "name": "Take({null, 2, 3}, 2) = {null, 2}",
+        "cql": "Take({null, 2, 3}, 2)",
+        "expected": {
+          "type": "List",
+          "raw": "Value: []result.Value{newOrFatal(t, nil), newOrFatal(t, int32(2))}, StaticType: &types.List{ElementType: types.Integer}"
+        }
+      },
+      {
+        "name": "Take(List<Integer>{}, 1) = {}",
+        "cql": "Take(List<Integer>{}, 1)",
+        "expected": {
+          "type": "List",
+          "raw": "Value: []result.Value{}, StaticType: &types.List{ElementType: types.Integer}"
+        }
+      },
+      {
+        "name": "Take(null as List<Integer>, 1) = null",
+        "cql": "Take(null as List<Integer>, 1)",
+        "expected": null
+      },
+      {
+        "name": "Take({@2010, @2011, @2012}, 1) = {@2010}",
+        "cql": "Take({@2010, @2011, @2012}, 1)",
+        "expected": {
+          "type": "List",
+          "raw": "Value: []result.Value{newOrFatal(t, result.Date{Date: time.Date(2010, time.January, 1, 0, 0, 0, 0, defaultEvalTimestamp.Location()), Precision: model.YEAR})}, StaticType: &types.List{ElementType: types.Date}"
+        }
+      }
+    ],
+    "TestIndexerList": [
+      {
+        "name": "Indexer [] syntax for List<Integer>",
+        "cql": "{1, 2}[1]",
+        "expected": 2
+      },
+      {
+        "name": "Indexer [] syntax for List<String>",
+        "cql": "{'a', 'b'}[1]",
+        "expected": "b"
+      },
+      {
+        "name": "Indexer functional form",
+        "cql": "Indexer({1, 2}, 1)",
+        "expected": 2
+      },
+      {
+        "name": "Indexer with index too large",
+        "cql": "{1, 2}[100]",
+        "expected": null
+      },
+      {
+        "name": "Indexer with index smaller than 0",
+        "cql": "{1, 2}[-100]",
+        "expected": null
+      },
+      {
+        "name": "Indexer on null",
+        "cql": "(null as List<Integer>)[1]",
+        "expected": null
+      },
+      {
+        "name": "Indexer with null index",
+        "cql": "{1, 2}[null as Integer]",
+        "expected": null
+      }
+    ],
+    "TestUnionList": [
+      {
+        "name": "Union on two equal lists",
+        "cql": "{'a', 'b'} union {'a', 'b'}",
+        "expected": {
+          "type": "List",
+          "raw": "Value: []result.Value{newOrFatal(t, \"a\"), newOrFatal(t, \"b\")}, StaticType: &types.List{ElementType: types.String}"
+        }
+      },
+      {
+        "name": "Union where right is a superset of left",
+        "cql": "{1} union {1, 2}",
+        "expected": {
+          "type": "List",
+          "raw": "Value: []result.Value{newOrFatal(t, int32(1)), newOrFatal(t, int32(2))}, StaticType: &types.List{ElementType: types.Integer}"
+        }
+      },
+      {
+        "name": "Union where left is a superset of right",
+        "cql": "{1, 2} union {1}",
+        "expected": {
+          "type": "List",
+          "raw": "Value: []result.Value{newOrFatal(t, int32(1)), newOrFatal(t, int32(2))}, StaticType: &types.List{ElementType: types.Integer}"
+        }
+      },
+      {
+        "name": "Union with both empty lists",
+        "cql": "{} union {}",
+        "expected": {
+          "type": "List",
+          "raw": "Value: []result.Value{}, StaticType: &types.List{ElementType: types.Any}"
+        }
+      },
+      {
+        "name": "Union with right null",
+        "cql": "{1, 2} union null",
+        "expected": {
+          "type": "List",
+          "raw": "Value: []result.Value{newOrFatal(t, int32(1)), newOrFatal(t, int32(2))}, StaticType: &types.List{ElementType: types.Integer}"
+        }
+      },
+      {
+        "name": "Union with left null",
+        "cql": "null union {1, 2}",
+        "expected": {
+          "type": "List",
+          "raw": "Value: []result.Value{newOrFatal(t, int32(1)), newOrFatal(t, int32(2))}, StaticType: &types.List{ElementType: types.Integer}"
+        }
+      },
+      {
+        "name": "Union with both null",
+        "cql": "null as List<Integer> union null as List<Integer>",
+        "expected": {
+          "type": "List",
+          "raw": "Value: []result.Value{}, StaticType: &types.List{ElementType: types.Any}"
+        }
+      },
+      {
+        "name": "Union with symbolic operator",
+        "cql": "{1, 2} | {1}",
+        "expected": {
+          "type": "List",
+          "raw": "Value: []result.Value{newOrFatal(t, int32(1)), newOrFatal(t, int32(2))}, StaticType: &types.List{ElementType: types.Integer}"
+        }
+      },
+      {
+        "name": "Union functional form",
+        "cql": "Union({1, 2}, {1})",
+        "expected": {
+          "type": "List",
+          "raw": "Value: []result.Value{newOrFatal(t, int32(1)), newOrFatal(t, int32(2))}, StaticType: &types.List{ElementType: types.Integer}"
+        }
+      }
+    ]
+  }
+}

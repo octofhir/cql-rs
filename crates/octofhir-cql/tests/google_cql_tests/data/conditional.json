@@ -1,0 +1,32 @@
+{
+  "source": "conditional_test.go",
+  "functions": {
+    "TestIf": [
+      {
+        "name": "if 1 = 1 then 2 else 3",
+        "cql": "if 1 = 1 then 2 else 3",
+        "expected": 2
+      },
+      {
+        "name": "if 1 = 2 then 2 else 3",
+        "cql": "if 1 = 2 then 2 else 3",
+        "expected": 3
+      },
+      {
+        "name": "if null then 2 else 3",
+        "cql": "if null then 2 else 3",
+        "expected": 3
+      },
+      {
+        "name": "if 1 = 2 then 2.0 else 3",
+        "cql": "if 1 = 2 then 2.0 else 3",
+        "expected": 3.0
+      },
+      {
+        "name": "If returns choice type",
+        "cql": "if 1 = 2 then 2 else 'hi there!'",
+        "expected": "hi there!"
+      }
+    ]
+  }
+}

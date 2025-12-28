@@ -413,13 +413,35 @@ fn read_text_content(reader: &mut Reader<&[u8]>) -> Result<String, ParseError> {
     loop {
         match reader.read_event_into(&mut buf) {
             Ok(Event::Text(e)) => {
-                text = e.decode()
-                    .map_err(|e| ParseError::XmlError(e.to_string()))?
-                    .to_string();
+                // In quick_xml 0.38+, text events don't include entity refs
+                let decoded = std::str::from_utf8(&e)
+                    .map_err(|e| ParseError::Utf8Error(e.to_string()))?;
+                text.push_str(decoded);
+            }
+            Ok(Event::GeneralRef(e)) => {
+                // Handle XML entity references like &lt; &gt; &amp; etc.
+                let entity_name = std::str::from_utf8(&e)
+                    .map_err(|e| ParseError::Utf8Error(e.to_string()))?;
+                let resolved = match entity_name {
+                    "lt" => "<",
+                    "gt" => ">",
+                    "amp" => "&",
+                    "apos" => "'",
+                    "quot" => "\"",
+                    _ => {
+                        // Unknown entity - just include as-is with ampersand
+                        text.push('&');
+                        text.push_str(entity_name);
+                        text.push(';');
+                        continue;
+                    }
+                };
+                text.push_str(resolved);
             }
             Ok(Event::CData(e)) => {
-                text = String::from_utf8(e.into_inner().to_vec())
+                let cdata = String::from_utf8(e.into_inner().to_vec())
                     .map_err(|e| ParseError::Utf8Error(e.to_string()))?;
+                text.push_str(&cdata);
             }
             Ok(Event::End(_)) => break,
             Ok(Event::Eof) => break,

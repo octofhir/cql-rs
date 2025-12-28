@@ -287,7 +287,11 @@ impl SpecTestRunner {
             }
             _ => {
                 // Generic comparison - format and compare strings
-                format_value(result) == expected.value
+                // Normalize whitespace for list comparisons as test expectations are inconsistent
+                let actual = format_value(result);
+                let expected_normalized = normalize_list_format(&expected.value);
+                let actual_normalized = normalize_list_format(&actual);
+                actual_normalized == expected_normalized
             }
         }
     }
@@ -298,20 +302,99 @@ fn format_value(value: &CqlValue) -> String {
         CqlValue::Null => "null".to_string(),
         CqlValue::Boolean(b) => b.to_string(),
         CqlValue::Integer(i) => i.to_string(),
-        CqlValue::Long(l) => l.to_string(),
-        CqlValue::Decimal(d) => d.to_string(),
-        CqlValue::String(s) => s.clone(),
+        CqlValue::Long(l) => format!("{}L", l),
+        CqlValue::Decimal(d) => {
+            // Normalize the decimal to remove trailing zeros, then ensure it shows decimal point
+            let normalized = d.normalize();
+            let s = normalized.to_string();
+            if s.contains('.') {
+                s
+            } else {
+                format!("{}.0", s)
+            }
+        }
+        CqlValue::String(s) => format!("'{}'", s),
         CqlValue::Date(d) => format!("@{}", d),
         CqlValue::DateTime(dt) => format!("@{}", dt),
         CqlValue::Time(t) => format!("@T{}", t),
         CqlValue::Quantity(q) => format!("{}", q),
         CqlValue::Code(c) => format!("Code '{}'", c.code),
         CqlValue::Concept(c) => format!("Concept with {} codes", c.codes.len()),
-        CqlValue::Interval(i) => format!("Interval[{:?}, {:?}]", i.low, i.high),
-        CqlValue::List(l) => format!("List with {} elements", l.len()),
-        CqlValue::Tuple(t) => format!("Tuple with {} elements", t.elements.len()),
+        CqlValue::Interval(i) => format!("Interval{}", i),  // No space before brackets
+        CqlValue::List(l) => {
+            if l.is_empty() {
+                "{}".to_string()
+            } else {
+                let items: Vec<String> = l.iter().map(format_value).collect();
+                format!("{{{}}}", items.join(", "))  // Use ", " to match most test expectations
+            }
+        }
+        CqlValue::Tuple(t) => {
+            // Format as { name: value, ... } without Tuple prefix
+            let elements: Vec<String> = t.iter()
+                .map(|(name, val)| format!("{}: {}", name, format_value(val)))
+                .collect();
+            format!("{{ {} }}", elements.join(", "))
+        }
         CqlValue::Ratio(r) => format!("Ratio({:?}:{:?})", r.numerator, r.denominator),
     }
+}
+
+/// Normalize format for comparison
+/// Test expectations are inconsistent with whitespace and prefixes:
+/// - Lists: `{ null }` vs `{null}`, `{1,2,3}` vs `{1, 2, 3}`
+/// - Intervals: `Interval[ 1, 10 ]` vs `Interval[1, 10]`
+/// - Tuples: `Tuple { id: 1 }` vs `{ id: 1 }`
+/// - Quantities: `5 'ml'` vs `5'ml'`
+fn normalize_list_format(s: &str) -> String {
+    // First strip common prefixes that are inconsistently used
+    let s = s.replace("Tuple { ", "{ ").replace("Tuple{ ", "{ ");
+    // Normalize quantity space (remove space before unit quotes)
+    let s = s.replace(" '", "'");
+
+    let mut result = String::with_capacity(s.len());
+    let mut chars = s.chars().peekable();
+
+    while let Some(c) = chars.next() {
+        match c {
+            '{' | '[' | '(' => {
+                result.push(c);
+                // Skip whitespace after opening bracket
+                while chars.peek() == Some(&' ') {
+                    chars.next();
+                }
+            }
+            '}' | ']' | ')' => {
+                // Remove trailing whitespace before closing bracket
+                while result.ends_with(' ') {
+                    result.pop();
+                }
+                result.push(c);
+            }
+            ',' => {
+                result.push(',');
+                // Skip all whitespace after comma
+                while chars.peek() == Some(&' ') {
+                    chars.next();
+                }
+                // Add single space after comma for consistency
+                let next = chars.peek();
+                if next != Some(&'}') && next != Some(&']') && next != Some(&')') {
+                    result.push(' ');
+                }
+            }
+            ' ' => {
+                // Only add space if not right before comma or closing bracket
+                let next = chars.peek();
+                if next != Some(&',') && next != Some(&'}') && next != Some(&']') && next != Some(&')') {
+                    result.push(' ');
+                }
+            }
+            _ => result.push(c),
+        }
+    }
+
+    result
 }
 
 /// Generate a compliance report

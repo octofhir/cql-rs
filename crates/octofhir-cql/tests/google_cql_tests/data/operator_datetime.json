@@ -1,0 +1,582 @@
+{
+  "source": "operator_datetime_test.go",
+  "functions": {
+    "TestCanConvertQuantity": [
+      {
+        "name": "CanConvertQuantity(1 year, null) returns null",
+        "cql": "CanConvertQuantity(1 year, null)",
+        "expected": null
+      },
+      {
+        "name": "CanConvertQuantity(null, 'y') returns null",
+        "cql": "CanConvertQuantity(null, 'y')",
+        "expected": null
+      },
+      {
+        "name": "CanConvertQuantity(1 year, 'mo')",
+        "cql": "CanConvertQuantity(1 year, 'mo')",
+        "expected": true
+      }
+    ],
+    "TestDateTimeOperatorBefore": [
+      {
+        "name": "True",
+        "cql": "@2020-03-01 before day of @2020-03-02",
+        "expected": true
+      },
+      {
+        "name": "False",
+        "cql": "@2020-03-04 before day of @2020-03-02",
+        "expected": false
+      },
+      {
+        "name": "Equal dates false",
+        "cql": "@2020-03-01 before day of @2020-03-01",
+        "expected": false
+      },
+      {
+        "name": "Left null",
+        "cql": "(null as Date) before day of @2020-03-02",
+        "expected": null
+      },
+      {
+        "name": "Right null",
+        "cql": "@2020 before day of (null as Date)",
+        "expected": null
+      },
+      {
+        "name": "No precision",
+        "cql": "@2014-01-01 before @2015-01-01",
+        "expected": true
+      },
+      {
+        "name": "Equal datetimes false",
+        "cql": "@2024-02-29T01:20:30.101-07:00 before day of @2024-02-29T01:20:30.101-07:00",
+        "expected": false
+      },
+      {
+        "name": "Same Year Different Date at Year Precision is False",
+        "cql": "@2024-02-29T01:20:30.101-07:00 before year of @2024-02-28T01:20:30.101-07:00",
+        "expected": false
+      },
+      {
+        "name": "Month Precision Before True Even Though Day Precision is Before",
+        "cql": "@2024-02-29T01:20:30.101-07:00 before month of @2024-03-31T01:20:30.101-07:00",
+        "expected": true
+      },
+      {
+        "name": "Timezone offset taken into account",
+        "cql": "@2024-02-19T01:20-04:00 before hour of @2024-02-19T01:20-07:00",
+        "expected": true
+      },
+      {
+        "name": "Timezone not applied for day precision",
+        "cql": "@2024-02-18T-04:00 before day of @2024-02-19TZ",
+        "expected": true
+      },
+      {
+        "name": "Timezone applied because the left DateTime is hour precision",
+        "cql": "@2024-02-18T23-04:00 before day of @2024-02-19TZ",
+        "expected": false
+      }
+    ],
+    "TestDateTimeOperatorBefore_Error": [
+      {
+        "name": "Invalid Precision Date",
+        "cql": "@2020-03-01 before second of @2020-03-02",
+        "expected": null
+      },
+      {
+        "name": "Invalid Precision DateTime",
+        "cql": "@2024-02-29T01:20:30.101-07:00 before week of @2024-03-31T01:20:30.101-07:00",
+        "expected": null
+      }
+    ],
+    "TestDateTimeOperatorAfter": [
+      {
+        "name": "@2020-03-04 after day of @2020-03-02",
+        "cql": "@2020-03-04 after day of @2020-03-02",
+        "expected": true
+      },
+      {
+        "name": "@2020-03-01 after day of @2020-03-02 returns false",
+        "cql": "@2020-03-01 after day of @2020-03-02",
+        "expected": false
+      },
+      {
+        "name": "null after day of @2020-03-02 returns null",
+        "cql": "(null as Date) after day of @2020-03-02",
+        "expected": null
+      },
+      {
+        "name": "@2020 after day of null returns null",
+        "cql": "@2020 after day of (null as Date)",
+        "expected": null
+      },
+      {
+        "name": "@2020-03-01 after day of @2020-03-01 returns false",
+        "cql": "@2020-03-01 after day of @2020-03-01",
+        "expected": false
+      },
+      {
+        "name": "@2024-02-29T01:20:30.101-07:00 after day of @2024-02-29T01:20:30.101-07:00 returns false",
+        "cql": "@2024-02-29T01:20:30.101-07:00 after day of @2024-02-29T01:20:30.101-07:00",
+        "expected": false
+      },
+      {
+        "name": "Same Year Different Date at Year Precision is False",
+        "cql": "@2024-05-29T01:20:30.101-07:00 after year of @2024-03-31T01:20:30.101-07:00",
+        "expected": false
+      },
+      {
+        "name": "Month Precision After True Even Though Day Precision is Before",
+        "cql": "@2024-05-29T01:20:30.101-07:00 after month of @2024-03-31T01:20:30.101-07:00",
+        "expected": true
+      },
+      {
+        "name": "Timezone offset taken into account",
+        "cql": "@2024-02-19T01:20+04:00 after hour of @2024-02-19T01:20+07:00",
+        "expected": true
+      },
+      {
+        "name": "Timezone not applied for day precision",
+        "cql": "@2024-02-18T+04:00 after day of @2024-02-17TZ",
+        "expected": true
+      }
+    ],
+    "TestDateTimeOperatorDifferenceBetween": [
+      {
+        "name": "difference in years between @2020 and @2022",
+        "cql": "difference in years between @2020 and @2022",
+        "expected": 2
+      },
+      {
+        "name": "difference in years between @2022 and @2020",
+        "cql": "difference in years between @2022 and @2020",
+        "expected": -2
+      },
+      {
+        "name": "difference in years between null and @2022 returns null",
+        "cql": "difference in years between (null as Date)  and @2022",
+        "expected": null
+      },
+      {
+        "name": "difference in years between @2020 and null returns null",
+        "cql": "difference in years between @2020 and (null as Date)",
+        "expected": null
+      },
+      {
+        "name": "difference in months between @2020-10 and @2022-02",
+        "cql": "difference in months between @2020-10 and @2022-02",
+        "expected": 16
+      },
+      {
+        "name": "difference in weeks from monday to saturday returns zero",
+        "cql": "difference in weeks between @2023-11-20 and @2023-11-25",
+        "expected": 0
+      },
+      {
+        "name": "difference in weeks from monday to sunday returns 1",
+        "cql": "difference in weeks between @2023-11-20 and @2023-11-26",
+        "expected": 1
+      },
+      {
+        "name": "difference in weeks from saturday to saturday returns 1",
+        "cql": "difference in weeks between @2023-11-25 and @2023-12-02",
+        "expected": 1
+      },
+      {
+        "name": "difference in weeks from saturday to saturday a week later returns 2",
+        "cql": "difference in weeks between @2023-11-25 and @2023-12-03",
+        "expected": 2
+      },
+      {
+        "name": "difference in days from saturday to monday returns 2",
+        "cql": "difference in days between @2023-11-25 and @2023-11-27",
+        "expected": 2
+      },
+      {
+        "name": "difference in years between @2022-02-22T01:20:30.101-07:00 and @2024-02-22T01:20:30.101-07:00",
+        "cql": "difference in years between @2022-02-22T01:20:30.101-07:00 and @2024-02-22T01:20:30.101-07:00",
+        "expected": 2
+      },
+      {
+        "name": "difference in hours between @2014-01-01T01:01:00.000Z and @2014-01-02T01:01:00.000Z",
+        "cql": "difference in hours between @2014-01-01T01:01:00.000Z and @2014-01-02T01:01:00.000Z",
+        "expected": 24
+      },
+      {
+        "name": "difference in months between @2014-01-01T01:01:00.000Z and @2014-02",
+        "cql": "difference in months between @2014-01-01T01:01:00.000Z and @2014-02",
+        "expected": 1
+      },
+      {
+        "name": "difference in milliseconds between @2022-02-22T01:20:30.101-07:00 and @2022-02-22T01:20:30.105-07:00",
+        "cql": "difference in milliseconds between @2022-02-22T01:20:30.101-07:00 and @2022-02-22T01:20:30.105-07:00",
+        "expected": 4
+      }
+    ],
+    "TestDateTimeOperatorDifferencebetween_Error": [
+      {
+        "name": "difference in months between 2014 and 2016 return error invalid precision",
+        "cql": "difference in months between @2014 and @2016",
+        "expected": null
+      }
+    ],
+    "TestDateTimeOperatorSameOrAfter": [
+      {
+        "name": "@2020-03-04 same day or after @2020-03-02",
+        "cql": "@2020-03-04 same day or after @2020-03-02",
+        "expected": true
+      },
+      {
+        "name": "@2020-03-01 same day or after @2020-03-02 returns false",
+        "cql": "@2020-03-01 same day or after @2020-03-02",
+        "expected": false
+      },
+      {
+        "name": "@2020-03-04 on or after day of @2020-03-02",
+        "cql": "@2020-03-04 on or after day of @2020-03-02",
+        "expected": true
+      },
+      {
+        "name": "@2020-03-01 on or after day of @2020-03-02 returns false",
+        "cql": "@2020-03-01 on or after day of @2020-03-02",
+        "expected": false
+      },
+      {
+        "name": "null on or after year of @2020 returns null",
+        "cql": "(null as Date) on or after year of @2020",
+        "expected": null
+      },
+      {
+        "name": "@2020 on or after year of null returns null",
+        "cql": "@2020 on or after year of (null as Date)",
+        "expected": null
+      },
+      {
+        "name": "@2024-02-29T01:20:30.101-07:00 on or after day of @2024-02-29T01:20:30.101-07:00",
+        "cql": "@2024-02-29T01:20:30.101-07:00 on or after day of @2024-02-29T01:20:30.101-07:00",
+        "expected": true
+      },
+      {
+        "name": "Same Year Different Date at Year Precision is True",
+        "cql": "@2024-03-30T01:20:30.101-07:00 on or after year of @2024-02-28T01:20:30.101-07:00",
+        "expected": true
+      },
+      {
+        "name": "Month Precision After True Even Though Day Precision is Before",
+        "cql": "@2024-05-29T01:20:30.101-07:00 on or after month of @2024-03-31T01:20:30.101-07:00",
+        "expected": true
+      }
+    ],
+    "TestDateTimeOperatorSameOrBefore": [
+      {
+        "name": "@2020-03-01 same day or before @2020-03-02",
+        "cql": "@2020-03-01 same day or before @2020-03-02",
+        "expected": true
+      },
+      {
+        "name": "@2020-03-04 same day or before @2020-03-02 returns false",
+        "cql": "@2020-03-04 same day or before @2020-03-02",
+        "expected": false
+      },
+      {
+        "name": "@2020-03-01 on or before day of @2020-03-02",
+        "cql": "@2020-03-01 on or before day of @2020-03-02",
+        "expected": true
+      },
+      {
+        "name": "@2020-03-04 on or before day of @2020-03-02 returns false",
+        "cql": "@2020-03-04 on or before day of @2020-03-02",
+        "expected": false
+      },
+      {
+        "name": "null on or before year of @2020 returns null",
+        "cql": "(null as Date) on or before year of @2020",
+        "expected": null
+      },
+      {
+        "name": "@2020 on or before year of null returns null",
+        "cql": "@2020 on or before year of (null as Date)",
+        "expected": null
+      },
+      {
+        "name": "@2024-02-29T01:20:30.101-07:00 on or before day of @2024-02-29T01:20:30.101-07:00",
+        "cql": "@2024-02-29T01:20:30.101-07:00 on or before day of @2024-02-29T01:20:30.101-07:00",
+        "expected": true
+      },
+      {
+        "name": "Same Year Different Date at Year Precision is True",
+        "cql": "@2024-02-29T01:20:30.101-07:00 on or before year of @2024-03-31T01:20:30.101-07:00",
+        "expected": true
+      },
+      {
+        "name": "Month Precision Before True Even Though Day Precision is After",
+        "cql": "@2024-02-29T01:20:30.101-07:00 on or before month of @2024-03-31T01:20:30.101-07:00",
+        "expected": true
+      }
+    ],
+    "TestEvaluationTimestamp": [
+      {
+        "name": "Now returns passed evaluation timestamp",
+        "cql": "define TESTRESULT: Now()",
+        "expected": {
+          "type": "DateTime",
+          "args": "2024, time.January, 1, 0, 0, 0, 1, time.UTC",
+          "precision": "MILLISECOND"
+        }
+      },
+      {
+        "name": "now() returns passed evaluation timestamp",
+        "cql": "define TESTRESULT: now()",
+        "expected": {
+          "type": "DateTime",
+          "args": "2024, time.January, 1, 0, 0, 0, 1, time.UTC",
+          "precision": "MILLISECOND"
+        }
+      },
+      {
+        "name": "Time returns passed evaluation timestamp time components",
+        "cql": "define TESTRESULT: TimeOfDay()",
+        "expected": {
+          "type": "Time",
+          "args": "0, time.January, 1, 1, 2, 3, 4, time.UTC",
+          "precision": "MILLISECOND"
+        }
+      },
+      {
+        "name": "Today truncates time values",
+        "cql": "define TESTRESULT: Today()",
+        "expected": {
+          "type": "Date",
+          "args": "2024, time.January, 1, 0, 0, 0, 0, time.UTC",
+          "precision": "DAY"
+        }
+      }
+    ],
+    "TestDate": [
+      {
+        "name": "Year",
+        "cql": "Date(2014)",
+        "expected": {
+          "type": "Date",
+          "args": "2014, time.January, 1, 0, 0, 0, 0, time.UTC",
+          "precision": "YEAR"
+        }
+      },
+      {
+        "name": "Month",
+        "cql": "Date(2014, 9)",
+        "expected": {
+          "type": "Date",
+          "args": "2014, time.September, 1, 0, 0, 0, 0, time.UTC",
+          "precision": "MONTH"
+        }
+      },
+      {
+        "name": "Day",
+        "cql": "Date(2014, 9, 4)",
+        "expected": {
+          "type": "Date",
+          "args": "2014, time.September, 4, 0, 0, 0, 0, time.UTC",
+          "precision": "DAY"
+        }
+      },
+      {
+        "name": "Functional and string constructors equal",
+        "cql": "Date(2014, 9, 4) = @2014-09-04",
+        "expected": true
+      }
+    ],
+    "TestDateTime": [
+      {
+        "name": "Year",
+        "cql": "DateTime(2014)",
+        "expected": {
+          "type": "DateTime",
+          "args": "2014, time.January, 1, 0, 0, 0, 0, defaultEvalTimestamp.Location()",
+          "precision": "YEAR"
+        }
+      },
+      {
+        "name": "Month",
+        "cql": "DateTime(2014, 9)",
+        "expected": {
+          "type": "DateTime",
+          "args": "2014, time.September, 1, 0, 0, 0, 0, defaultEvalTimestamp.Location()",
+          "precision": "MONTH"
+        }
+      },
+      {
+        "name": "Day",
+        "cql": "DateTime(2014, 9, 4)",
+        "expected": {
+          "type": "DateTime",
+          "args": "2014, time.September, 4, 0, 0, 0, 0, defaultEvalTimestamp.Location()",
+          "precision": "DAY"
+        }
+      },
+      {
+        "name": "Hour",
+        "cql": "DateTime(2014, 9, 4, 12)",
+        "expected": {
+          "type": "DateTime",
+          "args": "2014, time.September, 4, 12, 0, 0, 0, defaultEvalTimestamp.Location()",
+          "precision": "HOUR"
+        }
+      },
+      {
+        "name": "Minute",
+        "cql": "DateTime(2014, 9, 4, 12, 30)",
+        "expected": {
+          "type": "DateTime",
+          "args": "2014, time.September, 4, 12, 30, 0, 0, defaultEvalTimestamp.Location()",
+          "precision": "MINUTE"
+        }
+      },
+      {
+        "name": "Second",
+        "cql": "DateTime(2014, 9, 4, 12, 30, 30)",
+        "expected": {
+          "type": "DateTime",
+          "args": "2014, time.September, 4, 12, 30, 30, 0, defaultEvalTimestamp.Location()",
+          "precision": "SECOND"
+        }
+      },
+      {
+        "name": "Millisecond",
+        "cql": "DateTime(2014, 9, 4, 12, 30, 30, 100)",
+        "expected": {
+          "type": "DateTime",
+          "args": "2014, time.September, 4, 12, 30, 30, 100*1000000, defaultEvalTimestamp.Location()",
+          "precision": "MILLISECOND"
+        }
+      },
+      {
+        "name": "Timezone",
+        "cql": "DateTime(2014, 9, 4, 12, 30, 30, 100, -7)",
+        "expected": {
+          "type": "DateTime",
+          "args": "2014, time.September, 4, 12, 30, 30, 100*1000000, time.FixedZone(\"-7\", -7*60*60)",
+          "precision": "MILLISECOND"
+        }
+      },
+      {
+        "name": "Functional and string constructors equal",
+        "cql": "DateTime(2014, 9, 4, 12, 30, 30, 101) = @2014-09-04T12:30:30.101",
+        "expected": true
+      },
+      {
+        "name": "Functional and string constructors equal with timezone",
+        "cql": "DateTime(2014, 9, 4, 12, 30, 30, 101, -7) = @2014-09-04T12:30:30.101-07:00",
+        "expected": true
+      },
+      {
+        "name": "All null arguments",
+        "cql": "DateTime(null, null, null, null, null, null, null, null)",
+        "expected": null
+      }
+    ],
+    "TestTime": [
+      {
+        "name": "Hour",
+        "cql": "Time(21)",
+        "expected": {
+          "type": "Time",
+          "args": "0, time.January, 1, 21, 0, 0, 0, defaultEvalTimestamp.Location()",
+          "precision": "HOUR"
+        }
+      },
+      {
+        "name": "Minute",
+        "cql": "Time(12, 30)",
+        "expected": {
+          "type": "Time",
+          "args": "0, time.January, 1, 12, 30, 0, 0, defaultEvalTimestamp.Location()",
+          "precision": "MINUTE"
+        }
+      },
+      {
+        "name": "Second",
+        "cql": "Time(12, 30, 30)",
+        "expected": {
+          "type": "Time",
+          "args": "0, time.January, 1, 12, 30, 30, 0, defaultEvalTimestamp.Location()",
+          "precision": "SECOND"
+        }
+      },
+      {
+        "name": "Millisecond",
+        "cql": "Time(12, 30, 30, 100)",
+        "expected": {
+          "type": "Time",
+          "args": "0, time.January, 1, 12, 30, 30, 100*1000000, defaultEvalTimestamp.Location()",
+          "precision": "MILLISECOND"
+        }
+      },
+      {
+        "name": "Functional and string constructors equal",
+        "cql": "Time(12, 30, 30, 101) = @T12:30:30.101",
+        "expected": true
+      }
+    ],
+    "TestDateTimeConstructor_Errors": [
+      {
+        "name": "Date val after null",
+        "cql": "Date(2014, null, 15)",
+        "expected": null
+      },
+      {
+        "name": "Date starts with null",
+        "cql": "Date(null)",
+        "expected": null
+      },
+      {
+        "name": "Date year outside range",
+        "cql": "Date(-1)",
+        "expected": null
+      },
+      {
+        "name": "Date day outside range",
+        "cql": "Date(2014, 5, 32)",
+        "expected": null
+      },
+      {
+        "name": "Time val after null",
+        "cql": "Time(12, null, 30)",
+        "expected": null
+      },
+      {
+        "name": "Time starts with null",
+        "cql": "Time(null)",
+        "expected": null
+      },
+      {
+        "name": "Time hour outside range",
+        "cql": "Time(25)",
+        "expected": null
+      },
+      {
+        "name": "Time millisecond outside range",
+        "cql": "Time(12, 30, 30, -100)",
+        "expected": null
+      },
+      {
+        "name": "DateTime year outside range",
+        "cql": "DateTime(99999999)",
+        "expected": null
+      },
+      {
+        "name": "DateTime millisecond outside range",
+        "cql": "DateTime(2014, 9, 4, 12, 30, 30, -101, -7)",
+        "expected": null
+      },
+      {
+        "name": "DateTime timezone our of range",
+        "cql": "DateTime(2014, 9, 4, 12, 30, 30, 101, -14.1)",
+        "expected": null
+      }
+    ]
+  }
+}

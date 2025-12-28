@@ -1,0 +1,284 @@
+{
+  "source": "literal_test.go",
+  "functions": {
+    "TestLiteral": [
+      {
+        "name": "Integer",
+        "cql": "1",
+        "expected": 1
+      },
+      {
+        "name": "Long",
+        "cql": "1L",
+        "expected": {
+          "type": "Long",
+          "value": 1
+        }
+      },
+      {
+        "name": "Decimal",
+        "cql": "1.0",
+        "expected": 1.0
+      },
+      {
+        "name": "Quantity with temporal unit",
+        "cql": "1 'month'",
+        "expected": {
+          "type": "Quantity",
+          "value": 1.0,
+          "unit": "MONTHUNIT"
+        }
+      },
+      {
+        "name": "Ratio",
+        "cql": "1 'cm':2 'cm'",
+        "expected": {
+          "raw": "result.Ratio{Numerator: result.Quantity{Value: 1, Unit: \"cm\"}, Denominator: result.Quantity{Value: 2, Unit: \"cm\"}}"
+        }
+      },
+      {
+        "name": "Boolean",
+        "cql": "true",
+        "expected": true
+      },
+      {
+        "name": "String",
+        "cql": "'apple'",
+        "expected": "apple"
+      },
+      {
+        "name": "Null",
+        "cql": "null",
+        "expected": null
+      },
+      {
+        "name": "Date with default timezone",
+        "cql": "@2024-02-20",
+        "expected": {
+          "type": "Date",
+          "args": "2024, 2, 20, 0, 0, 0, 0, defaultEvalTimestamp.Location()",
+          "precision": "DAY"
+        }
+      },
+      {
+        "name": "DateTime with default timezone",
+        "cql": "@2024-03-31T",
+        "expected": {
+          "type": "DateTime",
+          "args": "2024, time.March, 31, 0, 0, 0, 0, defaultEvalTimestamp.Location()",
+          "precision": "DAY"
+        }
+      },
+      {
+        "name": "DateTime Zulu override",
+        "cql": "@2024-03-31T01:20:30.101Z",
+        "expected": {
+          "type": "DateTime",
+          "args": "2024, time.March, 31, 1, 20, 30, 101e6, time.UTC",
+          "precision": "MILLISECOND"
+        }
+      },
+      {
+        "name": "DateTime TimeZone override",
+        "cql": "@2024-03-31T01:20:30.101-07:00",
+        "expected": {
+          "type": "DateTime",
+          "args": "2024, time.March, 31, 1, 20, 30, 101e6, time.FixedZone(\"-07:00\", -7*60*60)",
+          "precision": "MILLISECOND"
+        }
+      },
+      {
+        "name": "Time",
+        "cql": "@T12",
+        "expected": {
+          "type": "Time",
+          "args": "0, time.January, 1, 12, 0, 0, 0, defaultEvalTimestamp.Location()",
+          "precision": "HOUR"
+        }
+      }
+    ],
+    "TestIntervalSelector": [
+      {
+        "name": "Integers",
+        "cql": "Interval[1, 2)",
+        "expected": {
+          "type": "Interval",
+          "raw": "Low:           newOrFatal(t, 1),\n\t\t\t\tHigh:          newOrFatal(t, 2),\n\t\t\t\tLowInclusive:  true,\n\t\t\t\tHighInclusive: false,\n\t\t\t\tStaticType:    &types.Interval{PointType: types.Integer},"
+        }
+      },
+      {
+        "name": "Longs",
+        "cql": "Interval(1L, 3]",
+        "expected": {
+          "type": "Interval",
+          "raw": "Low:           newOrFatal(t, int64(1)),\n\t\t\t\tHigh:          newOrFatal(t, int64(3)),\n\t\t\t\tLowInclusive:  false,\n\t\t\t\tHighInclusive: true,\n\t\t\t\tStaticType:    &types.Interval{PointType: types.Long},"
+        }
+      },
+      {
+        "name": "Decimals",
+        "cql": "Interval(1.0, 3]",
+        "expected": {
+          "type": "Interval",
+          "raw": "Low:           newOrFatal(t, 1.0),\n\t\t\t\tHigh:          newOrFatal(t, 3.0),\n\t\t\t\tLowInclusive:  false,\n\t\t\t\tHighInclusive: true,\n\t\t\t\tStaticType:    &types.Interval{PointType: types.Decimal},"
+        }
+      },
+      {
+        "name": "Date",
+        "cql": "Interval(@2024-03, @2024-03]",
+        "expected": {
+          "type": "Interval",
+          "raw": "Low:           newOrFatal(t, result.Date{Date: time.Date(2024, 3, 1, 0, 0, 0, 0, defaultEvalTimestamp.Location()), Precision: model.MONTH}),\n\t\t\t\tHigh:          newOrFatal(t, result.Date{Date: time.Date(2024, 3, 1, 0, 0, 0, 0, defaultEvalTimestamp.Location()), Precision: model.MONTH}),\n\t\t\t\tLowInclusive:  false,\n\t\t\t\tHighInclusive: true,\n\t\t\t\tStaticType:    &types.Interval{PointType: types.Date},"
+        }
+      },
+      {
+        "name": "DateTime",
+        "cql": "Interval(@2024-03-31T01:20:30.101Z, @2024-03-31T01:20:30.101Z]",
+        "expected": {
+          "type": "Interval",
+          "raw": "Low:           newOrFatal(t, result.DateTime{Date: time.Date(2024, time.March, 31, 1, 20, 30, 101e6, time.UTC), Precision: model.MILLISECOND}),\n\t\t\t\tHigh:          newOrFatal(t, result.DateTime{Date: time.Date(2024, time.March, 31, 1, 20, 30, 101e6, time.UTC), Precision: model.MILLISECOND}),\n\t\t\t\tLowInclusive:  false,\n\t\t\t\tHighInclusive: true,\n\t\t\t\tStaticType:    &types.Interval{PointType: types.DateTime},"
+        }
+      },
+      {
+        "name": "Left Null",
+        "cql": "Interval[null, 2)",
+        "expected": {
+          "type": "Interval",
+          "raw": "Low:           newOrFatal(t, nil),\n\t\t\t\tHigh:          newOrFatal(t, 2),\n\t\t\t\tLowInclusive:  true,\n\t\t\t\tHighInclusive: false,\n\t\t\t\tStaticType:    &types.Interval{PointType: types.Integer},"
+        }
+      },
+      {
+        "name": "Right Null",
+        "cql": "Interval[1, null)",
+        "expected": {
+          "type": "Interval",
+          "raw": "Low:           newOrFatal(t, 1),\n\t\t\t\tHigh:          newOrFatal(t, nil),\n\t\t\t\tLowInclusive:  true,\n\t\t\t\tHighInclusive: false,\n\t\t\t\tStaticType:    &types.Interval{PointType: types.Integer},"
+        }
+      },
+      {
+        "name": "Both null (with static types)",
+        "cql": "Interval[null as Integer, null as Integer)",
+        "expected": {
+          "type": "Interval",
+          "raw": "Low:           newOrFatal(t, nil),\n\t\t\t\tHigh:          newOrFatal(t, nil),\n\t\t\t\tLowInclusive:  true,\n\t\t\t\tHighInclusive: false,\n\t\t\t\tStaticType:    &types.Interval{PointType: types.Integer},"
+        }
+      }
+    ],
+    "TestListSelector": [
+      {
+        "name": "Non mixed",
+        "cql": "{1, 2}",
+        "expected": {
+          "type": "List",
+          "raw": "Value:      []result.Value{newOrFatal(t, 1), newOrFatal(t, 2)},\n\t\t\t\tStaticType: &types.List{ElementType: types.Integer},"
+        }
+      },
+      {
+        "name": "With type specifier",
+        "cql": "List<Decimal>{1, 2.0}",
+        "expected": {
+          "type": "List",
+          "raw": "Value:      []result.Value{newOrFatal(t, 1.0), newOrFatal(t, 2.0)},\n\t\t\t\tStaticType: &types.List{ElementType: types.Decimal},"
+        }
+      },
+      {
+        "name": "Mixed implicitly convertible to same type",
+        "cql": "{1, 2.0}",
+        "expected": {
+          "type": "List",
+          "raw": "Value:      []result.Value{newOrFatal(t, 1.0), newOrFatal(t, 2.0)},\n\t\t\t\tStaticType: &types.List{ElementType: types.Decimal},"
+        }
+      },
+      {
+        "name": "Mixed",
+        "cql": "{1, 'hi'}",
+        "expected": {
+          "type": "List",
+          "raw": "Value:      []result.Value{newOrFatal(t, 1), newOrFatal(t, \"hi\")},\n\t\t\t\tStaticType: &types.List{ElementType: &types.Choice{ChoiceTypes: []types.IType{types.Integer, types.String}}},"
+        }
+      },
+      {
+        "name": "Null is converted based on type specifier",
+        "cql": "List<Integer>{null}",
+        "expected": {
+          "type": "List",
+          "raw": "Value:      []result.Value{newOrFatal(t, nil)},\n\t\t\t\tStaticType: &types.List{ElementType: types.Integer},"
+        }
+      },
+      {
+        "name": "Empty",
+        "cql": "{}",
+        "expected": {
+          "type": "List",
+          "raw": "Value:      []result.Value{},\n\t\t\t\tStaticType: &types.List{ElementType: types.Any},"
+        }
+      }
+    ],
+    "TestTupleAndInstanceSelector": [
+      {
+        "name": "Quantity Instance",
+        "cql": "Quantity{value: 4, unit: 'day' }",
+        "expected": {
+          "raw": "result.Quantity{Value: 4, Unit: \"day\"}"
+        }
+      },
+      {
+        "name": "Code Instance",
+        "cql": "Code{code: 'foo', system: 'bar', version: '1.0', display: 'severed leg' }",
+        "expected": {
+          "raw": "result.Code{Code: \"foo\", System: \"bar\", Display: \"severed leg\", Version: \"1.0\"}"
+        }
+      },
+      {
+        "name": "CodeSystem Instance",
+        "cql": "CodeSystem{id: 'id', version: '1.0' }",
+        "expected": {
+          "raw": "result.CodeSystem{ID: \"id\", Version: \"1.0\"}"
+        }
+      },
+      {
+        "name": "Concept Instance no codes",
+        "cql": "Concept{codes: {} }",
+        "expected": {
+          "raw": "result.Concept{\n\t\t\t\tCodes: []*result.Code{},\n\t\t\t}"
+        }
+      },
+      {
+        "name": "Concept Instance with null codes",
+        "cql": "Concept{codes: { null as Code, null as Code } }",
+        "expected": {
+          "raw": "result.Concept{\n\t\t\t\tCodes: []*result.Code{nil, nil},\n\t\t\t}"
+        }
+      },
+      {
+        "name": "Concept Instance",
+        "cql": "Concept{codes: {Code{code: 'foo', system: 'bar', version: '1.0' }}, display: 'display' }",
+        "expected": {
+          "raw": "result.Concept{\n\t\t\t\tCodes:   []*result.Code{{Code: \"foo\", System: \"bar\", Version: \"1.0\"}},\n\t\t\t\tDisplay: \"display\",\n\t\t\t}"
+        }
+      },
+      {
+        "name": "ValueSet Instance",
+        "cql": "ValueSet{id: 'id', version: '1.0', codesystems: List<CodeSystem>{CodeSystem{id: 'id', version: '1.0' }}}",
+        "expected": {
+          "raw": "result.ValueSet{\n\t\t\t\tID:          \"id\",\n\t\t\t\tVersion:     \"1.0\",\n\t\t\t\tCodeSystems: []result.CodeSystem{{ID: \"id\", Version: \"1.0\"}},\n\t\t\t}"
+        }
+      },
+      {
+        "name": "FHIR Instance",
+        "cql": "Patient { gender: Patient.gender }",
+        "expected": {
+          "type": "Tuple",
+          "raw": "Value: map[string]result.Value{\n\t\t\t\t\t\"gender\": newOrFatal(t, result.Named{\n\t\t\t\t\t\tValue:       &r4patientpb.Patient_GenderCode{Value: c4pb.AdministrativeGenderCode_MALE},\n\t\t\t\t\t\tRuntimeType: &types.Named{TypeName: \"FHIR.AdministrativeGender\"},\n\t\t\t\t\t}),\n\t\t\t\t},\n\t\t\t\tRuntimeType: &types.Named{TypeName: \"FHIR.Patient\"},"
+        }
+      },
+      {
+        "name": "Tuple",
+        "cql": "Tuple { apple: 'red', banana: 4 as Choice<Integer, String> }",
+        "expected": {
+          "type": "Tuple",
+          "raw": "Value: map[string]result.Value{\n\t\t\t\t\t\"apple\":  newOrFatal(t, \"red\"),\n\t\t\t\t\t\"banana\": newOrFatal(t, 4),\n\t\t\t\t},\n\t\t\t\tRuntimeType: &types.Tuple{ElementTypes: map[string]types.IType{\"apple\": types.String, \"banana\": &types.Choice{ChoiceTypes: []types.IType{types.Integer, types.String}}}},"
+        }
+      }
+    ]
+  }
+}

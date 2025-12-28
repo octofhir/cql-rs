@@ -186,6 +186,10 @@ pub enum UnaryOp {
     Collapse,
     /// Singleton from
     SingletonFrom,
+    /// Predecessor (previous value in ordered domain)
+    Predecessor,
+    /// Successor (next value in ordered domain)
+    Successor,
 }
 
 impl UnaryOp {
@@ -205,6 +209,8 @@ impl UnaryOp {
             Self::Flatten => "flatten",
             Self::Collapse => "collapse",
             Self::SingletonFrom => "singleton from",
+            Self::Predecessor => "predecessor of",
+            Self::Successor => "successor of",
         }
     }
 }

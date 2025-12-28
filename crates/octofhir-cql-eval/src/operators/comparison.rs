@@ -9,6 +9,7 @@ use crate::error::{EvalError, EvalResult};
 use octofhir_cql_elm::BinaryExpression;
 use octofhir_cql_types::{CqlCode, CqlConcept, CqlInterval, CqlList, CqlQuantity, CqlTuple, CqlType, CqlValue};
 use rust_decimal::Decimal;
+use rust_decimal::prelude::ToPrimitive;
 use std::cmp::Ordering;
 
 impl CqlEngine {
@@ -29,7 +30,10 @@ impl CqlEngine {
             return Ok(CqlValue::Null);
         }
 
-        Ok(CqlValue::Boolean(cql_equal(&left, &right)?))
+        match cql_equal(&left, &right)? {
+            Some(result) => Ok(CqlValue::Boolean(result)),
+            None => Ok(CqlValue::Null),
+        }
     }
 
     /// Evaluate NotEqual (!=) operator
@@ -42,7 +46,10 @@ impl CqlEngine {
             return Ok(CqlValue::Null);
         }
 
-        Ok(CqlValue::Boolean(!cql_equal(&left, &right)?))
+        match cql_equal(&left, &right)? {
+            Some(result) => Ok(CqlValue::Boolean(!result)),
+            None => Ok(CqlValue::Null),
+        }
     }
 
     /// Evaluate Equivalent (~) operator
@@ -130,69 +137,78 @@ impl CqlEngine {
 
 /// CQL equality comparison
 ///
-/// Returns true if values are equal, false otherwise.
-/// Does NOT handle nulls - caller must check for nulls first.
-pub fn cql_equal(left: &CqlValue, right: &CqlValue) -> EvalResult<bool> {
+/// Returns Some(true) if values are equal, Some(false) if different, None if uncertain (null).
+/// Does NOT handle nulls at top level - caller must check for nulls first.
+pub fn cql_equal(left: &CqlValue, right: &CqlValue) -> EvalResult<Option<bool>> {
     match (left, right) {
         // Same type comparisons
-        (CqlValue::Boolean(a), CqlValue::Boolean(b)) => Ok(a == b),
-        (CqlValue::Integer(a), CqlValue::Integer(b)) => Ok(a == b),
-        (CqlValue::Long(a), CqlValue::Long(b)) => Ok(a == b),
-        (CqlValue::Decimal(a), CqlValue::Decimal(b)) => Ok(a == b),
-        (CqlValue::String(a), CqlValue::String(b)) => Ok(a == b),
+        (CqlValue::Boolean(a), CqlValue::Boolean(b)) => Ok(Some(a == b)),
+        (CqlValue::Integer(a), CqlValue::Integer(b)) => Ok(Some(a == b)),
+        (CqlValue::Long(a), CqlValue::Long(b)) => Ok(Some(a == b)),
+        (CqlValue::Decimal(a), CqlValue::Decimal(b)) => Ok(Some(a == b)),
+        (CqlValue::String(a), CqlValue::String(b)) => Ok(Some(a == b)),
 
         // Cross-type numeric comparisons
-        (CqlValue::Integer(a), CqlValue::Long(b)) => Ok((*a as i64) == *b),
-        (CqlValue::Long(a), CqlValue::Integer(b)) => Ok(*a == (*b as i64)),
-        (CqlValue::Integer(a), CqlValue::Decimal(b)) => Ok(Decimal::from(*a) == *b),
-        (CqlValue::Decimal(a), CqlValue::Integer(b)) => Ok(*a == Decimal::from(*b)),
-        (CqlValue::Long(a), CqlValue::Decimal(b)) => Ok(Decimal::from(*a) == *b),
-        (CqlValue::Decimal(a), CqlValue::Long(b)) => Ok(*a == Decimal::from(*b)),
+        (CqlValue::Integer(a), CqlValue::Long(b)) => Ok(Some((*a as i64) == *b)),
+        (CqlValue::Long(a), CqlValue::Integer(b)) => Ok(Some(*a == (*b as i64))),
+        (CqlValue::Integer(a), CqlValue::Decimal(b)) => Ok(Some(Decimal::from(*a) == *b)),
+        (CqlValue::Decimal(a), CqlValue::Integer(b)) => Ok(Some(*a == Decimal::from(*b))),
+        (CqlValue::Long(a), CqlValue::Decimal(b)) => Ok(Some(Decimal::from(*a) == *b)),
+        (CqlValue::Decimal(a), CqlValue::Long(b)) => Ok(Some(*a == Decimal::from(*b))),
 
         // Date/Time comparisons
-        (CqlValue::Date(a), CqlValue::Date(b)) => Ok(a == b),
-        (CqlValue::DateTime(a), CqlValue::DateTime(b)) => Ok(a == b),
-        (CqlValue::Time(a), CqlValue::Time(b)) => Ok(a == b),
+        (CqlValue::Date(a), CqlValue::Date(b)) => Ok(Some(a == b)),
+        (CqlValue::DateTime(a), CqlValue::DateTime(b)) => Ok(Some(a == b)),
+        (CqlValue::Time(a), CqlValue::Time(b)) => Ok(Some(a == b)),
 
-        // Quantity comparison (same units)
+        // Quantity comparison (same units or UCUM-convertible)
         (CqlValue::Quantity(a), CqlValue::Quantity(b)) => {
-            if a.unit == b.unit {
-                Ok(a.value == b.value)
-            } else {
-                // Different units - would need UCUM conversion
-                Err(EvalError::IncompatibleUnits {
-                    unit1: a.unit.clone().unwrap_or_default(),
-                    unit2: b.unit.clone().unwrap_or_default(),
-                })
-            }
+            compare_quantities_equal(a, b)
         }
 
         // Ratio comparison
         (CqlValue::Ratio(a), CqlValue::Ratio(b)) => {
-            Ok(a.numerator == b.numerator && a.denominator == b.denominator)
+            Ok(Some(a.numerator == b.numerator && a.denominator == b.denominator))
         }
 
         // Code comparison - must match code, system, and version
         (CqlValue::Code(a), CqlValue::Code(b)) => {
-            Ok(a.code == b.code && a.system == b.system && a.version == b.version)
+            Ok(Some(a.code == b.code && a.system == b.system && a.version == b.version))
         }
 
         // Concept comparison - codes must match
         (CqlValue::Concept(a), CqlValue::Concept(b)) => {
-            Ok(a.codes == b.codes)
+            Ok(Some(a.codes == b.codes))
         }
 
         // List comparison - element-wise
+        // Per CQL spec: null elements are considered equal within lists
         (CqlValue::List(a), CqlValue::List(b)) => {
             if a.len() != b.len() {
-                return Ok(false);
+                return Ok(Some(false));
             }
+            let mut has_uncertain = false;
             for (elem_a, elem_b) in a.iter().zip(b.iter()) {
-                if !cql_equal(elem_a, elem_b)? {
-                    return Ok(false);
+                // Per CQL spec: null elements are considered equal
+                if elem_a.is_null() && elem_b.is_null() {
+                    continue; // Both null - equal
+                }
+                // One null, one not - uncertain result
+                if elem_a.is_null() || elem_b.is_null() {
+                    has_uncertain = true;
+                    continue;
+                }
+                match cql_equal(elem_a, elem_b)? {
+                    Some(false) => return Ok(Some(false)), // Definite difference
+                    Some(true) => {} // Continue checking
+                    None => has_uncertain = true, // Uncertain
                 }
             }
-            Ok(true)
+            if has_uncertain {
+                Ok(None) // At least one uncertain comparison
+            } else {
+                Ok(Some(true)) // All comparisons were true
+            }
         }
 
         // Interval comparison
@@ -201,25 +217,42 @@ pub fn cql_equal(left: &CqlValue, right: &CqlValue) -> EvalResult<bool> {
         }
 
         // Tuple comparison - all elements must match
+        // Per CQL spec: null elements are considered equal within tuples
         (CqlValue::Tuple(a), CqlValue::Tuple(b)) => {
             if a.len() != b.len() {
-                return Ok(false);
+                return Ok(Some(false));
             }
+            let mut has_uncertain = false;
             for (name, val_a) in a.iter() {
                 match b.get(name) {
                     Some(val_b) => {
-                        if !cql_equal(val_a, val_b)? {
-                            return Ok(false);
+                        // Per CQL spec: null elements are considered equal
+                        if val_a.is_null() && val_b.is_null() {
+                            continue; // Both null - equal
+                        }
+                        // One null, one not - uncertain result
+                        if val_a.is_null() || val_b.is_null() {
+                            has_uncertain = true;
+                            continue;
+                        }
+                        match cql_equal(val_a, val_b)? {
+                            Some(false) => return Ok(Some(false)), // Definite difference
+                            Some(true) => {} // Continue checking
+                            None => has_uncertain = true, // Uncertain
                         }
                     }
-                    None => return Ok(false),
+                    None => return Ok(Some(false)),
                 }
             }
-            Ok(true)
+            if has_uncertain {
+                Ok(None) // At least one uncertain comparison
+            } else {
+                Ok(Some(true)) // All comparisons were true
+            }
         }
 
         // Different types are not equal
-        _ => Ok(false),
+        _ => Ok(Some(false)),
     }
 }
 
@@ -263,8 +296,15 @@ pub fn cql_equivalent(left: &CqlValue, right: &CqlValue) -> EvalResult<bool> {
                 return Ok(false);
             }
             for (elem_a, elem_b) in a.iter().zip(b.iter()) {
-                if !cql_equivalent(elem_a, elem_b)? {
-                    return Ok(false);
+                // Handle null equivalence for elements
+                match (elem_a.is_null(), elem_b.is_null()) {
+                    (true, true) => continue, // null ~ null is true
+                    (true, false) | (false, true) => return Ok(false), // null ~ non-null is false
+                    (false, false) => {
+                        if !cql_equivalent(elem_a, elem_b)? {
+                            return Ok(false);
+                        }
+                    }
                 }
             }
             Ok(true)
@@ -278,8 +318,15 @@ pub fn cql_equivalent(left: &CqlValue, right: &CqlValue) -> EvalResult<bool> {
             for (name, val_a) in a.iter() {
                 match b.get(name) {
                     Some(val_b) => {
-                        if !cql_equivalent(val_a, val_b)? {
-                            return Ok(false);
+                        // Handle null equivalence for elements
+                        match (val_a.is_null(), val_b.is_null()) {
+                            (true, true) => continue, // null ~ null is true
+                            (true, false) | (false, true) => return Ok(false), // null ~ non-null is false
+                            (false, false) => {
+                                if !cql_equivalent(val_a, val_b)? {
+                                    return Ok(false);
+                                }
+                            }
                         }
                     }
                     None => return Ok(false),
@@ -289,7 +336,7 @@ pub fn cql_equivalent(left: &CqlValue, right: &CqlValue) -> EvalResult<bool> {
         }
 
         // Fall back to equality for other types
-        _ => cql_equal(left, right),
+        _ => cql_equal(left, right).map(|opt| opt.unwrap_or(false)),
     }
 }
 
@@ -391,16 +438,9 @@ pub fn cql_compare(left: &CqlValue, right: &CqlValue) -> EvalResult<Option<Order
         // Time comparison
         (CqlValue::Time(a), CqlValue::Time(b)) => Ok(a.partial_cmp(b)),
 
-        // Quantity comparison (same units)
+        // Quantity comparison (same units or UCUM-convertible)
         (CqlValue::Quantity(a), CqlValue::Quantity(b)) => {
-            if a.unit == b.unit {
-                Ok(Some(a.value.cmp(&b.value)))
-            } else {
-                Err(EvalError::IncompatibleUnits {
-                    unit1: a.unit.clone().unwrap_or_default(),
-                    unit2: b.unit.clone().unwrap_or_default(),
-                })
-            }
+            compare_quantities(a, b)
         }
 
         _ => Err(EvalError::unsupported_operator(
@@ -410,22 +450,113 @@ pub fn cql_compare(left: &CqlValue, right: &CqlValue) -> EvalResult<Option<Order
     }
 }
 
+/// Compare two quantities for equality, with UCUM unit conversion if needed
+fn compare_quantities_equal(a: &CqlQuantity, b: &CqlQuantity) -> EvalResult<Option<bool>> {
+    // Same unit - direct comparison
+    if a.unit == b.unit {
+        return Ok(Some(a.value == b.value));
+    }
+
+    // Different units - try UCUM conversion
+    let unit_a = a.unit.as_deref().unwrap_or("1");
+    let unit_b = b.unit.as_deref().unwrap_or("1");
+
+    // Check if units are comparable (same dimension)
+    match octofhir_ucum::is_comparable(unit_a, unit_b) {
+        Ok(true) => {
+            // Convert both to canonical form and compare
+            match (octofhir_ucum::get_canonical_units(unit_a), octofhir_ucum::get_canonical_units(unit_b)) {
+                (Ok(canon_a), Ok(canon_b)) => {
+                    // Convert values to canonical units
+                    let val_a = a.value.to_f64().unwrap_or(0.0) * canon_a.factor;
+                    let val_b = b.value.to_f64().unwrap_or(0.0) * canon_b.factor;
+                    // Compare with small epsilon for floating point
+                    let epsilon = 1e-10 * (val_a.abs() + val_b.abs()).max(1.0);
+                    Ok(Some((val_a - val_b).abs() < epsilon))
+                }
+                _ => Err(EvalError::IncompatibleUnits {
+                    unit1: unit_a.to_string(),
+                    unit2: unit_b.to_string(),
+                }),
+            }
+        }
+        Ok(false) => Err(EvalError::IncompatibleUnits {
+            unit1: unit_a.to_string(),
+            unit2: unit_b.to_string(),
+        }),
+        Err(_) => Err(EvalError::IncompatibleUnits {
+            unit1: unit_a.to_string(),
+            unit2: unit_b.to_string(),
+        }),
+    }
+}
+
+/// Compare two quantities for ordering, with UCUM unit conversion if needed
+fn compare_quantities(a: &CqlQuantity, b: &CqlQuantity) -> EvalResult<Option<Ordering>> {
+    // Same unit - direct comparison
+    if a.unit == b.unit {
+        return Ok(Some(a.value.cmp(&b.value)));
+    }
+
+    // Different units - try UCUM conversion
+    let unit_a = a.unit.as_deref().unwrap_or("1");
+    let unit_b = b.unit.as_deref().unwrap_or("1");
+
+    // Check if units are comparable (same dimension)
+    match octofhir_ucum::is_comparable(unit_a, unit_b) {
+        Ok(true) => {
+            // Convert both to canonical form and compare
+            match (octofhir_ucum::get_canonical_units(unit_a), octofhir_ucum::get_canonical_units(unit_b)) {
+                (Ok(canon_a), Ok(canon_b)) => {
+                    // Convert values to canonical units
+                    let val_a = a.value.to_f64().unwrap_or(0.0) * canon_a.factor;
+                    let val_b = b.value.to_f64().unwrap_or(0.0) * canon_b.factor;
+                    // Compare with small epsilon for floating point
+                    let epsilon = 1e-10 * (val_a.abs() + val_b.abs()).max(1.0);
+                    if (val_a - val_b).abs() < epsilon {
+                        Ok(Some(Ordering::Equal))
+                    } else if val_a < val_b {
+                        Ok(Some(Ordering::Less))
+                    } else {
+                        Ok(Some(Ordering::Greater))
+                    }
+                }
+                _ => Err(EvalError::IncompatibleUnits {
+                    unit1: unit_a.to_string(),
+                    unit2: unit_b.to_string(),
+                }),
+            }
+        }
+        Ok(false) => Err(EvalError::IncompatibleUnits {
+            unit1: unit_a.to_string(),
+            unit2: unit_b.to_string(),
+        }),
+        Err(_) => Err(EvalError::IncompatibleUnits {
+            unit1: unit_a.to_string(),
+            unit2: unit_b.to_string(),
+        }),
+    }
+}
+
 /// Compare two intervals for equality
-fn interval_equal(a: &CqlInterval, b: &CqlInterval) -> EvalResult<bool> {
+fn interval_equal(a: &CqlInterval, b: &CqlInterval) -> EvalResult<Option<bool>> {
     // Compare bounds and closed flags
     let low_equal = match (&a.low, &b.low) {
         (Some(al), Some(bl)) => cql_equal(al, bl)?,
-        (None, None) => true,
-        _ => false,
+        (None, None) => Some(true),
+        _ => Some(false),
     };
 
     let high_equal = match (&a.high, &b.high) {
         (Some(ah), Some(bh)) => cql_equal(ah, bh)?,
-        (None, None) => true,
-        _ => false,
+        (None, None) => Some(true),
+        _ => Some(false),
     };
 
-    Ok(low_equal && high_equal && a.low_closed == b.low_closed && a.high_closed == b.high_closed)
+    match (low_equal, high_equal) {
+        (Some(le), Some(he)) => Ok(Some(le && he && a.low_closed == b.low_closed && a.high_closed == b.high_closed)),
+        _ => Ok(None),
+    }
 }
 
 #[cfg(test)]
@@ -434,29 +565,29 @@ mod tests {
 
     #[test]
     fn test_integer_equality() {
-        assert!(cql_equal(&CqlValue::Integer(5), &CqlValue::Integer(5)).unwrap());
-        assert!(!cql_equal(&CqlValue::Integer(5), &CqlValue::Integer(6)).unwrap());
+        assert_eq!(cql_equal(&CqlValue::Integer(5), &CqlValue::Integer(5)).unwrap(), Some(true));
+        assert_eq!(cql_equal(&CqlValue::Integer(5), &CqlValue::Integer(6)).unwrap(), Some(false));
     }
 
     #[test]
     fn test_cross_type_numeric_equality() {
-        assert!(cql_equal(&CqlValue::Integer(5), &CqlValue::Long(5)).unwrap());
-        assert!(cql_equal(
+        assert_eq!(cql_equal(&CqlValue::Integer(5), &CqlValue::Long(5)).unwrap(), Some(true));
+        assert_eq!(cql_equal(
             &CqlValue::Integer(5),
             &CqlValue::Decimal(Decimal::from(5))
-        ).unwrap());
+        ).unwrap(), Some(true));
     }
 
     #[test]
     fn test_string_equality() {
-        assert!(cql_equal(
+        assert_eq!(cql_equal(
             &CqlValue::String("hello".to_string()),
             &CqlValue::String("hello".to_string())
-        ).unwrap());
-        assert!(!cql_equal(
+        ).unwrap(), Some(true));
+        assert_eq!(cql_equal(
             &CqlValue::String("hello".to_string()),
             &CqlValue::String("Hello".to_string())
-        ).unwrap());
+        ).unwrap(), Some(false));
     }
 
     #[test]
@@ -474,7 +605,7 @@ mod tests {
         let code2 = CqlValue::Code(CqlCode::new("123", "http://snomed.info/sct", Some("2.0"), Some("Different")));
 
         // Equal fails because version differs
-        assert!(!cql_equal(&code1, &code2).unwrap());
+        assert_eq!(cql_equal(&code1, &code2).unwrap(), Some(false));
         // Equivalent succeeds because only code and system matter
         assert!(cql_equivalent(&code1, &code2).unwrap());
     }
@@ -493,5 +624,42 @@ mod tests {
             cql_compare(&CqlValue::Integer(5), &CqlValue::Integer(5)).unwrap(),
             Some(Ordering::Equal)
         );
+    }
+
+    #[test]
+    fn test_tuple_equality_with_nulls() {
+        use octofhir_cql_types::CqlTuple;
+
+        // Two tuples with null values at the same position
+        let mut t1 = CqlTuple::new();
+        t1.set("Id".to_string(), CqlValue::Integer(1));
+        t1.set("Name".to_string(), CqlValue::Null);
+
+        let mut t2 = CqlTuple::new();
+        t2.set("Id".to_string(), CqlValue::Integer(1));
+        t2.set("Name".to_string(), CqlValue::Null);
+
+        // For equivalence, null ~ null is true
+        assert!(cql_equivalent(&CqlValue::Tuple(t1.clone()), &CqlValue::Tuple(t2.clone())).unwrap());
+
+        // Per CQL spec: null elements are considered equal within tuples
+        assert_eq!(cql_equal(&CqlValue::Tuple(t1), &CqlValue::Tuple(t2)).unwrap(), Some(true));
+    }
+
+    #[test]
+    fn test_tuple_equality_with_one_null() {
+        use octofhir_cql_types::CqlTuple;
+
+        // One tuple has null, other has value - should be uncertain
+        let mut t1 = CqlTuple::new();
+        t1.set("Id".to_string(), CqlValue::Integer(1));
+        t1.set("Name".to_string(), CqlValue::Null);
+
+        let mut t2 = CqlTuple::new();
+        t2.set("Id".to_string(), CqlValue::Integer(1));
+        t2.set("Name".to_string(), CqlValue::String("John".to_string()));
+
+        // One null, one value - uncertain
+        assert_eq!(cql_equal(&CqlValue::Tuple(t1), &CqlValue::Tuple(t2)).unwrap(), None);
     }
 }

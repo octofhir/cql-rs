@@ -1,0 +1,45 @@
+{
+  "source": "expression_test.go",
+  "functions": {
+    "TestExpressions": [
+      {
+        "name": "Message returns source value",
+        "cql": "Message(1.2, true, 'Code 100', 'Message', 'Test Message')",
+        "expected": 1.2
+      },
+      {
+        "name": "Message returns source false condition",
+        "cql": "Message(1.2, false, 'Code 100', 'Severity', 'Test Message')",
+        "expected": 1.2
+      }
+    ],
+    "TestRetrieves": [
+      {
+        "name": "Retrieve multiple FHIR resources",
+        "cql": "define TESTRESULT: [Observation]",
+        "expected": {
+          "type": "List",
+          "raw": "Value: []result.Value{\n\t\t\t\t\tnewOrFatal(t, result.Named{Value: RetrieveFHIRResource(t, \"Observation\", \"1\"), RuntimeType: &types.Named{TypeName: \"FHIR.Observation\"}}),\n\t\t\t\t\tnewOrFatal(t, result.Named{Value: RetrieveFHIRResource(t, \"Observation\", \"2\"), RuntimeType: &types.Named{TypeName: \"FHIR.Observation\"}}),\n\t\t\t\t\tnewOrFatal(t, result.Named{Value: RetrieveFHIRResource(t, \"Observation\", \"3\"), RuntimeType: &types.Named{TypeName: \"FHIR.Observation\"}}),\n\t\t\t\t},\n\t\t\t\tStaticType: &types.List{ElementType: &types.Named{TypeName: \"FHIR.Observation\"}},"
+        }
+      },
+      {
+        "name": "Retrieve returns empty list",
+        "cql": "define TESTRESULT: [Binary]",
+        "expected": {
+          "type": "List",
+          "raw": "Value: []result.Value{}, StaticType: &types.List{ElementType: &types.Named{TypeName: \"FHIR.Binary\"}}"
+        }
+      }
+    ],
+    "TestLocalReferences": [
+      {
+        "name": "Property on Alias Ref",
+        "cql": "define TESTRESULT: [Patient] P return P.active",
+        "expected": {
+          "type": "List",
+          "raw": "Value:      []result.Value{newOrFatal(t, result.Named{Value: &d4pb.Boolean{Value: true}, RuntimeType: &types.Named{TypeName: \"FHIR.boolean\"}})},\n\t\t\t\tStaticType: &types.List{ElementType: &types.Named{TypeName: \"FHIR.boolean\"}}"
+        }
+      }
+    ]
+  }
+}

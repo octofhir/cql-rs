@@ -51,6 +51,17 @@ rust_decimal = { workspace = true }
 indexmap = { workspace = true }
 async-trait = { workspace = true }
 quick-xml = { workspace = true }
+divan = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+[[bench]]
+name = "parser"
+harness = false
+
+[[bench]]
+name = "evaluator"
+harness = false
 
 [lints]
 workspace = true

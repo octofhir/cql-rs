@@ -1,7 +1,7 @@
-//! CQL parser using Chumsky 0.12
+//! CQL parser using Winnow
 //!
-//! This crate provides a complete CQL 1.5 parser using Chumsky with Pratt parsing
-//! for operator precedence.
+//! This crate provides a complete CQL 1.5 parser using Winnow with recursive descent
+//! and precedence climbing for operator precedence.
 
 mod combinators;
 mod expression;

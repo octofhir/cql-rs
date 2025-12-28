@@ -407,6 +407,19 @@ impl TypeInferrer {
             Expression::Total(_) => Ok(CqlType::Any),
             Expression::Iteration | Expression::Index | Expression::TotalRef => Ok(CqlType::Any),
 
+            Expression::MinValue(min_expr) | Expression::MaxValue(min_expr) => {
+                // Return the type based on the value_type identifier
+                match min_expr.value_type.name.as_str() {
+                    "Integer" => Ok(CqlType::Integer),
+                    "Long" => Ok(CqlType::Long),
+                    "Decimal" => Ok(CqlType::Decimal),
+                    "Date" => Ok(CqlType::Date),
+                    "DateTime" => Ok(CqlType::DateTime),
+                    "Time" => Ok(CqlType::Time),
+                    _ => Ok(CqlType::Any),
+                }
+            }
+
             Expression::Error => Ok(CqlType::Any),
         }
     }
@@ -510,6 +523,8 @@ impl TypeInferrer {
                     Ok(operand.clone())
                 }
             }
+            // Predecessor and Successor return the same type as the operand
+            UnaryOp::Predecessor | UnaryOp::Successor => Ok(operand.clone()),
         }
     }
 

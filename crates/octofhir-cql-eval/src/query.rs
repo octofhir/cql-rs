@@ -34,6 +34,10 @@ impl CqlEngine {
         // Step 1: Evaluate all sources
         let sources = self.evaluate_query_sources(query, ctx)?;
 
+        // Track if this is a singleton source query (non-list source)
+        // A singleton source should return a scalar, not a list
+        let is_singleton_source = sources.len() == 1 && sources[0].2;
+
         // Step 2: Generate combinations (cartesian product for multi-source)
         let mut combinations = self.generate_source_combinations(&sources)?;
 
@@ -75,28 +79,37 @@ impl CqlEngine {
             results = self.apply_sort_clause(results, sort, ctx)?;
         }
 
+        // Step 10: For singleton source, unwrap the result
+        // If the source was a non-list value, return the single result directly
+        if is_singleton_source && results.len() == 1 {
+            return Ok(results.into_iter().next().unwrap());
+        }
+
         Ok(CqlValue::List(CqlList::from_elements(results)))
     }
 
-    /// Evaluate query sources and return as (alias, values) pairs
+    /// Evaluate query sources and return as (alias, values, was_singleton) tuples
+    ///
+    /// The third element indicates if the source was a non-list value (singleton).
+    /// This is used to determine if the result should be unwrapped.
     fn evaluate_query_sources(
         &self,
         query: &Query,
         ctx: &mut EvaluationContext,
-    ) -> EvalResult<Vec<(String, Vec<CqlValue>)>> {
+    ) -> EvalResult<Vec<(String, Vec<CqlValue>, bool)>> {
         let mut sources = Vec::new();
 
         for source in &query.source {
             let value = self.evaluate(&source.expression, ctx)?;
 
-            // Convert to list if needed
-            let values = match value {
-                CqlValue::List(list) => list.iter().cloned().collect(),
-                CqlValue::Null => vec![],
-                other => vec![other],
+            // Convert to list if needed, and track if it was originally a singleton
+            let (values, was_singleton) = match value {
+                CqlValue::List(list) => (list.iter().cloned().collect(), false),
+                CqlValue::Null => (vec![], false),
+                other => (vec![other], true), // Non-list value treated as singleton
             };
 
-            sources.push((source.alias.clone(), values));
+            sources.push((source.alias.clone(), values, was_singleton));
         }
 
         Ok(sources)
@@ -108,21 +121,21 @@ impl CqlEngine {
     /// For multi-source queries, this produces the cartesian product.
     fn generate_source_combinations(
         &self,
-        sources: &[(String, Vec<CqlValue>)],
+        sources: &[(String, Vec<CqlValue>, bool)],
     ) -> EvalResult<Vec<Vec<(String, CqlValue)>>> {
         if sources.is_empty() {
             return Ok(vec![]);
         }
 
         // Start with first source
-        let (first_alias, first_values) = &sources[0];
+        let (first_alias, first_values, _) = &sources[0];
         let mut combinations: Vec<Vec<(String, CqlValue)>> = first_values
             .iter()
             .map(|v| vec![(first_alias.clone(), v.clone())])
             .collect();
 
         // Add each subsequent source (cartesian product)
-        for (alias, values) in sources.iter().skip(1) {
+        for (alias, values, _) in sources.iter().skip(1) {
             let mut new_combinations = Vec::new();
             for combo in combinations {
                 for value in values {
@@ -396,8 +409,8 @@ impl CqlEngine {
                 }
             }
 
-            // Set the accumulator alias
-            ctx.set_special(&aggregate.identifier, accumulator.clone());
+            // Set the accumulator as an alias so it can be referenced in the expression
+            ctx.set_alias(&aggregate.identifier, accumulator.clone());
 
             // Evaluate aggregate expression
             accumulator = self.evaluate(&aggregate.expression, ctx)?;
@@ -422,7 +435,7 @@ impl CqlEngine {
                 existing
                     .iter()
                     .zip(combo.iter())
-                    .all(|((_, v1), (_, v2))| crate::operators::comparison::cql_equal(v1, v2).unwrap_or(false))
+                    .all(|((_, v1), (_, v2))| crate::operators::comparison::cql_equal(v1, v2).unwrap_or(Some(false)).unwrap_or(false))
             });
 
             if !is_duplicate {
@@ -439,7 +452,7 @@ impl CqlEngine {
 
         for value in values {
             let is_duplicate = result.iter().any(|existing| {
-                crate::operators::comparison::cql_equal(existing, &value).unwrap_or(false)
+                crate::operators::comparison::cql_equal(existing, &value).unwrap_or(Some(false)).unwrap_or(false)
             });
 
             if !is_duplicate {

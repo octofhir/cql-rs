@@ -52,7 +52,7 @@ thiserror = "2"
 once_cell = "1.21"
 
 # Parser
-chumsky = { version = "0.12", features = ["pratt"] }
+winnow = { version = "0.7", features = ["std"] }
 
 # Async
 async-trait = "0.1"
@@ -82,7 +82,7 @@ wildcard_imports = "warn"
 module_name_repetitions = "allow"
 redundant_pub_crate = "warn"
 
-# Reduce debug info to avoid linker issues
+# Reduce debug info to avoid linker issues with long symbol names
 [profile.dev]
 debug = 0
 strip = "symbols"
@@ -92,5 +92,18 @@ debug = 0
 strip = "symbols"
 
 [profile.release]
+debug = 0
+strip = "symbols"
+
+# Apply to all packages
+[profile.dev.package."*"]
+debug = 0
+strip = "symbols"
+
+[profile.test.package."*"]
+debug = 0
+strip = "symbols"
+
+[profile.release.package."*"]
 debug = 0
 strip = "symbols"

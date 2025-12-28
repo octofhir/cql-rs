@@ -208,7 +208,7 @@ impl CqlEngine {
         };
 
         for (i, item) in list.iter().enumerate() {
-            if cql_equal(item, &element)? {
+            if cql_equal(item, &element)?.unwrap_or(false) {
                 return Ok(CqlValue::Integer(i as i32));
             }
         }
@@ -350,14 +350,14 @@ impl CqlEngine {
                 match expanded {
                     CqlValue::List(inner) => {
                         for inner_item in inner.iter() {
-                            if !result.iter().any(|r| cql_equal(r, inner_item).unwrap_or(false)) {
+                            if !result.iter().any(|r| cql_equal(r, inner_item).unwrap_or(Some(false)).unwrap_or(false)) {
                                 new_items.push(inner_item.clone());
                             }
                         }
                     }
                     CqlValue::Null => {}
                     other => {
-                        if !result.iter().any(|r| cql_equal(r, &other).unwrap_or(false)) {
+                        if !result.iter().any(|r| cql_equal(r, &other).unwrap_or(Some(false)).unwrap_or(false)) {
                             new_items.push(other);
                         }
                     }
@@ -374,6 +374,9 @@ impl CqlEngine {
     }
 
     /// Evaluate Distinct - removes duplicates
+    ///
+    /// For the Distinct operator, null values are considered equivalent to each other,
+    /// so multiple nulls are reduced to a single null.
     pub fn eval_distinct(&self, expr: &UnaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
         let operand = self.evaluate(&expr.operand, ctx)?;
 
@@ -381,8 +384,28 @@ impl CqlEngine {
             CqlValue::Null => Ok(CqlValue::Null),
             CqlValue::List(list) => {
                 let mut result: Vec<CqlValue> = Vec::new();
+                let mut has_null = false;
+
                 for item in list.iter() {
-                    if !result.iter().any(|r| cql_equal(r, item).unwrap_or(false)) {
+                    // Special handling for nulls - only keep one null
+                    if item.is_null() {
+                        if !has_null {
+                            result.push(item.clone());
+                            has_null = true;
+                        }
+                        continue;
+                    }
+
+                    // For non-null values, use cql_equal to check for duplicates
+                    let is_duplicate = result.iter().any(|r| {
+                        if r.is_null() {
+                            false // Null is never equal to non-null for comparison
+                        } else {
+                            cql_equal(r, item).unwrap_or(Some(false)).unwrap_or(false)
+                        }
+                    });
+
+                    if !is_duplicate {
                         result.push(item.clone());
                     }
                 }
@@ -811,7 +834,7 @@ impl CqlEngine {
         // Count occurrences
         let mut counts: Vec<(&CqlValue, usize)> = Vec::new();
         for item in &non_null {
-            let found = counts.iter_mut().find(|(v, _)| cql_equal(v, item).unwrap_or(false));
+            let found = counts.iter_mut().find(|(v, _)| cql_equal(v, item).unwrap_or(Some(false)).unwrap_or(false));
             match found {
                 Some((_, count)) => *count += 1,
                 None => counts.push((item, 1)),
@@ -989,7 +1012,7 @@ mod tests {
 
         let mut result: Vec<CqlValue> = Vec::new();
         for item in list.iter() {
-            if !result.iter().any(|r| cql_equal(r, item).unwrap_or(false)) {
+            if !result.iter().any(|r| cql_equal(r, item).unwrap_or(Some(false)).unwrap_or(false)) {
                 result.push(item.clone());
             }
         }

@@ -39,6 +39,10 @@ pub enum Expression {
     Convert(ConvertExpr),
     /// Cast expression (explicit)
     Cast(CastExpr),
+    /// Minimum value for type (minimum Integer, minimum DateTime, etc.)
+    MinValue(MinMaxValueExpr),
+    /// Maximum value for type (maximum Integer, maximum DateTime, etc.)
+    MaxValue(MinMaxValueExpr),
 
     // === Conditionals ===
     /// If-then-else expression
@@ -267,6 +271,13 @@ pub struct CastExpr {
     pub operand: BoxExpr,
     /// Target type
     pub as_type: Spanned<TypeSpecifier>,
+}
+
+/// MinValue/MaxValue expression
+#[derive(Debug, Clone)]
+pub struct MinMaxValueExpr {
+    /// Target type name (e.g., "Integer", "DateTime")
+    pub value_type: Identifier,
 }
 
 /// If expression

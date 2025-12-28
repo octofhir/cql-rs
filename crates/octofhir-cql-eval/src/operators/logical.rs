@@ -165,7 +165,27 @@ impl CqlEngine {
     ///
     /// Returns the first non-null value in the list
     /// If all values are null, returns null
+    /// If a single list argument is provided, iterates through the list elements
     pub fn eval_coalesce(&self, expr: &NaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+        // Special case: single list argument - iterate through list elements
+        if expr.operand.len() == 1 {
+            let value = self.evaluate(&expr.operand[0], ctx)?;
+            if let CqlValue::List(list) = &value {
+                for item in &list.elements {
+                    if !item.is_null() {
+                        return Ok(item.clone());
+                    }
+                }
+                return Ok(CqlValue::Null);
+            }
+            // Single non-list value - return it if not null
+            if !value.is_null() {
+                return Ok(value);
+            }
+            return Ok(CqlValue::Null);
+        }
+
+        // Multiple operands - check each one
         for operand in &expr.operand {
             let value = self.evaluate(operand, ctx)?;
             if !value.is_null() {
@@ -204,7 +224,7 @@ impl CqlEngine {
                 // Use equality comparison
                 let equal = match (&comparand, &when_value) {
                     (CqlValue::Null, _) | (_, CqlValue::Null) => false,
-                    _ => crate::operators::comparison::cql_equal(&comparand, &when_value)?,
+                    _ => crate::operators::comparison::cql_equal(&comparand, &when_value)?.unwrap_or(false),
                 };
 
                 if equal {

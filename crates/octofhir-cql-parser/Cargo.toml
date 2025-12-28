@@ -1,6 +1,6 @@
 [package]
 name = "octofhir-cql-parser"
-description = "CQL parser using Chumsky"
+description = "CQL parser using Winnow"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
@@ -10,7 +10,7 @@ repository.workspace = true
 [dependencies]
 octofhir-cql-ast = { workspace = true }
 octofhir-cql-diagnostics = { workspace = true }
-chumsky = { workspace = true }
+winnow = { workspace = true }
 rust_decimal = { workspace = true }
 
 [dev-dependencies]

@@ -1,0 +1,762 @@
+{
+  "source": "operator_string_test.go",
+  "functions": {
+    "TestConcatenate": [
+      {
+        "name": "'a' + 'b'",
+        "cql": "'a' + 'b'",
+        "expected": "ab"
+      },
+      {
+        "name": "'a' + 'b' + 'c'",
+        "cql": "'a' + 'b' + 'c'",
+        "expected": "abc"
+      },
+      {
+        "name": "'a' + null",
+        "cql": "'a' + null",
+        "expected": null
+      },
+      {
+        "name": "null + 'a'",
+        "cql": "null + 'a'",
+        "expected": null
+      },
+      {
+        "name": "concatenate with & operator",
+        "cql": "'a' & 'b'",
+        "expected": "ab"
+      },
+      {
+        "name": "concatenate using & treats null as empty string, when null is second input",
+        "cql": "'a' & null",
+        "expected": "a"
+      },
+      {
+        "name": "concatenate using & treats null as empty string, when null is first input",
+        "cql": "null & 'a'",
+        "expected": "a"
+      }
+    ],
+    "TestSubstring": [
+      {
+        "name": "Substring('abcdef', 2)",
+        "cql": "Substring('abcdef', 2)",
+        "expected": "cdef"
+      },
+      {
+        "name": "Substring('abcdef', 0)",
+        "cql": "Substring('abcdef', 0)",
+        "expected": "abcdef"
+      },
+      {
+        "name": "Substring('abcdef', 5)",
+        "cql": "Substring('abcdef', 5)",
+        "expected": "f"
+      },
+      {
+        "name": "Substring('abcdef', 6) -> null (startIndex equals length)",
+        "cql": "Substring('abcdef', 6)",
+        "expected": null
+      },
+      {
+        "name": "Substring('abcdef', 7) -> null (startIndex out of bounds)",
+        "cql": "Substring('abcdef', 7)",
+        "expected": null
+      },
+      {
+        "name": "Substring('abcdef', -1) -> null (startIndex out of bounds)",
+        "cql": "Substring('abcdef', -1)",
+        "expected": null
+      },
+      {
+        "name": "Substring('', 0) -> empty string",
+        "cql": "Substring('', 0)",
+        "expected": ""
+      },
+      {
+        "name": "Substring('', 1) -> null",
+        "cql": "Substring('', 1)",
+        "expected": null
+      },
+      {
+        "name": "Substring(null, 2) -> null",
+        "cql": "Substring(null, 2)",
+        "expected": null
+      },
+      {
+        "name": "Substring('abcdef', null) -> null",
+        "cql": "Substring('abcdef', null)",
+        "expected": null
+      },
+      {
+        "name": "Substring('\ud83d\ude0a\ud83d\ude0a\ud83d\ude0a', 1) -> \ud83d\ude0a\ud83d\ude0a (Unicode)",
+        "cql": "Substring('\ud83d\ude0a\ud83d\ude0a\ud83d\ude0a', 1)",
+        "expected": "\ud83d\ude0a\ud83d\ude0a"
+      },
+      {
+        "name": "Substring('abcdef', 2, 3)",
+        "cql": "Substring('abcdef', 2, 3)",
+        "expected": "cde"
+      },
+      {
+        "name": "Substring('abcdef', 0, 3)",
+        "cql": "Substring('abcdef', 0, 3)",
+        "expected": "abc"
+      },
+      {
+        "name": "Substring('abcdef', 0, 6)",
+        "cql": "Substring('abcdef', 0, 6)",
+        "expected": "abcdef"
+      },
+      {
+        "name": "Substring('abcdef', 0, 7) -> abcdef (length truncated)",
+        "cql": "Substring('abcdef', 0, 7)",
+        "expected": "abcdef"
+      },
+      {
+        "name": "Substring('abcdef', 5, 1)",
+        "cql": "Substring('abcdef', 5, 1)",
+        "expected": "f"
+      },
+      {
+        "name": "Substring('abcdef', 5, 2) -> f (length truncated)",
+        "cql": "Substring('abcdef', 5, 2)",
+        "expected": "f"
+      },
+      {
+        "name": "Substring('abcdef', 2, 0) -> empty string (zero length)",
+        "cql": "Substring('abcdef', 2, 0)",
+        "expected": ""
+      },
+      {
+        "name": "Substring('abcdef', 6, 0) -> null (startIndex equals length)",
+        "cql": "Substring('abcdef', 6, 0)",
+        "expected": null
+      },
+      {
+        "name": "Substring('abcdef', 6, 1) -> null (startIndex equals length)",
+        "cql": "Substring('abcdef', 6, 1)",
+        "expected": null
+      },
+      {
+        "name": "Substring('abcdef', 7, 2) -> null (startIndex out of bounds)",
+        "cql": "Substring('abcdef', 7, 2)",
+        "expected": null
+      },
+      {
+        "name": "Substring('abcdef', -1, 3) -> null (startIndex out of bounds)",
+        "cql": "Substring('abcdef', -1, 3)",
+        "expected": null
+      },
+      {
+        "name": "Substring('abcdef', 2, -1) -> null (negative length)",
+        "cql": "Substring('abcdef', 2, -1)",
+        "expected": null
+      },
+      {
+        "name": "Substring('', 0, 0) -> empty string",
+        "cql": "Substring('', 0, 0)",
+        "expected": ""
+      },
+      {
+        "name": "Substring('', 0, 1) -> empty string (length truncated)",
+        "cql": "Substring('', 0, 1)",
+        "expected": ""
+      },
+      {
+        "name": "Substring('', 1, 1) -> null",
+        "cql": "Substring('', 1, 1)",
+        "expected": null
+      },
+      {
+        "name": "Substring(null, 2, 3) -> null",
+        "cql": "Substring(null, 2, 3)",
+        "expected": null
+      },
+      {
+        "name": "Substring('abcdef', null, 3) -> null",
+        "cql": "Substring('abcdef', null, 3)",
+        "expected": null
+      },
+      {
+        "name": "Substring('abcdef', 2, null) -> null",
+        "cql": "Substring('abcdef', 2, null)",
+        "expected": null
+      },
+      {
+        "name": "Substring('\ud83d\ude0a\ud83d\ude0a\ud83d\ude0a', 1, 1) -> \ud83d\ude0a (Unicode)",
+        "cql": "Substring('\ud83d\ude0a\ud83d\ude0a\ud83d\ude0a', 1, 1)",
+        "expected": "\ud83d\ude0a"
+      },
+      {
+        "name": "Substring('\ud83d\ude0a\ud83d\ude0a\ud83d\ude0a', 0, 2) -> \ud83d\ude0a\ud83d\ude0a (Unicode, length truncated within runes)",
+        "cql": "Substring('\ud83d\ude0a\ud83d\ude0a\ud83d\ude0a', 0, 2)",
+        "expected": "\ud83d\ude0a\ud83d\ude0a"
+      }
+    ],
+    "TestToString": [
+      {
+        "name": "ToString(true)",
+        "cql": "ToString(true)",
+        "expected": "true"
+      },
+      {
+        "name": "ToString(false)",
+        "cql": "ToString(false)",
+        "expected": "false"
+      },
+      {
+        "name": "ToString(1)",
+        "cql": "ToString(1)",
+        "expected": "1"
+      },
+      {
+        "name": "ToString(-1)",
+        "cql": "ToString(-1)",
+        "expected": "-1"
+      },
+      {
+        "name": "ToString(100000L)",
+        "cql": "ToString(100000L)",
+        "expected": "100000"
+      },
+      {
+        "name": "ToString(-100000L)",
+        "cql": "ToString(-100000L)",
+        "expected": "-100000"
+      },
+      {
+        "name": "ToString(1.42)",
+        "cql": "ToString(1.42)",
+        "expected": "1.42"
+      },
+      {
+        "name": "ToString(-1.42)",
+        "cql": "ToString(-1.42)",
+        "expected": "-1.42"
+      },
+      {
+        "name": "ToString(1 'cm')",
+        "cql": "ToString(1 'cm')",
+        "expected": "1 'cm'"
+      },
+      {
+        "name": "ToString(-1 'cm')",
+        "cql": "ToString(-1 'cm')",
+        "expected": "-1 'cm'"
+      },
+      {
+        "name": "ToString(1'g':0.1'g')",
+        "cql": "ToString(1'g':0.1'g')",
+        "expected": "1 'g':0.1 'g'"
+      },
+      {
+        "name": "ToString(@2022-01-03)",
+        "cql": "ToString(@2022-01-03)",
+        "expected": "2022-01-03"
+      },
+      {
+        "name": "ToString(@2022-01-03T12:00:00Z)",
+        "cql": "ToString(@2022-01-03T12:00:00Z)",
+        "expected": "2022-01-03T12:00:00Z"
+      },
+      {
+        "name": "ToString(DateTime(2022, 1, 3))",
+        "cql": "ToString(DateTime(2022, 1, 3))",
+        "expected": "2022-01-03+04:00"
+      },
+      {
+        "name": "ToString(@T12:01:00)",
+        "cql": "ToString(@T12:01:00)",
+        "expected": "12:01:00"
+      },
+      {
+        "name": "ToString(null as Date)",
+        "cql": "ToString(null as Date)",
+        "expected": null
+      },
+      {
+        "name": "ToString(null)",
+        "cql": "ToString(null)",
+        "expected": null
+      }
+    ],
+    "TestSplit": [
+      {
+        "name": "Split('A,B,C', ',')",
+        "cql": "Split('A,B,C', ',')",
+        "expected": {
+          "type": "List",
+          "raw": "Value: []result.Value{newOrFatal(t, \"A\"), newOrFatal(t, \"B\"), newOrFatal(t, \"C\")}, StaticType: &types.List{ElementType: types.String}"
+        }
+      },
+      {
+        "name": "Split with stringToSplit=null",
+        "cql": "Split(null, ',')",
+        "expected": null
+      },
+      {
+        "name": "Split with seperator = null",
+        "cql": "Split('test', null)",
+        "expected": {
+          "type": "List",
+          "raw": "Value: []result.Value{newOrFatal(t, \"test\")}, StaticType: &types.List{ElementType: types.String}"
+        }
+      },
+      {
+        "name": "Split with seperator not found in stringToSplit",
+        "cql": "Split('test abc', ',')",
+        "expected": {
+          "type": "List",
+          "raw": "Value: []result.Value{newOrFatal(t, \"test abc\")}, StaticType: &types.List{ElementType: types.String}"
+        }
+      },
+      {
+        "name": "Split with both operands null",
+        "cql": "Split(null, null)",
+        "expected": null
+      },
+      {
+        "name": "Split with both multi-character seperator",
+        "cql": "Split('a//b', '//')",
+        "expected": {
+          "type": "List",
+          "raw": "Value: []result.Value{newOrFatal(t, \"a\"), newOrFatal(t, \"b\")}, StaticType: &types.List{ElementType: types.String}"
+        }
+      }
+    ],
+    "TestCombine": [
+      {
+        "name": "Combine without separator",
+        "cql": "Combine({'A', 'B'})",
+        "expected": "AB"
+      },
+      {
+        "name": "Combine with separator",
+        "cql": "Combine({'A', 'B'}, ':')",
+        "expected": "A:B"
+      },
+      {
+        "name": "Combine with empty list is null",
+        "cql": "Combine({})",
+        "expected": null
+      },
+      {
+        "name": "Combine with empty list and non-empty separator is null",
+        "cql": "Combine({}, ':')",
+        "expected": null
+      },
+      {
+        "name": "Combine with null list is null",
+        "cql": "Combine(null, ':')",
+        "expected": null
+      },
+      {
+        "name": "Combine with null separator is null",
+        "cql": "Combine({'A', 'B'}, null)",
+        "expected": null
+      },
+      {
+        "name": "Combine skips null elements in input list",
+        "cql": "Combine({'A', 'B', null, 'C'})",
+        "expected": "ABC"
+      },
+      {
+        "name": "Combine with list of nulls",
+        "cql": "Combine({null as String, null as String})",
+        "expected": ""
+      }
+    ],
+    "TestIndexerString": [
+      {
+        "name": "[] Indexer",
+        "cql": "'abc'[1]",
+        "expected": "b"
+      },
+      {
+        "name": "Indexer functional form",
+        "cql": "Indexer('abc', 1)",
+        "expected": "b"
+      },
+      {
+        "name": "Indexer with index too large",
+        "cql": "'abc'[100]",
+        "expected": null
+      },
+      {
+        "name": "Indexer with index smaller than 0",
+        "cql": "'abc'[-100]",
+        "expected": null
+      },
+      {
+        "name": "Indexer on null",
+        "cql": "(null as String)[1]",
+        "expected": null
+      },
+      {
+        "name": "Indexer with null index",
+        "cql": "'abc'[null as Integer]",
+        "expected": null
+      }
+    ],
+    "TestEndsWith": [
+      {
+        "name": "EndsWithTrue",
+        "cql": "EndsWith('apple', 'ple')",
+        "expected": true
+      },
+      {
+        "name": "EndsWithFalse",
+        "cql": "EndsWith('apple', 'pel')",
+        "expected": false
+      },
+      {
+        "name": "EndsWithBothNull",
+        "cql": "EndsWith(null, null)",
+        "expected": null
+      },
+      {
+        "name": "EndsWithRightNull",
+        "cql": "EndsWith('apple',null)",
+        "expected": null
+      },
+      {
+        "name": "EndsWithLeftNull",
+        "cql": "EndsWith(null,'ple')",
+        "expected": null
+      },
+      {
+        "name": "EndsWithLeftEmpty",
+        "cql": "EndsWith('','ple')",
+        "expected": false
+      },
+      {
+        "name": "EndsWithRightEmpty",
+        "cql": "EndsWith('apple','')",
+        "expected": true
+      },
+      {
+        "name": "EndsWithBothEmpty",
+        "cql": "EndsWith('','')",
+        "expected": true
+      }
+    ],
+    "TestLengthString": [
+      {
+        "name": "Length('ABC') = 3",
+        "cql": "Length('ABC')",
+        "expected": 3
+      },
+      {
+        "name": "LengthNullasString",
+        "cql": "Length(null as String)",
+        "expected": null
+      },
+      {
+        "name": "LengthBig",
+        "cql": "Length('How is the weather today')",
+        "expected": 24
+      },
+      {
+        "name": "LengthEmpty",
+        "cql": "Length('')",
+        "expected": 0
+      }
+    ],
+    "TestLastPositionOf": [
+      {
+        "name": "LastPositionOfFound",
+        "cql": "LastPositionOf('B','ABC')",
+        "expected": 1
+      },
+      {
+        "name": "LastPositionOfNotFound",
+        "cql": "LastPositionOf('X', 'ABC')",
+        "expected": -1
+      },
+      {
+        "name": "LastPositionOfFound2",
+        "cql": "LastPositionOf('B', 'ABCDEDCBA')",
+        "expected": 7
+      },
+      {
+        "name": "LastPositionOfLeftNull",
+        "cql": "LastPositionOf(null, 'ABC')",
+        "expected": null
+      },
+      {
+        "name": "LastPositionOfRightNull",
+        "cql": "LastPositionOf('A', null)",
+        "expected": null
+      },
+      {
+        "name": "LastPositionOfLong",
+        "cql": "LastPositionOf('abra','abracadabra')",
+        "expected": 7
+      },
+      {
+        "name": "LastPositionEmptyLeft",
+        "cql": "LastPositionOf('','ABC')",
+        "expected": 3
+      },
+      {
+        "name": "LastPositionOfEmptyRight",
+        "cql": "LastPositionOf('A','')",
+        "expected": -1
+      }
+    ],
+    "TestUpper": [
+      {
+        "name": "Upper",
+        "cql": "Upper('abc')",
+        "expected": "ABC"
+      },
+      {
+        "name": "UpperAlready",
+        "cql": "Upper('ABC')",
+        "expected": "ABC"
+      },
+      {
+        "name": "UpperNil",
+        "cql": "Upper(null)",
+        "expected": null
+      },
+      {
+        "name": "UpperEmpty",
+        "cql": "Upper('')",
+        "expected": ""
+      }
+    ],
+    "TestLower": [
+      {
+        "name": "Lower",
+        "cql": "Lower('ABC')",
+        "expected": "abc"
+      },
+      {
+        "name": "LowerAlready",
+        "cql": "Lower('abc')",
+        "expected": "abc"
+      },
+      {
+        "name": "LowerNil",
+        "cql": "Lower(null)",
+        "expected": null
+      },
+      {
+        "name": "LowerEmptyString",
+        "cql": "Lower('')",
+        "expected": ""
+      }
+    ],
+    "TestReplaceMatches": [
+      {
+        "name": "ReplaceMatchesOne",
+        "cql": "ReplaceMatches('ABC','B','Z')",
+        "expected": "AZC"
+      },
+      {
+        "name": "ReplaceMatchesNotFound",
+        "cql": "ReplaceMatches('ABC','D','C')",
+        "expected": "ABC"
+      },
+      {
+        "name": "ReplaceMatchesArgNull",
+        "cql": "ReplaceMatches(null,'B','Z')",
+        "expected": null
+      },
+      {
+        "name": "ReplaceMatchesPatternNull",
+        "cql": "ReplaceMatches('ABC',null,'Z')",
+        "expected": null
+      },
+      {
+        "name": "ReplaceMatchesReplacesNull",
+        "cql": "ReplaceMatches('ABC','B',null)",
+        "expected": null
+      },
+      {
+        "name": "ReplaceMatchesArgEmpty",
+        "cql": "ReplaceMatches('','B','Z')",
+        "expected": ""
+      },
+      {
+        "name": "ReplaceMatchesPatternEmpty",
+        "cql": "ReplaceMatches('ABC','','Z')",
+        "expected": "ZAZBZCZ"
+      },
+      {
+        "name": "ReplaceMatchesReplacesEmpty",
+        "cql": "ReplaceMatches('ABC','B','')",
+        "expected": "AC"
+      },
+      {
+        "name": "ReplaceMatchesRegex",
+        "cql": "ReplaceMatches('A B C D', '\\\\s', 'match')",
+        "expected": "AmatchBmatchCmatchD"
+      },
+      {
+        "name": "ReplaceMatchesWholeRegexTrue",
+        "cql": "ReplaceMatches('A B C D', '^[\\\\w|\\\\s]+$', 'Success')",
+        "expected": "Success"
+      },
+      {
+        "name": "ReplaceMatchesWholeRegexFalse",
+        "cql": "ReplaceMatches('Failure', '^.*\\\\d+$', 'Success')",
+        "expected": "Failure"
+      }
+    ],
+    "TestPositionOf": [
+      {
+        "name": "PositionOfFound",
+        "cql": "PositionOf('B','ABC')",
+        "expected": 1
+      },
+      {
+        "name": "PositionOfMultiples",
+        "cql": "PositionOf('B', 'ABCBA')",
+        "expected": 1
+      },
+      {
+        "name": "PositionOfNotFound",
+        "cql": "PositionOf('B','ACDC')",
+        "expected": -1
+      },
+      {
+        "name": "PositionOfLeftNull",
+        "cql": "PositionOf(null, 'ABC')",
+        "expected": null
+      },
+      {
+        "name": "PositionOfRightNull",
+        "cql": "PositionOf('B', null)",
+        "expected": null
+      },
+      {
+        "name": "PositionOfBothNull",
+        "cql": "PositionOf(null, null)",
+        "expected": null
+      },
+      {
+        "name": "PositionOfLeftEmpty",
+        "cql": "PositionOf('','ABC')",
+        "expected": 0
+      },
+      {
+        "name": "PositionOfRightEmpty",
+        "cql": "PositionOf('B', '')",
+        "expected": -1
+      },
+      {
+        "name": "PositionOfFound",
+        "cql": "PositionOf('B','ABC')",
+        "expected": 1
+      },
+      {
+        "name": "PositionOfMultiples",
+        "cql": "PositionOf('B', 'ABCBA')",
+        "expected": 1
+      },
+      {
+        "name": "PositionOfNotFound",
+        "cql": "PositionOf('B','ACDC')",
+        "expected": -1
+      },
+      {
+        "name": "PositionOfLeftNull",
+        "cql": "PositionOf(null, 'ABC')",
+        "expected": null
+      },
+      {
+        "name": "PositionOfRightNull",
+        "cql": "PositionOf('B', null)",
+        "expected": null
+      },
+      {
+        "name": "PositionOfBothNull",
+        "cql": "PositionOf(null, null)",
+        "expected": null
+      },
+      {
+        "name": "PositionOfLeftEmpty",
+        "cql": "PositionOf('','ABC')",
+        "expected": 0
+      },
+      {
+        "name": "PositionOfRightEmpty",
+        "cql": "PositionOf('B', '')",
+        "expected": -1
+      }
+    ],
+    "TestStartsWith": [
+      {
+        "name": "StartsWithTrue",
+        "cql": "StartsWith('Appendix','App')",
+        "expected": true
+      },
+      {
+        "name": "StartsWithFalse",
+        "cql": "StartsWith('Appendix','Dep')",
+        "expected": false
+      },
+      {
+        "name": "StartsWithLeftNull",
+        "cql": "StartsWith(null, 'App')",
+        "expected": null
+      },
+      {
+        "name": "StartsWithRightNull",
+        "cql": "StartsWith('Appendix', null)",
+        "expected": null
+      },
+      {
+        "name": "StartsWithLeftEmpty",
+        "cql": "StartsWith('','App')",
+        "expected": false
+      },
+      {
+        "name": "StartsWithRightEmpty",
+        "cql": "StartsWith('Appendix','')",
+        "expected": true
+      }
+    ],
+    "TestMatches": [
+      {
+        "name": "MatchesWordsAndSpacesTrue",
+        "cql": "Matches('Not all who wander are lost', '[\\\\w|\\\\s]+')",
+        "expected": true
+      },
+      {
+        "name": "MatchesWordsAndSpacesFalse",
+        "cql": "Matches('Not all who wander are lost - circa 2017', '^[\\\\w\\\\s]+$')",
+        "expected": false
+      },
+      {
+        "name": "MatchesNumberTrue",
+        "cql": "Matches('Not all who wander are lost - circa 2017', '.*\\\\d+')",
+        "expected": true
+      },
+      {
+        "name": "MatchesNumberFalse",
+        "cql": "Matches('Not all who wander are lost', '.*\\\\d+')",
+        "expected": false
+      },
+      {
+        "name": "MatchesLeftNil",
+        "cql": "Matches(null, '\\\\w+')",
+        "expected": null
+      },
+      {
+        "name": "MatchesRightNil",
+        "cql": "Matches('abc', null)",
+        "expected": null
+      },
+      {
+        "name": "MatchesNotWords",
+        "cql": "Matches('   ', '\\\\W+')",
+        "expected": true
+      }
+    ]
+  }
+}

@@ -11,8 +11,8 @@ use octofhir_cql_ast::{
 // Note: Spanned has `.inner` field (not `.inner`)
 
 use crate::model::{
-    AccessModifier, AggregateClause, AggregateExpression, AliasRef, AliasedQuerySource,
-    AsExpression, BinaryExpression, BoundaryExpression, CalculateAgeAtExpression,
+    AccessModifier, AfterExpression, AggregateClause, AggregateExpression, AliasRef, AliasedQuerySource,
+    AsExpression, BeforeExpression, BinaryExpression, BoundaryExpression, CalculateAgeAtExpression,
     CalculateAgeExpression, CanConvertExpression, CaseExpression, CaseItem, CodeDef,
     CodeDefs, CodeLiteralExpression, CodeRef, CodeSystemDef, CodeSystemDefs, CodeSystemRef,
     CombineExpression, ConceptDef, ConceptDefs, ConceptRef, ContextDef, ContextDefs,
@@ -425,6 +425,14 @@ impl AstToElmConverter {
                 as_type: None,
                 strict: Some(true),
             }),
+            AstExpression::MinValue(min_expr) => Expression::MinValue(MinMaxValueExpression {
+                element: Element::default(),
+                value_type: format!("{{urn:hl7-org:elm-types:r1}}{}", min_expr.value_type.name),
+            }),
+            AstExpression::MaxValue(max_expr) => Expression::MaxValue(MinMaxValueExpression {
+                element: Element::default(),
+                value_type: format!("{{urn:hl7-org:elm-types:r1}}{}", max_expr.value_type.name),
+            }),
 
             // === Conditionals ===
             AstExpression::If(if_expr) => Expression::If(IfExpression {
@@ -726,11 +734,28 @@ impl AstToElmConverter {
                 })
             }
             AstExpression::DateTimeComponent(dtc) => {
-                Expression::DateTimeComponentFrom(DateTimeComponentFromExpression {
-                    element: Element::default(),
-                    operand: Box::new(self.convert_expression(&dtc.source.inner)),
-                    precision: self.convert_datetime_component(dtc.component),
-                })
+                // Handle `date from` and `time from` specially - they produce different ELM expressions
+                match dtc.component {
+                    DateTimeComponent::Date => {
+                        Expression::DateFrom(UnaryExpression {
+                            element: Element::default(),
+                            operand: Box::new(self.convert_expression(&dtc.source.inner)),
+                        })
+                    }
+                    DateTimeComponent::Time => {
+                        Expression::TimeFrom(UnaryExpression {
+                            element: Element::default(),
+                            operand: Box::new(self.convert_expression(&dtc.source.inner)),
+                        })
+                    }
+                    _ => {
+                        Expression::DateTimeComponentFrom(DateTimeComponentFromExpression {
+                            element: Element::default(),
+                            operand: Box::new(self.convert_expression(&dtc.source.inner)),
+                            precision: self.convert_datetime_component(dtc.component),
+                        })
+                    }
+                }
             }
 
             // === String Operations ===
@@ -1159,6 +1184,14 @@ impl AstToElmConverter {
                 element: Element::default(),
                 operand,
             }),
+            UnaryOp::Predecessor => Expression::Predecessor(UnaryExpression {
+                element: Element::default(),
+                operand,
+            }),
+            UnaryOp::Successor => Expression::Successor(UnaryExpression {
+                element: Element::default(),
+                operand,
+            }),
         }
     }
 
@@ -1185,13 +1218,15 @@ impl AstToElmConverter {
                 element: Element::default(),
                 operand,
             }),
-            IntervalOp::Before => Expression::Before(BinaryExpression {
+            IntervalOp::Before => Expression::Before(BeforeExpression {
                 element: Element::default(),
                 operand,
+                precision: int_op.precision.map(|p| self.convert_temporal_precision(p)),
             }),
-            IntervalOp::After => Expression::After(BinaryExpression {
+            IntervalOp::After => Expression::After(AfterExpression {
                 element: Element::default(),
                 operand,
+                precision: int_op.precision.map(|p| self.convert_temporal_precision(p)),
             }),
             IntervalOp::Meets => Expression::Meets(BinaryExpression {
                 element: Element::default(),
@@ -1736,9 +1771,52 @@ impl AstToElmConverter {
                     None
                 }
             }
-            "Skip" | "Take" | "Tail" => {
-                // These are typically handled as special list operations
-                None
+            "Take" => {
+                // Take(source, n) -> Slice(source, 0, n) - returns first n elements
+                if args.len() >= 2 {
+                    Some(Expression::Slice(SliceExpression {
+                        element: Element::default(),
+                        source: Box::new(self.convert_expression(&args[0].inner)),
+                        start_index: Box::new(Expression::Literal(ElmLiteral {
+                            element: Element::default(),
+                            value_type: "{urn:hl7-org:elm-types:r1}Integer".to_string(),
+                            value: Some("0".to_string()),
+                        })),
+                        end_index: Some(Box::new(self.convert_expression(&args[1].inner))),
+                    }))
+                } else {
+                    None
+                }
+            }
+            "Skip" => {
+                // Skip(source, n) -> Slice(source, n, null) - skips first n elements
+                if args.len() >= 2 {
+                    Some(Expression::Slice(SliceExpression {
+                        element: Element::default(),
+                        source: Box::new(self.convert_expression(&args[0].inner)),
+                        start_index: Box::new(self.convert_expression(&args[1].inner)),
+                        end_index: None, // null means rest of list
+                    }))
+                } else {
+                    None
+                }
+            }
+            "Tail" => {
+                // Tail(source) -> Slice(source, 1, null) - returns all but first element
+                if args.len() >= 1 {
+                    Some(Expression::Slice(SliceExpression {
+                        element: Element::default(),
+                        source: Box::new(self.convert_expression(&args[0].inner)),
+                        start_index: Box::new(Expression::Literal(ElmLiteral {
+                            element: Element::default(),
+                            value_type: "{urn:hl7-org:elm-types:r1}Integer".to_string(),
+                            value: Some("1".to_string()),
+                        })),
+                        end_index: None, // null means rest of list
+                    }))
+                } else {
+                    None
+                }
             }
 
             // === Type Conversion Operators ===
@@ -1786,8 +1864,16 @@ impl AstToElmConverter {
             "ProperIn" => binary(args).map(Expression::ProperIn),
             "ProperIncludes" => binary(args).map(Expression::ProperIncludes),
             "ProperIncludedIn" => binary(args).map(Expression::ProperIncludedIn),
-            "Before" => binary(args).map(Expression::Before),
-            "After" => binary(args).map(Expression::After),
+            "Before" => binary(args).map(|b| Expression::Before(BeforeExpression {
+                element: b.element,
+                operand: b.operand,
+                precision: None,
+            })),
+            "After" => binary(args).map(|b| Expression::After(AfterExpression {
+                element: b.element,
+                operand: b.operand,
+                precision: None,
+            })),
             "Meets" => binary(args).map(Expression::Meets),
             "MeetsBefore" => binary(args).map(Expression::MeetsBefore),
             "MeetsAfter" => binary(args).map(Expression::MeetsAfter),

@@ -386,7 +386,11 @@ impl CqlDate {
     }
 
     /// Parse from ISO 8601 date string
+    /// Also handles @ prefix: @2024-01-15
     pub fn parse(s: &str) -> Option<Self> {
+        // Strip @ prefix if present (used in CQL/ELM literals)
+        let s = s.strip_prefix('@').unwrap_or(s);
+
         let parts: Vec<&str> = s.split('-').collect();
         match parts.len() {
             1 => {
@@ -548,6 +552,103 @@ impl CqlDateTime {
             millisecond: self.millisecond,
         })
     }
+
+    /// Parse from ISO 8601 datetime string
+    /// Supports formats like: 2024-01-15T14:30:00.000Z, 2024-01-15T14:30, etc.
+    /// Also handles @ prefix: @2024-01-15T14:30:00.000Z
+    pub fn parse(s: &str) -> Option<Self> {
+        // Strip @ prefix if present (used in CQL/ELM literals)
+        let s = s.strip_prefix('@').unwrap_or(s);
+
+        // Handle timezone suffix
+        let (datetime_str, tz_offset) = if s.ends_with('Z') {
+            (&s[..s.len() - 1], Some(0i16))
+        } else if let Some(plus_idx) = s.rfind('+') {
+            if plus_idx > 10 {
+                // Make sure it's a timezone offset, not part of date
+                let tz_str = &s[plus_idx + 1..];
+                let offset = Self::parse_tz_offset(tz_str, false)?;
+                (&s[..plus_idx], Some(offset))
+            } else {
+                (s, None)
+            }
+        } else if let Some(minus_idx) = s.rfind('-') {
+            if minus_idx > 10 {
+                // Make sure it's a timezone offset
+                let tz_str = &s[minus_idx + 1..];
+                let offset = Self::parse_tz_offset(tz_str, true)?;
+                (&s[..minus_idx], Some(offset))
+            } else {
+                (s, None)
+            }
+        } else {
+            (s, None)
+        };
+
+        // Split date and time parts
+        let parts: Vec<&str> = datetime_str.split('T').collect();
+        let date_str = parts.first()?;
+        let time_str = parts.get(1);
+
+        // Parse date portion
+        let date_parts: Vec<&str> = date_str.split('-').collect();
+        let year: i32 = date_parts.first()?.parse().ok()?;
+        let month: Option<u8> = date_parts.get(1).and_then(|s| s.parse().ok());
+        let day: Option<u8> = date_parts.get(2).and_then(|s| s.parse().ok());
+
+        // Parse time portion if present
+        let (hour, minute, second, millisecond) = if let Some(t) = time_str {
+            Self::parse_time_components(t)
+        } else {
+            (None, None, None, None)
+        };
+
+        Some(Self {
+            year,
+            month,
+            day,
+            hour,
+            minute,
+            second,
+            millisecond,
+            timezone_offset: tz_offset,
+        })
+    }
+
+    /// Parse timezone offset string like "05:00" or "0500"
+    fn parse_tz_offset(s: &str, negative: bool) -> Option<i16> {
+        let clean = s.replace(':', "");
+        if clean.len() < 2 {
+            return None;
+        }
+        let hours: i16 = clean[..2].parse().ok()?;
+        let mins: i16 = if clean.len() >= 4 {
+            clean[2..4].parse().ok()?
+        } else {
+            0
+        };
+        let offset = hours * 60 + mins;
+        Some(if negative { -offset } else { offset })
+    }
+
+    /// Parse time components from a time string
+    fn parse_time_components(s: &str) -> (Option<u8>, Option<u8>, Option<u8>, Option<u16>) {
+        // Handle milliseconds
+        let (time_str, ms) = if let Some(dot_idx) = s.find('.') {
+            let ms_str = &s[dot_idx + 1..];
+            let ms: u16 = ms_str.parse().ok().unwrap_or(0);
+            (&s[..dot_idx], Some(ms))
+        } else {
+            (s, None)
+        };
+
+        let parts: Vec<&str> = time_str.split(':').collect();
+        let hour: Option<u8> = parts.first().and_then(|s| s.parse().ok());
+        let minute: Option<u8> = parts.get(1).and_then(|s| s.parse().ok());
+        let second: Option<u8> = parts.get(2).and_then(|s| s.parse().ok());
+
+        (hour, minute, second, ms)
+    }
 }
 
 impl fmt::Display for CqlDateTime {
@@ -579,8 +680,17 @@ impl fmt::Display for CqlDateTime {
                             write!(f, "{}{:02}:{:02}", sign, hours, mins)?;
                         }
                     }
+                } else {
+                    // DateTime with date-only precision: add trailing T
+                    write!(f, "T")?;
                 }
+            } else {
+                // DateTime with year-month precision: add trailing T
+                write!(f, "T")?;
             }
+        } else {
+            // DateTime with year-only precision: add trailing T
+            write!(f, "T")?;
         }
         Ok(())
     }
@@ -662,6 +772,57 @@ impl CqlTime {
         let second_ms = self.second.unwrap_or(0) as u32 * 1_000;
         let ms = self.millisecond.unwrap_or(0) as u32;
         Some(hour_ms + minute_ms + second_ms + ms)
+    }
+
+    /// Parse from ISO 8601 time string
+    /// Supports formats like: 14:30:00.000, 14:30:00, 14:30, 14
+    /// Also handles @T prefix: @T14:30:00.000
+    pub fn parse(s: &str) -> Option<Self> {
+        // Strip @T prefix if present (used in CQL/ELM literals)
+        let s = s.strip_prefix("@T").unwrap_or(s);
+
+        // Handle milliseconds
+        let (time_str, ms) = if let Some(dot_idx) = s.find('.') {
+            let ms_str = &s[dot_idx + 1..];
+            let ms: u16 = ms_str.parse().ok().unwrap_or(0);
+            (&s[..dot_idx], Some(ms))
+        } else {
+            (s, None)
+        };
+
+        let parts: Vec<&str> = time_str.split(':').collect();
+        match parts.len() {
+            1 => {
+                let hour = parts[0].parse().ok()?;
+                Some(Self {
+                    hour,
+                    minute: None,
+                    second: None,
+                    millisecond: ms,
+                })
+            }
+            2 => {
+                let hour = parts[0].parse().ok()?;
+                let minute = parts[1].parse().ok()?;
+                Some(Self {
+                    hour,
+                    minute: Some(minute),
+                    second: None,
+                    millisecond: ms,
+                })
+            }
+            3 | _ => {
+                let hour = parts.first()?.parse().ok()?;
+                let minute = parts.get(1)?.parse().ok()?;
+                let second = parts.get(2)?.parse().ok()?;
+                Some(Self {
+                    hour,
+                    minute: Some(minute),
+                    second: Some(second),
+                    millisecond: ms,
+                })
+            }
+        }
     }
 }
 
@@ -788,6 +949,7 @@ impl fmt::Display for CqlQuantity {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.value)?;
         if let Some(unit) = &self.unit {
+            // Keep space before unit - most tests expect this format
             write!(f, " '{}'", unit)?;
         }
         Ok(())
@@ -1006,7 +1168,7 @@ impl fmt::Display for CqlList {
         write!(f, "{{")?;
         for (i, elem) in self.elements.iter().enumerate() {
             if i > 0 {
-                write!(f, ", ")?;
+                write!(f, ",")?;  // No space after comma to match spec format
             }
             write!(f, "{}", elem)?;
         }
@@ -1102,6 +1264,7 @@ impl Eq for CqlInterval {}
 
 impl fmt::Display for CqlInterval {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // Format as Interval[low, high] or Interval(low, high) etc. without extra spaces
         if self.low_closed {
             write!(f, "[")?;
         } else {

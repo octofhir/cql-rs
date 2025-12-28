@@ -1,122 +1,257 @@
-//! Common parser combinators for CQL
+//! Common parser combinators for CQL using winnow
 
-use chumsky::prelude::*;
 use octofhir_cql_ast::{
     DateLiteral, DateTimeLiteral, Identifier, Literal, QualifiedIdentifier, QuantityLiteral,
     RatioLiteral, TimeLiteral, VersionSpecifier,
 };
 use rust_decimal::Decimal;
 use std::str::FromStr;
+use winnow::ascii::{digit1, multispace0};
+use winnow::combinator::{alt, delimited, opt, preceded, repeat};
+use winnow::error::ContextError;
+use winnow::prelude::*;
+use winnow::stream::{AsChar, Offset};
+use winnow::token::{any, literal, none_of, one_of, take_while};
+
+/// Input type for our parsers - simple &str with position tracking via checkpoint
+pub type Input<'a> = &'a str;
+
+/// Error type for our parsers
+pub type PError = ContextError;
+
+/// Result type for our parsers
+pub type PResult<O> = Result<O, PError>;
+
+/// State to track original input for position calculation
+/// Note: Currently unused but will be needed for proper span tracking
+#[allow(dead_code)]
+pub struct ParseState<'a> {
+    pub original: &'a str,
+}
+
+#[allow(dead_code)]
+impl<'a> ParseState<'a> {
+    pub fn new(input: &'a str) -> Self {
+        Self { original: input }
+    }
+
+    pub fn position(&self, current: &str) -> usize {
+        self.original.offset_from(&current)
+    }
+}
+
+/// Parse optional whitespace
+pub fn ws<'a>(input: &mut Input<'a>) -> PResult<()> {
+    multispace0.void().parse_next(input)
+}
+
+/// Parse a literal string with proper type annotations
+pub fn lit<'a>(s: &'static str) -> impl Parser<Input<'a>, &'a str, PError> {
+    literal(s)
+}
+
+/// Parse a keyword case-insensitively (must not be followed by alphanumeric)
+pub fn keyword<'a>(kw: &'static str) -> impl Parser<Input<'a>, (), PError> {
+    move |input: &mut Input<'a>| {
+        let checkpoint = *input;
+        // Case-insensitive keyword matching - keywords are ASCII-only so byte length is OK
+        // but we need to check if we have enough characters first
+        let input_chars: String = input.chars().take(kw.len()).collect();
+        if input_chars.len() < kw.len() {
+            return Err(ContextError::new());
+        }
+        if !input_chars.eq_ignore_ascii_case(kw) {
+            return Err(ContextError::new());
+        }
+        // Advance past the keyword - calculate actual byte length consumed
+        let byte_len: usize = input.char_indices().take(kw.len()).last().map_or(0, |(i, c)| i + c.len_utf8());
+        *input = &input[byte_len..];
+        // Peek at next char - if alphanumeric or _, it's not a keyword
+        if let Some(c) = input.chars().next() {
+            if c.is_alphanum() || c == '_' {
+                *input = checkpoint;
+                return Err(ContextError::new());
+            }
+        }
+        Ok(())
+    }
+}
+
+/// Parse a padded keyword (with whitespace before and after)
+pub fn padded_keyword<'a>(kw: &'static str) -> impl Parser<Input<'a>, (), PError> {
+    move |input: &mut Input<'a>| {
+        ws.parse_next(input)?;
+        keyword(kw).parse_next(input)?;
+        ws.parse_next(input)?;
+        Ok(())
+    }
+}
 
 /// Parse a CQL identifier (not a keyword)
-pub fn identifier_parser<'a>(
-) -> impl Parser<'a, &'a str, Identifier, extra::Err<Rich<'a, char>>> + Clone {
-    // Quoted identifier: "identifier"
-    let quoted = just('"')
-        .ignore_then(none_of("\"").repeated().collect::<String>())
-        .then_ignore(just('"'))
-        .map(Identifier::quoted);
+pub fn identifier_parser<'a>(input: &mut Input<'a>) -> PResult<Identifier> {
+    alt((
+        // Quoted identifier: "identifier"
+        delimited(
+            '"',
+            take_while(0.., |c: char| c != '"').map(|s: &str| Identifier::quoted(s.to_string())),
+            '"',
+        ),
+        // Regular identifier: starts with letter or _, followed by alphanumeric or _
+        (
+            one_of(|c: char| c.is_alphabetic() || c == '_'),
+            take_while(0.., |c: char| c.is_alphanumeric() || c == '_'),
+        )
+            .take()
+            .verify(|s: &str| !is_keyword(s))
+            .map(|s: &str| Identifier::new(s)),
+    ))
+    .parse_next(input)
+}
 
-    // Regular identifier: starts with letter or _, followed by alphanumeric or _
-    let regular = text::ident().map(|s: &str| Identifier::new(s));
-
-    quoted.or(regular)
+/// Parse an identifier that allows keywords (for tuple element names, property names, etc.)
+/// In CQL, certain contexts allow keywords to be used as identifiers.
+pub fn identifier_or_keyword_parser<'a>(input: &mut Input<'a>) -> PResult<Identifier> {
+    alt((
+        // Quoted identifier: "identifier"
+        delimited(
+            '"',
+            take_while(0.., |c: char| c != '"').map(|s: &str| Identifier::quoted(s.to_string())),
+            '"',
+        ),
+        // Regular identifier OR keyword: starts with letter or _, followed by alphanumeric or _
+        (
+            one_of(|c: char| c.is_alphabetic() || c == '_'),
+            take_while(0.., |c: char| c.is_alphanumeric() || c == '_'),
+        )
+            .take()
+            .map(|s: &str| Identifier::new(s)),
+    ))
+    .parse_next(input)
 }
 
 /// Parse a qualified identifier (e.g., "Library.Definition")
-pub fn qualified_identifier_parser<'a>(
-) -> impl Parser<'a, &'a str, QualifiedIdentifier, extra::Err<Rich<'a, char>>> + Clone {
-    identifier_parser()
-        .then(just('.').ignore_then(identifier_parser()).or_not())
-        .map(|(first, second)| match second {
-            Some(name) => QualifiedIdentifier::qualified(first.name, name),
-            None => QualifiedIdentifier::simple(first),
-        })
+pub fn qualified_identifier_parser<'a>(input: &mut Input<'a>) -> PResult<QualifiedIdentifier> {
+    let first = identifier_parser.parse_next(input)?;
+    let second = opt(preceded('.', identifier_parser)).parse_next(input)?;
+
+    Ok(match second {
+        Some(name) => QualifiedIdentifier::qualified(first.name, name),
+        None => QualifiedIdentifier::simple(first),
+    })
 }
 
 /// Parse a version specifier (a string literal)
-pub fn version_specifier_parser<'a>(
-) -> impl Parser<'a, &'a str, VersionSpecifier, extra::Err<Rich<'a, char>>> + Clone {
-    string_parser().map(|s| VersionSpecifier::new(s))
+pub fn version_specifier_parser<'a>(input: &mut Input<'a>) -> PResult<VersionSpecifier> {
+    string_parser.map(VersionSpecifier::new).parse_next(input)
 }
 
 /// Parse a string literal (single-quoted)
-pub fn string_parser<'a>() -> impl Parser<'a, &'a str, String, extra::Err<Rich<'a, char>>> + Clone {
-    just('\'')
-        .ignore_then(
-            choice((just("''").to('\''), none_of("'\\")))
-                .repeated()
-                .collect::<String>(),
+/// Character or two-character escape sequence from a string
+enum StringChar {
+    Single(char),
+    Escape(char, char), // For unknown escapes like \d, keep both chars
+}
+
+pub fn string_parser<'a>(input: &mut Input<'a>) -> PResult<String> {
+    delimited(
+        '\'',
+        repeat(
+            0..,
+            alt((
+                // Escaped quote '' (CQL style)
+                "''".map(|_| StringChar::Single('\'')),
+                // Backslash escape sequences
+                preceded(
+                    '\\',
+                    alt((
+                        '\\'.map(|_| StringChar::Single('\\')),
+                        '\''.map(|_| StringChar::Single('\'')),
+                        'n'.map(|_| StringChar::Single('\n')),
+                        'r'.map(|_| StringChar::Single('\r')),
+                        't'.map(|_| StringChar::Single('\t')),
+                        'f'.map(|_| StringChar::Single('\x0C')),
+                        // Keep unknown escape sequences as-is (e.g., \d, \s for regex)
+                        any.map(|c| StringChar::Escape('\\', c)),
+                    )),
+                ),
+                // Any char except quote and backslash
+                none_of(['\'', '\\']).map(StringChar::Single),
+            )),
         )
-        .then_ignore(just('\''))
+        .fold(String::new, |mut acc: String, sc: StringChar| {
+            match sc {
+                StringChar::Single(c) => acc.push(c),
+                StringChar::Escape(c1, c2) => {
+                    acc.push(c1);
+                    acc.push(c2);
+                }
+            }
+            acc
+        }),
+        '\'',
+    )
+    .parse_next(input)
 }
 
 /// Parse an integer literal
-pub fn integer_parser<'a>() -> impl Parser<'a, &'a str, i32, extra::Err<Rich<'a, char>>> + Clone {
-    text::int(10).map(|s: &str| s.parse().unwrap_or(0))
+#[allow(dead_code)]
+pub fn integer_parser<'a>(input: &mut Input<'a>) -> PResult<i32> {
+    digit1
+        .map(|s: &str| s.parse().unwrap_or(0))
+        .parse_next(input)
 }
 
 /// Parse a decimal literal
-pub fn decimal_parser<'a>() -> impl Parser<'a, &'a str, Decimal, extra::Err<Rich<'a, char>>> + Clone
-{
-    text::int(10)
-        .then(just('.').then(text::digits(10)))
-        .to_slice()
+#[allow(dead_code)]
+pub fn decimal_parser<'a>(input: &mut Input<'a>) -> PResult<Decimal> {
+    (digit1, '.', digit1)
+        .take()
         .map(|s: &str| Decimal::from_str(s).unwrap_or_default())
+        .parse_next(input)
 }
 
-/// Parse a number (decimal or integer) returning a Literal
-pub fn number_parser<'a>() -> impl Parser<'a, &'a str, Literal, extra::Err<Rich<'a, char>>> + Clone {
-    // Try decimal first (has dot), then integer
-    let decimal = text::int(10)
-        .then(just('.'))
-        .then(text::digits(10))
-        .to_slice()
-        .map(|s: &str| Literal::Decimal(Decimal::from_str(s).unwrap_or_default()));
-
-    let long = text::int(10)
-        .then(one_of("Ll"))
-        .to_slice()
-        .map(|s: &str| {
-            let num_str = s.trim_end_matches(['L', 'l']);
-            Literal::Long(num_str.parse().unwrap_or(0))
-        });
-
-    let integer = text::int(10).map(|s: &str| Literal::Integer(s.parse().unwrap_or(0)));
-
-    decimal.or(long).or(integer)
+/// Parse a number (decimal, long, or integer) returning a Literal
+pub fn number_parser<'a>(input: &mut Input<'a>) -> PResult<Literal> {
+    alt((
+        // Decimal: digits.digits
+        (digit1, '.', digit1)
+            .take()
+            .map(|s: &str| Literal::Decimal(Decimal::from_str(s).unwrap_or_default())),
+        // Long: digitsL or digitsl
+        (digit1, one_of(['L', 'l']))
+            .take()
+            .map(|s: &str| {
+                let num_str = s.trim_end_matches(['L', 'l']);
+                Literal::Long(num_str.parse().unwrap_or(0))
+            }),
+        // Integer: digits
+        digit1.map(|s: &str| Literal::Integer(s.parse().unwrap_or(0))),
+    ))
+    .parse_next(input)
 }
 
 /// Parse a boolean literal
-pub fn boolean_parser<'a>() -> impl Parser<'a, &'a str, bool, extra::Err<Rich<'a, char>>> + Clone {
-    choice((
-        text::keyword("true").to(true),
-        text::keyword("false").to(false),
-    ))
+pub fn boolean_parser<'a>(input: &mut Input<'a>) -> PResult<bool> {
+    alt((keyword("true").value(true), keyword("false").value(false))).parse_next(input)
 }
 
 /// Parse a 2-digit number
-fn two_digits<'a>() -> impl Parser<'a, &'a str, u8, extra::Err<Rich<'a, char>>> + Clone {
-    text::digits(10)
-        .exactly(2)
-        .to_slice()
+fn two_digits<'a>(input: &mut Input<'a>) -> PResult<u8> {
+    take_while(2..=2, |c: char| c.is_ascii_digit())
         .map(|s: &str| s.parse().unwrap_or(0))
+        .parse_next(input)
 }
 
 /// Parse a 4-digit year
-fn four_digit_year<'a>() -> impl Parser<'a, &'a str, i32, extra::Err<Rich<'a, char>>> + Clone {
-    text::digits(10)
-        .exactly(4)
-        .to_slice()
+fn four_digit_year<'a>(input: &mut Input<'a>) -> PResult<i32> {
+    take_while(4..=4, |c: char| c.is_ascii_digit())
         .map(|s: &str| s.parse().unwrap_or(0))
+        .parse_next(input)
 }
 
 /// Parse milliseconds (1-3 digits)
-fn milliseconds<'a>() -> impl Parser<'a, &'a str, u16, extra::Err<Rich<'a, char>>> + Clone {
-    text::digits(10)
-        .at_least(1)
-        .at_most(3)
-        .to_slice()
+fn milliseconds<'a>(input: &mut Input<'a>) -> PResult<u16> {
+    take_while(1..=3, |c: char| c.is_ascii_digit())
         .map(|s: &str| {
             let num: u16 = s.parse().unwrap_or(0);
             // Pad to 3 digits: "1" -> 100, "12" -> 120, "123" -> 123
@@ -126,32 +261,93 @@ fn milliseconds<'a>() -> impl Parser<'a, &'a str, u16, extra::Err<Rich<'a, char>
                 _ => num,
             }
         })
+        .parse_next(input)
 }
 
 /// Parse timezone offset (+/-hh:mm or Z)
-fn timezone_offset<'a>() -> impl Parser<'a, &'a str, i16, extra::Err<Rich<'a, char>>> + Clone {
-    let z = just('Z').to(0i16);
-
-    let offset = one_of("+-")
-        .then(two_digits())
-        .then_ignore(just(':'))
-        .then(two_digits())
-        .map(|((sign, hours), minutes)| {
+fn timezone_offset<'a>(input: &mut Input<'a>) -> PResult<i16> {
+    alt((
+        'Z'.value(0i16),
+        (one_of(['+', '-']), two_digits, ':', two_digits).map(|(sign, hours, _, minutes)| {
             let total = (hours as i16) * 60 + (minutes as i16);
-            if sign == '-' { -total } else { total }
-        });
-
-    z.or(offset)
+            if sign == '-' {
+                -total
+            } else {
+                total
+            }
+        }),
+    ))
+    .parse_next(input)
 }
 
 /// Parse a date literal: @YYYY[-MM[-DD]]
-pub fn date_literal_parser<'a>(
-) -> impl Parser<'a, &'a str, DateLiteral, extra::Err<Rich<'a, char>>> + Clone {
-    just('@')
-        .ignore_then(four_digit_year())
-        .then(just('-').ignore_then(two_digits()).or_not())
-        .then(just('-').ignore_then(two_digits()).or_not())
-        .map(|((year, month), day)| {
+pub fn date_literal_parser<'a>(input: &mut Input<'a>) -> PResult<DateLiteral> {
+    preceded(
+        '@',
+        (
+            four_digit_year,
+            opt(preceded('-', two_digits)),
+            opt(preceded('-', two_digits)),
+        ),
+    )
+    .map(|(year, month, day)| {
+        let mut date = DateLiteral::new(year);
+        if let Some(m) = month {
+            date = date.with_month(m);
+        }
+        if let Some(d) = day {
+            date = date.with_day(d);
+        }
+        date
+    })
+    .parse_next(input)
+}
+
+/// Parse a time literal: @Thh[:mm[:ss[.fff]]]
+pub fn time_literal_parser<'a>(input: &mut Input<'a>) -> PResult<TimeLiteral> {
+    preceded(
+        "@T",
+        (
+            two_digits,
+            opt(preceded(':', two_digits)),
+            opt(preceded(':', two_digits)),
+            opt(preceded('.', milliseconds)),
+        ),
+    )
+    .map(|(hour, minute, second, ms)| {
+        let mut time = TimeLiteral::new(hour);
+        if let Some(m) = minute {
+            time = time.with_minute(m);
+        }
+        if let Some(s) = second {
+            time = time.with_second(s);
+        }
+        if let Some(ms) = ms {
+            time = time.with_millisecond(ms);
+        }
+        time
+    })
+    .parse_next(input)
+}
+
+/// Parse a datetime literal: @YYYY[-MM[-DD]][Thh[:mm[:ss[.fff]]]][(+|-)hh:mm|Z]
+#[allow(dead_code)]
+pub fn datetime_literal_parser<'a>(input: &mut Input<'a>) -> PResult<DateTimeLiteral> {
+    preceded(
+        '@',
+        (
+            four_digit_year,
+            opt(preceded('-', two_digits)),
+            opt(preceded('-', two_digits)),
+            opt(preceded('T', two_digits)),
+            opt(preceded(':', two_digits)),
+            opt(preceded(':', two_digits)),
+            opt(preceded('.', milliseconds)),
+            opt(timezone_offset),
+        ),
+    )
+    .map(
+        |(year, month, day, hour, minute, second, ms, tz)| {
             let mut date = DateLiteral::new(year);
             if let Some(m) = month {
                 date = date.with_month(m);
@@ -159,95 +355,50 @@ pub fn date_literal_parser<'a>(
             if let Some(d) = day {
                 date = date.with_day(d);
             }
-            date
-        })
-}
 
-/// Parse a time literal: @Thh[:mm[:ss[.fff]]]
-pub fn time_literal_parser<'a>(
-) -> impl Parser<'a, &'a str, TimeLiteral, extra::Err<Rich<'a, char>>> + Clone {
-    just("@T")
-        .ignore_then(two_digits())
-        .then(just(':').ignore_then(two_digits()).or_not())
-        .then(just(':').ignore_then(two_digits()).or_not())
-        .then(just('.').ignore_then(milliseconds()).or_not())
-        .map(|(((hour, minute), second), ms)| {
-            let mut time = TimeLiteral::new(hour);
+            let mut dt = DateTimeLiteral::new(date);
+            if let Some(h) = hour {
+                dt.hour = Some(h);
+            }
             if let Some(m) = minute {
-                time = time.with_minute(m);
+                dt.minute = Some(m);
             }
             if let Some(s) = second {
-                time = time.with_second(s);
+                dt.second = Some(s);
             }
             if let Some(ms) = ms {
-                time = time.with_millisecond(ms);
+                dt.millisecond = Some(ms);
             }
-            time
-        })
-}
-
-/// Parse a datetime literal: @YYYY[-MM[-DD]][Thh[:mm[:ss[.fff]]]][(+|-)hh:mm|Z]
-pub fn datetime_literal_parser<'a>(
-) -> impl Parser<'a, &'a str, DateTimeLiteral, extra::Err<Rich<'a, char>>> + Clone {
-    just('@')
-        .ignore_then(four_digit_year())
-        .then(just('-').ignore_then(two_digits()).or_not())
-        .then(just('-').ignore_then(two_digits()).or_not())
-        .then(just('T').ignore_then(two_digits()).or_not())
-        .then(just(':').ignore_then(two_digits()).or_not())
-        .then(just(':').ignore_then(two_digits()).or_not())
-        .then(just('.').ignore_then(milliseconds()).or_not())
-        .then(timezone_offset().or_not())
-        .map(
-            |(((((((year, month), day), hour), minute), second), ms), tz)| {
-                let mut date = DateLiteral::new(year);
-                if let Some(m) = month {
-                    date = date.with_month(m);
-                }
-                if let Some(d) = day {
-                    date = date.with_day(d);
-                }
-
-                let mut dt = DateTimeLiteral::new(date);
-                if let Some(h) = hour {
-                    dt.hour = Some(h);
-                }
-                if let Some(m) = minute {
-                    dt.minute = Some(m);
-                }
-                if let Some(s) = second {
-                    dt.second = Some(s);
-                }
-                if let Some(ms) = ms {
-                    dt.millisecond = Some(ms);
-                }
-                if let Some(tz) = tz {
-                    dt.timezone_offset = Some(tz);
-                }
-                dt
-            },
-        )
+            if let Some(tz) = tz {
+                dt.timezone_offset = Some(tz);
+            }
+            dt
+        },
+    )
+    .parse_next(input)
 }
 
 /// Parse any temporal literal (Date, DateTime, or Time)
-pub fn temporal_literal_parser<'a>(
-) -> impl Parser<'a, &'a str, Literal, extra::Err<Rich<'a, char>>> + Clone {
-    // Time must be checked first (@T...)
-    let time = time_literal_parser().map(Literal::Time);
-
-    // DateTime includes time component (has 'T' after date)
-    let datetime_with_time = just('@')
-        .ignore_then(four_digit_year())
-        .then(just('-').ignore_then(two_digits()).or_not())
-        .then(just('-').ignore_then(two_digits()).or_not())
-        .then_ignore(just('T'))
-        .then(two_digits())
-        .then(just(':').ignore_then(two_digits()).or_not())
-        .then(just(':').ignore_then(two_digits()).or_not())
-        .then(just('.').ignore_then(milliseconds()).or_not())
-        .then(timezone_offset().or_not())
+pub fn temporal_literal_parser<'a>(input: &mut Input<'a>) -> PResult<Literal> {
+    alt((
+        // Time must be checked first (@T...)
+        time_literal_parser.map(Literal::Time),
+        // DateTime with time component (has 'T' after date)
+        preceded(
+            '@',
+            (
+                four_digit_year,
+                opt(preceded('-', two_digits)),
+                opt(preceded('-', two_digits)),
+                preceded('T', two_digits),
+                opt(preceded(':', two_digits)),
+                opt(preceded(':', two_digits)),
+                opt(preceded('.', milliseconds)),
+                opt(timezone_offset),
+            ),
+        )
         .map(
-            |(((((((year, month), day), hour), minute), second), ms), tz)| {
+            |(year, month, day, hour, minute, second, ms, tz)| {
                 let mut date = DateLiteral::new(year);
                 if let Some(m) = month {
                     date = date.with_month(m);
@@ -272,83 +423,78 @@ pub fn temporal_literal_parser<'a>(
                 }
                 Literal::DateTime(dt)
             },
-        );
-
-    // Date only (no 'T')
-    let date_only = date_literal_parser().map(Literal::Date);
-
-    // Try in order: time (@T), datetime with time, date only
-    time.or(datetime_with_time).or(date_only)
+        ),
+        // Date only (no 'T')
+        date_literal_parser.map(Literal::Date),
+    ))
+    .parse_next(input)
 }
 
 /// Parse a decimal number for quantities (can include negative)
-fn quantity_value<'a>() -> impl Parser<'a, &'a str, Decimal, extra::Err<Rich<'a, char>>> + Clone {
-    let sign = just('-').or_not().map(|s| s.is_some());
-
-    let decimal = text::int(10)
-        .then(just('.').then(text::digits(10)).or_not())
-        .to_slice();
-
-    sign.then(decimal).map(|(neg, s): (bool, &str)| {
-        let val = Decimal::from_str(s).unwrap_or_default();
-        if neg { -val } else { val }
-    })
+fn quantity_value<'a>(input: &mut Input<'a>) -> PResult<Decimal> {
+    let neg = opt('-').map(|s| s.is_some()).parse_next(input)?;
+    let num_str = (digit1, opt(('.', digit1)))
+        .take()
+        .parse_next(input)?;
+    let val = Decimal::from_str(num_str).unwrap_or_default();
+    Ok(if neg { -val } else { val })
 }
 
 /// Parse a UCUM unit string (single-quoted)
-fn quoted_unit_string<'a>() -> impl Parser<'a, &'a str, String, extra::Err<Rich<'a, char>>> + Clone {
-    string_parser()
+fn quoted_unit_string<'a>(input: &mut Input<'a>) -> PResult<String> {
+    string_parser(input)
 }
 
 /// Parse an unquoted duration unit keyword
-fn duration_unit_keyword<'a>() -> impl Parser<'a, &'a str, String, extra::Err<Rich<'a, char>>> + Clone
-{
-    choice((
-        text::keyword("years").to("year".to_string()),
-        text::keyword("year").to("year".to_string()),
-        text::keyword("months").to("month".to_string()),
-        text::keyword("month").to("month".to_string()),
-        text::keyword("weeks").to("week".to_string()),
-        text::keyword("week").to("week".to_string()),
-        text::keyword("days").to("day".to_string()),
-        text::keyword("day").to("day".to_string()),
-        text::keyword("hours").to("hour".to_string()),
-        text::keyword("hour").to("hour".to_string()),
-        text::keyword("minutes").to("minute".to_string()),
-        text::keyword("minute").to("minute".to_string()),
-        text::keyword("seconds").to("second".to_string()),
-        text::keyword("second").to("second".to_string()),
-        text::keyword("milliseconds").to("millisecond".to_string()),
-        text::keyword("millisecond").to("millisecond".to_string()),
+fn duration_unit_keyword<'a>(input: &mut Input<'a>) -> PResult<String> {
+    alt((
+        keyword("years").value("year".to_string()),
+        keyword("year").value("year".to_string()),
+        keyword("months").value("month".to_string()),
+        keyword("month").value("month".to_string()),
+        keyword("weeks").value("week".to_string()),
+        keyword("week").value("week".to_string()),
+        keyword("days").value("day".to_string()),
+        keyword("day").value("day".to_string()),
+        keyword("hours").value("hour".to_string()),
+        keyword("hour").value("hour".to_string()),
+        keyword("minutes").value("minute".to_string()),
+        keyword("minute").value("minute".to_string()),
+        keyword("seconds").value("second".to_string()),
+        keyword("second").value("second".to_string()),
+        keyword("milliseconds").value("millisecond".to_string()),
+        keyword("millisecond").value("millisecond".to_string()),
     ))
+    .parse_next(input)
 }
 
 /// Parse a unit string (quoted UCUM or unquoted duration keyword)
-fn unit_string<'a>() -> impl Parser<'a, &'a str, String, extra::Err<Rich<'a, char>>> + Clone {
-    quoted_unit_string().or(duration_unit_keyword())
+fn unit_string<'a>(input: &mut Input<'a>) -> PResult<String> {
+    alt((quoted_unit_string, duration_unit_keyword)).parse_next(input)
 }
 
 /// Parse a quantity literal: number [unit]
-pub fn quantity_literal_parser<'a>(
-) -> impl Parser<'a, &'a str, QuantityLiteral, extra::Err<Rich<'a, char>>> + Clone {
-    quantity_value()
-        .then(unit_string().padded().or_not())
-        .map(|(value, unit)| {
-            let mut q = QuantityLiteral::new(value);
-            if let Some(u) = unit {
-                q = q.with_unit(u);
-            }
-            q
-        })
+pub fn quantity_literal_parser<'a>(input: &mut Input<'a>) -> PResult<QuantityLiteral> {
+    let value = quantity_value.parse_next(input)?;
+    ws.parse_next(input)?;
+    let unit = opt(unit_string).parse_next(input)?;
+
+    let mut q = QuantityLiteral::new(value);
+    if let Some(u) = unit {
+        q = q.with_unit(u);
+    }
+    Ok(q)
 }
 
 /// Parse a ratio literal: quantity:quantity
-pub fn ratio_literal_parser<'a>(
-) -> impl Parser<'a, &'a str, RatioLiteral, extra::Err<Rich<'a, char>>> + Clone {
-    quantity_literal_parser()
-        .then_ignore(just(':').padded())
-        .then(quantity_literal_parser())
-        .map(|(num, denom)| RatioLiteral::new(num, denom))
+#[allow(dead_code)]
+pub fn ratio_literal_parser<'a>(input: &mut Input<'a>) -> PResult<RatioLiteral> {
+    let num = quantity_literal_parser.parse_next(input)?;
+    ws.parse_next(input)?;
+    ':'.parse_next(input)?;
+    ws.parse_next(input)?;
+    let denom = quantity_literal_parser.parse_next(input)?;
+    Ok(RatioLiteral::new(num, denom))
 }
 
 /// Check if a string is a CQL keyword
@@ -433,6 +579,20 @@ pub fn is_keyword(s: &str) -> bool {
             | "time"
             | "div"
             | "mod"
+            // Interval/temporal operators
+            | "after"
+            | "before"
+            | "same"
+            | "meets"
+            | "overlaps"
+            | "starts"
+            | "ends"
+            | "includes"
+            | "included"  // for "included in"
+            | "during"
+            | "properly"
+            | "on"
+            | "within"
     )
 }
 

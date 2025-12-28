@@ -1,0 +1,119 @@
+{
+  "source": "operator_nullological_test.go",
+  "functions": {
+    "TestCoalesce": [
+      {
+        "name": "Coalesce(null, 1)",
+        "cql": "Coalesce(null, 1)",
+        "expected": 1
+      },
+      {
+        "name": "Coalesce(1, 2)",
+        "cql": "Coalesce(1, 2)",
+        "expected": 1
+      },
+      {
+        "name": "Coalesce(null, null)",
+        "cql": "Coalesce(null, null)",
+        "expected": null
+      },
+      {
+        "name": "Coalesce(null, null, 2)",
+        "cql": "Coalesce(null, null, 2)",
+        "expected": 2
+      },
+      {
+        "name": "Coalesce(null, null, null)",
+        "cql": "Coalesce(null, null, null)",
+        "expected": null
+      },
+      {
+        "name": "Coalesce(null, null, null, 2)",
+        "cql": "Coalesce(null, null, null, 2)",
+        "expected": 2
+      },
+      {
+        "name": "Coalesce(null, null, null, null, null)",
+        "cql": "Coalesce(null, null, null, null, null)",
+        "expected": null
+      },
+      {
+        "name": "Coalesce(null, null, null, null, 2)",
+        "cql": "Coalesce(null, null, null, null, 2)",
+        "expected": 2
+      },
+      {
+        "name": "Coalesce(null, null, null, null, null)",
+        "cql": "Coalesce(null, null, null, null, null)",
+        "expected": null
+      },
+      {
+        "name": "Coalesce({})",
+        "cql": "Coalesce({})",
+        "expected": null
+      },
+      {
+        "name": "Coalesce({null, 1})",
+        "cql": "Coalesce({null, 1})",
+        "expected": 1
+      }
+    ],
+    "TestIsNullogical": [
+      {
+        "name": "1 is null",
+        "cql": "1 is null",
+        "expected": false
+      },
+      {
+        "name": "null is null",
+        "cql": "null is null",
+        "expected": true
+      },
+      {
+        "name": "IsNull(null)",
+        "cql": "IsNull(null)",
+        "expected": true
+      },
+      {
+        "name": "true is true",
+        "cql": "true is true",
+        "expected": true
+      },
+      {
+        "name": "false is true",
+        "cql": "false is true",
+        "expected": false
+      },
+      {
+        "name": "null is true",
+        "cql": "null is true",
+        "expected": false
+      },
+      {
+        "name": "IsTrue(true)",
+        "cql": "IsTrue(true)",
+        "expected": true
+      },
+      {
+        "name": "true is false",
+        "cql": "true is false",
+        "expected": false
+      },
+      {
+        "name": "false is false",
+        "cql": "false is false",
+        "expected": true
+      },
+      {
+        "name": "null is false",
+        "cql": "null is false",
+        "expected": false
+      },
+      {
+        "name": "IsFalse(false)",
+        "cql": "IsFalse(false)",
+        "expected": true
+      }
+    ]
+  }
+}

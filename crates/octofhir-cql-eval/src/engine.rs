@@ -404,6 +404,18 @@ impl CqlEngine {
                 })?;
                 Ok(CqlValue::Date(date))
             }
+            "DateTime" => {
+                let datetime = CqlDateTime::parse(value_str).ok_or_else(|| {
+                    EvalError::conversion_error(value_str, "DateTime")
+                })?;
+                Ok(CqlValue::DateTime(datetime))
+            }
+            "Time" => {
+                let time = CqlTime::parse(value_str).ok_or_else(|| {
+                    EvalError::conversion_error(value_str, "Time")
+                })?;
+                Ok(CqlValue::Time(time))
+            }
             _ => Err(EvalError::unsupported_expression(format!(
                 "Literal type: {}",
                 type_name
