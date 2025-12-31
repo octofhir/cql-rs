@@ -36,21 +36,22 @@ fn test_integer_to_quantity() {
     let value = CqlValue::integer(5);
     let quantity = CqlQuantity {
         value: Decimal::from(5),
-        unit: "1".to_string(), // Unity
+        unit: Some("1".to_string()), // Unity
     };
 
     assert_eq!(quantity.value, Decimal::from(5));
+    let _ = value; // suppress unused warning
 }
 
 #[test]
 fn test_decimal_to_quantity() {
     let quantity = CqlQuantity {
         value: "3.14".parse().unwrap(),
-        unit: "m".to_string(),
+        unit: Some("m".to_string()),
     };
 
     assert_eq!(quantity.value.to_string(), "3.14");
-    assert_eq!(quantity.unit, "m");
+    assert_eq!(quantity.unit, Some("m".to_string()));
 }
 
 // === String Conversions ===
@@ -161,7 +162,7 @@ fn test_null_in_operations() {
 fn test_singleton_to_list() {
     // A single value can be treated as a list with one element
     let value = CqlValue::integer(42);
-    let list = CqlValue::list(vec![value]);
+    let list = CqlValue::List(CqlList::from_elements(vec![value]));
 
     match list {
         CqlValue::List(l) => {
@@ -176,7 +177,7 @@ fn test_list_element_type_promotion() {
     // If a list contains integers and decimals, integers should promote to decimals
     let list = vec![
         CqlValue::integer(1),
-        CqlValue::decimal("2.5"),
+        CqlValue::decimal("2.5".parse().unwrap()),
         CqlValue::integer(3),
     ];
 
@@ -191,6 +192,7 @@ fn test_point_to_interval() {
     // A single value can be treated as a point interval [value, value]
     let value = CqlValue::integer(5);
     let interval = CqlInterval {
+        point_type: CqlType::Integer,
         low: Some(Box::new(value.clone())),
         high: Some(Box::new(value)),
         low_closed: true,
@@ -207,12 +209,12 @@ fn test_point_to_interval() {
 fn test_quantity_unit_compatibility() {
     let qty1 = CqlQuantity {
         value: "1000".parse().unwrap(),
-        unit: "g".to_string(),
+        unit: Some("g".to_string()),
     };
 
     let qty2 = CqlQuantity {
         value: "1".parse().unwrap(),
-        unit: "kg".to_string(),
+        unit: Some("kg".to_string()),
     };
 
     // These should be equivalent (1kg = 1000g)
@@ -225,10 +227,10 @@ fn test_quantity_unit_compatibility() {
 fn test_quantity_dimensionless() {
     let qty = CqlQuantity {
         value: "42".parse().unwrap(),
-        unit: "1".to_string(), // Dimensionless
+        unit: Some("1".to_string()), // Dimensionless
     };
 
-    assert_eq!(qty.unit, "1");
+    assert_eq!(qty.unit, Some("1".to_string()));
 }
 
 // === Code/Concept Coercions ===
@@ -243,7 +245,7 @@ fn test_code_to_concept() {
     };
 
     let concept = CqlConcept {
-        codes: vec![code.clone()],
+        codes: smallvec::smallvec![code.clone()],
         display: code.display.clone(),
     };
 
@@ -255,7 +257,7 @@ fn test_code_to_concept() {
 fn test_concept_to_code() {
     // A concept with a single code can be treated as a code
     let concept = CqlConcept {
-        codes: vec![CqlCode {
+        codes: smallvec::smallvec![CqlCode {
             system: "http://loinc.org".to_string(),
             version: None,
             code: "8480-6".to_string(),
@@ -308,7 +310,7 @@ fn test_tuple_structural_subtyping() {
 fn test_choice_type_integer_or_decimal() {
     // Choice<Integer, Decimal> can hold either type
     let choice1: CqlValue = CqlValue::integer(42);
-    let choice2: CqlValue = CqlValue::decimal("3.14");
+    let choice2: CqlValue = CqlValue::decimal("3.14".parse().unwrap());
 
     assert!(matches!(choice1, CqlValue::Integer(_)));
     assert!(matches!(choice2, CqlValue::Decimal(_)));
@@ -364,7 +366,7 @@ fn test_code_is_subtype_of_concept() {
 
     // Can be promoted to Concept
     let as_concept = CqlConcept {
-        codes: vec![code],
+        codes: smallvec::smallvec![code],
         display: None,
     };
 
@@ -385,7 +387,7 @@ fn test_integer_list_to_decimal_list() {
     let decimal_list: Vec<CqlValue> = int_list
         .into_iter()
         .map(|v| match v {
-            CqlValue::Integer(i) => CqlValue::decimal(&Decimal::from(i).to_string()),
+            CqlValue::Integer(i) => CqlValue::decimal(Decimal::from(i)),
             other => other,
         })
         .collect();

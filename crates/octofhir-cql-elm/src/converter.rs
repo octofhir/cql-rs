@@ -748,6 +748,12 @@ impl AstToElmConverter {
                             operand: Box::new(self.convert_expression(&dtc.source.inner)),
                         })
                     }
+                    DateTimeComponent::TimezoneOffset => {
+                        Expression::TimezoneOffsetFrom(UnaryExpression {
+                            element: Element::default(),
+                            operand: Box::new(self.convert_expression(&dtc.source.inner)),
+                        })
+                    }
                     _ => {
                         Expression::DateTimeComponentFrom(DateTimeComponentFromExpression {
                             element: Element::default(),
@@ -1202,21 +1208,24 @@ impl AstToElmConverter {
         let operand = vec![left, right];
 
         match int_op.op {
-            IntervalOp::ProperlyIncludes => Expression::ProperIncludes(BinaryExpression {
+            IntervalOp::ProperlyIncludes => Expression::ProperIncludes(crate::model::ProperIncludesExpression {
                 element: Element::default(),
                 operand,
+                precision: int_op.precision.map(|p| self.convert_temporal_precision(p)),
             }),
-            IntervalOp::ProperlyIncludedIn => Expression::ProperIncludedIn(BinaryExpression {
+            IntervalOp::ProperlyIncludedIn => Expression::ProperIncludedIn(crate::model::ProperIncludedInExpression {
                 element: Element::default(),
                 operand,
+                precision: int_op.precision.map(|p| self.convert_temporal_precision(p)),
             }),
             IntervalOp::Includes => Expression::Includes(BinaryExpression {
                 element: Element::default(),
                 operand,
             }),
-            IntervalOp::IncludedIn => Expression::IncludedIn(BinaryExpression {
+            IntervalOp::IncludedIn => Expression::IncludedIn(crate::model::IncludedInExpression {
                 element: Element::default(),
                 operand,
+                precision: int_op.precision.map(|p| self.convert_temporal_precision(p)),
             }),
             IntervalOp::Before => Expression::Before(BeforeExpression {
                 element: Element::default(),
@@ -1260,9 +1269,10 @@ impl AstToElmConverter {
                 element: Element::default(),
                 operand,
             }),
-            IntervalOp::During => Expression::IncludedIn(BinaryExpression {
+            IntervalOp::During => Expression::IncludedIn(crate::model::IncludedInExpression {
                 element: Element::default(),
                 operand,
+                precision: int_op.precision.map(|p| self.convert_temporal_precision(p)),
             }),
             IntervalOp::SameAs => Expression::SameAs(SameAsExpression {
                 element: Element::default(),
@@ -1859,11 +1869,23 @@ impl AstToElmConverter {
             "Contains" => binary(args).map(Expression::Contains),
             "In" => binary(args).map(Expression::In),
             "Includes" => binary(args).map(Expression::Includes),
-            "IncludedIn" => binary(args).map(Expression::IncludedIn),
+            "IncludedIn" => binary(args).map(|b| Expression::IncludedIn(crate::model::IncludedInExpression {
+                element: b.element,
+                operand: b.operand,
+                precision: None,
+            })),
             "ProperContains" => binary(args).map(Expression::ProperContains),
             "ProperIn" => binary(args).map(Expression::ProperIn),
-            "ProperIncludes" => binary(args).map(Expression::ProperIncludes),
-            "ProperIncludedIn" => binary(args).map(Expression::ProperIncludedIn),
+            "ProperIncludes" => binary(args).map(|b| Expression::ProperIncludes(crate::model::ProperIncludesExpression {
+                element: b.element,
+                operand: b.operand,
+                precision: None,
+            })),
+            "ProperIncludedIn" => binary(args).map(|b| Expression::ProperIncludedIn(crate::model::ProperIncludedInExpression {
+                element: b.element,
+                operand: b.operand,
+                precision: None,
+            })),
             "Before" => binary(args).map(|b| Expression::Before(BeforeExpression {
                 element: b.element,
                 operand: b.operand,

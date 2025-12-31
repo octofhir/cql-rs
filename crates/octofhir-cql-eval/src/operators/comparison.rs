@@ -156,10 +156,10 @@ pub fn cql_equal(left: &CqlValue, right: &CqlValue) -> EvalResult<Option<bool>> 
         (CqlValue::Long(a), CqlValue::Decimal(b)) => Ok(Some(Decimal::from(*a) == *b)),
         (CqlValue::Decimal(a), CqlValue::Long(b)) => Ok(Some(*a == Decimal::from(*b))),
 
-        // Date/Time comparisons
-        (CqlValue::Date(a), CqlValue::Date(b)) => Ok(Some(a == b)),
-        (CqlValue::DateTime(a), CqlValue::DateTime(b)) => Ok(Some(a == b)),
-        (CqlValue::Time(a), CqlValue::Time(b)) => Ok(Some(a == b)),
+        // Date/Time comparisons - handle different precisions as uncertain
+        (CqlValue::Date(a), CqlValue::Date(b)) => compare_dates_equal(a, b),
+        (CqlValue::DateTime(a), CqlValue::DateTime(b)) => compare_datetimes_equal(a, b),
+        (CqlValue::Time(a), CqlValue::Time(b)) => compare_times_equal(a, b),
 
         // Quantity comparison (same units or UCUM-convertible)
         (CqlValue::Quantity(a), CqlValue::Quantity(b)) => {
@@ -345,6 +345,24 @@ pub fn cql_equivalent(left: &CqlValue, right: &CqlValue) -> EvalResult<bool> {
 /// Returns Some(Ordering) if comparison is certain, None if uncertain
 /// (e.g., partial dates with different precision)
 pub fn cql_compare(left: &CqlValue, right: &CqlValue) -> EvalResult<Option<Ordering>> {
+    // Handle Interval vs scalar comparison (for uncertainty results like "months between A and B > 5")
+    // Per CQL: comparing an interval to a point follows these rules:
+    // - interval > point: true if interval.low > point, false if interval.high <= point, null otherwise
+    // - interval < point: true if interval.high < point, false if interval.low >= point, null otherwise
+    // - etc.
+    if let CqlValue::Interval(interval) = left {
+        return interval_compare_point(interval, right);
+    }
+    if let CqlValue::Interval(interval) = right {
+        // point compared to interval - reverse the comparison
+        return match interval_compare_point(interval, left)? {
+            Some(Ordering::Less) => Ok(Some(Ordering::Greater)),
+            Some(Ordering::Greater) => Ok(Some(Ordering::Less)),
+            Some(Ordering::Equal) => Ok(Some(Ordering::Equal)),
+            None => Ok(None),
+        };
+    }
+
     match (left, right) {
         // Integer comparisons
         (CqlValue::Integer(a), CqlValue::Integer(b)) => Ok(Some(a.cmp(b))),
@@ -435,8 +453,8 @@ pub fn cql_compare(left: &CqlValue, right: &CqlValue) -> EvalResult<Option<Order
             }
         }
 
-        // Time comparison
-        (CqlValue::Time(a), CqlValue::Time(b)) => Ok(a.partial_cmp(b)),
+        // Time comparison (precision-aware)
+        (CqlValue::Time(a), CqlValue::Time(b)) => compare_times(a, b),
 
         // Quantity comparison (same units or UCUM-convertible)
         (CqlValue::Quantity(a), CqlValue::Quantity(b)) => {
@@ -541,21 +559,233 @@ fn compare_quantities(a: &CqlQuantity, b: &CqlQuantity) -> EvalResult<Option<Ord
 /// Compare two intervals for equality
 fn interval_equal(a: &CqlInterval, b: &CqlInterval) -> EvalResult<Option<bool>> {
     // Compare bounds and closed flags
+    // If one bound is null (unknown) and the other is a value, result is uncertain
     let low_equal = match (&a.low, &b.low) {
         (Some(al), Some(bl)) => cql_equal(al, bl)?,
         (None, None) => Some(true),
-        _ => Some(false),
+        // One is null (unknown), can't determine equality
+        _ => None,
     };
 
     let high_equal = match (&a.high, &b.high) {
         (Some(ah), Some(bh)) => cql_equal(ah, bh)?,
         (None, None) => Some(true),
-        _ => Some(false),
+        // One is null (unknown), can't determine equality
+        _ => None,
     };
 
     match (low_equal, high_equal) {
         (Some(le), Some(he)) => Ok(Some(le && he && a.low_closed == b.low_closed && a.high_closed == b.high_closed)),
+        // If either bound comparison is uncertain, result is uncertain
         _ => Ok(None),
+    }
+}
+
+/// Compare two dates for equality with precision handling
+fn compare_dates_equal(a: &octofhir_cql_types::CqlDate, b: &octofhir_cql_types::CqlDate) -> EvalResult<Option<bool>> {
+    // Compare year (always present)
+    if a.year != b.year {
+        return Ok(Some(false));
+    }
+
+    // Compare month if both have it
+    match (a.month, b.month) {
+        (Some(am), Some(bm)) => {
+            if am != bm {
+                return Ok(Some(false));
+            }
+        }
+        (None, None) => return Ok(Some(true)), // Both have same precision
+        _ => return Ok(None), // Different precision - uncertain
+    }
+
+    // Compare day if both have it
+    match (a.day, b.day) {
+        (Some(ad), Some(bd)) => Ok(Some(ad == bd)),
+        (None, None) => Ok(Some(true)), // Both have same precision
+        _ => Ok(None), // Different precision - uncertain
+    }
+}
+
+/// Compare two datetimes for equality with precision handling
+fn compare_datetimes_equal(a: &octofhir_cql_types::CqlDateTime, b: &octofhir_cql_types::CqlDateTime) -> EvalResult<Option<bool>> {
+    // Compare required fields first
+    if a.year != b.year {
+        return Ok(Some(false));
+    }
+    if a.month != b.month {
+        return Ok(Some(false));
+    }
+    if a.day != b.day {
+        return Ok(Some(false));
+    }
+
+    // Compare optional fields - if one has it and other doesn't, uncertain
+    match (a.hour, b.hour) {
+        (Some(ah), Some(bh)) => {
+            if ah != bh {
+                return Ok(Some(false));
+            }
+        }
+        (None, None) => return Ok(Some(true)), // Both have same precision
+        _ => return Ok(None), // Different precision - uncertain
+    }
+
+    match (a.minute, b.minute) {
+        (Some(am), Some(bm)) => {
+            if am != bm {
+                return Ok(Some(false));
+            }
+        }
+        (None, None) => return Ok(Some(true)),
+        _ => return Ok(None),
+    }
+
+    match (a.second, b.second) {
+        (Some(as_), Some(bs)) => {
+            if as_ != bs {
+                return Ok(Some(false));
+            }
+        }
+        (None, None) => return Ok(Some(true)),
+        _ => return Ok(None),
+    }
+
+    match (a.millisecond, b.millisecond) {
+        (Some(am), Some(bm)) => Ok(Some(am == bm)),
+        (None, None) => Ok(Some(true)),
+        _ => Ok(None),
+    }
+}
+
+/// Compare two times for ordering with precision handling
+/// Returns None when the comparison is uncertain due to precision differences
+fn compare_times(a: &octofhir_cql_types::CqlTime, b: &octofhir_cql_types::CqlTime) -> EvalResult<Option<Ordering>> {
+    // Compare hour (always present)
+    match a.hour.cmp(&b.hour) {
+        Ordering::Equal => {}
+        ord => return Ok(Some(ord)),
+    }
+
+    // Compare minute if both have it
+    match (a.minute, b.minute) {
+        (Some(am), Some(bm)) => match am.cmp(&bm) {
+            Ordering::Equal => {}
+            ord => return Ok(Some(ord)),
+        },
+        (None, None) => return Ok(Some(Ordering::Equal)),
+        // One has minute precision, other doesn't - uncertain
+        // e.g., @T12 vs @T12:30 - could be equal or either could be greater
+        _ => return Ok(None),
+    }
+
+    // Compare second if both have it
+    match (a.second, b.second) {
+        (Some(as_), Some(bs)) => match as_.cmp(&bs) {
+            Ordering::Equal => {}
+            ord => return Ok(Some(ord)),
+        },
+        (None, None) => return Ok(Some(Ordering::Equal)),
+        _ => return Ok(None),
+    }
+
+    // Compare millisecond if both have it
+    match (a.millisecond, b.millisecond) {
+        (Some(am), Some(bm)) => Ok(Some(am.cmp(&bm))),
+        (None, None) => Ok(Some(Ordering::Equal)),
+        // e.g., @T12:00:00 vs @T12:00:00.001 - uncertain
+        _ => Ok(None),
+    }
+}
+
+/// Compare two times for equality with precision handling
+fn compare_times_equal(a: &octofhir_cql_types::CqlTime, b: &octofhir_cql_types::CqlTime) -> EvalResult<Option<bool>> {
+    // Compare hour (always present)
+    if a.hour != b.hour {
+        return Ok(Some(false));
+    }
+
+    // Compare minute if both have it
+    match (a.minute, b.minute) {
+        (Some(am), Some(bm)) => {
+            if am != bm {
+                return Ok(Some(false));
+            }
+        }
+        (None, None) => return Ok(Some(true)), // Both have same precision
+        _ => return Ok(None), // Different precision - uncertain
+    }
+
+    // Compare second if both have it
+    match (a.second, b.second) {
+        (Some(as_), Some(bs)) => {
+            if as_ != bs {
+                return Ok(Some(false));
+            }
+        }
+        (None, None) => return Ok(Some(true)),
+        _ => return Ok(None),
+    }
+
+    // Compare millisecond if both have it
+    match (a.millisecond, b.millisecond) {
+        (Some(am), Some(bm)) => Ok(Some(am == bm)),
+        (None, None) => Ok(Some(true)),
+        _ => Ok(None), // Different precision - uncertain
+    }
+}
+
+/// Compare an interval to a point value
+///
+/// This implements CQL uncertainty semantics for comparing an interval (representing
+/// an uncertain value) to a point:
+/// - Returns Some(Greater) if interval.low > point (all possible values are greater)
+/// - Returns Some(Less) if interval.high < point (all possible values are less)
+/// - Returns Some(Equal) if interval.low == interval.high == point (single value equals point)
+/// - Returns None otherwise (uncertain - some values might be greater, some less)
+fn interval_compare_point(interval: &CqlInterval, point: &CqlValue) -> EvalResult<Option<Ordering>> {
+    let low = match &interval.low {
+        Some(v) => v,
+        None => return Ok(None), // Unbounded low means uncertain
+    };
+    let high = match &interval.high {
+        Some(v) => v,
+        None => return Ok(None), // Unbounded high means uncertain
+    };
+
+    // Compare low bound to point
+    let low_cmp = cql_compare_values(low, point)?;
+    // Compare high bound to point
+    let high_cmp = cql_compare_values(high, point)?;
+
+    match (low_cmp, high_cmp) {
+        // If low > point, then all values in interval > point
+        (Some(Ordering::Greater), _) => Ok(Some(Ordering::Greater)),
+        // If high < point, then all values in interval < point
+        (_, Some(Ordering::Less)) => Ok(Some(Ordering::Less)),
+        // If low == high == point, then interval represents exactly point
+        (Some(Ordering::Equal), Some(Ordering::Equal)) => Ok(Some(Ordering::Equal)),
+        // Otherwise uncertain - interval spans across point
+        _ => Ok(None),
+    }
+}
+
+/// Compare two scalar values (helper for interval_compare_point)
+fn cql_compare_values(left: &CqlValue, right: &CqlValue) -> EvalResult<Option<Ordering>> {
+    match (left, right) {
+        (CqlValue::Integer(a), CqlValue::Integer(b)) => Ok(Some(a.cmp(b))),
+        (CqlValue::Long(a), CqlValue::Long(b)) => Ok(Some(a.cmp(b))),
+        (CqlValue::Integer(a), CqlValue::Long(b)) => Ok(Some((*a as i64).cmp(b))),
+        (CqlValue::Long(a), CqlValue::Integer(b)) => Ok(Some(a.cmp(&(*b as i64)))),
+        (CqlValue::Decimal(a), CqlValue::Decimal(b)) => Ok(Some(a.cmp(b))),
+        (CqlValue::Integer(a), CqlValue::Decimal(b)) => Ok(Some(Decimal::from(*a).cmp(b))),
+        (CqlValue::Decimal(a), CqlValue::Integer(b)) => Ok(Some(a.cmp(&Decimal::from(*b)))),
+        (CqlValue::Long(a), CqlValue::Decimal(b)) => Ok(Some(Decimal::from(*a).cmp(b))),
+        (CqlValue::Decimal(a), CqlValue::Long(b)) => Ok(Some(a.cmp(&Decimal::from(*b)))),
+        (CqlValue::String(a), CqlValue::String(b)) => Ok(Some(a.cmp(b))),
+        (CqlValue::Date(a), CqlValue::Date(b)) => Ok(a.partial_cmp(b)),
+        (CqlValue::Time(a), CqlValue::Time(b)) => compare_times(a, b),
+        _ => Ok(None), // Incomparable types
     }
 }
 

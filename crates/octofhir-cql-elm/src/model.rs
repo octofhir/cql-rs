@@ -607,11 +607,11 @@ pub enum Expression {
     Contains(BinaryExpression),
     In(BinaryExpression),
     Includes(BinaryExpression),
-    IncludedIn(BinaryExpression),
+    IncludedIn(IncludedInExpression),
     ProperContains(BinaryExpression),
     ProperIn(BinaryExpression),
-    ProperIncludes(BinaryExpression),
-    ProperIncludedIn(BinaryExpression),
+    ProperIncludes(ProperIncludesExpression),
+    ProperIncludedIn(ProperIncludedInExpression),
     Before(BeforeExpression),
     After(AfterExpression),
     Meets(BinaryExpression),
@@ -1218,6 +1218,39 @@ pub struct BeforeExpression {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AfterExpression {
+    #[serde(flatten)]
+    pub element: Element,
+    pub operand: Vec<Box<Expression>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub precision: Option<DateTimePrecision>,
+}
+
+/// IncludedIn expression with optional precision
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct IncludedInExpression {
+    #[serde(flatten)]
+    pub element: Element,
+    pub operand: Vec<Box<Expression>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub precision: Option<DateTimePrecision>,
+}
+
+/// ProperIncludes expression with optional precision
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProperIncludesExpression {
+    #[serde(flatten)]
+    pub element: Element,
+    pub operand: Vec<Box<Expression>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub precision: Option<DateTimePrecision>,
+}
+
+/// ProperIncludedIn expression with optional precision
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProperIncludedInExpression {
     #[serde(flatten)]
     pub element: Element,
     pub operand: Vec<Box<Expression>>,

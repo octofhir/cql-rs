@@ -54,6 +54,7 @@ quick-xml = { workspace = true }
 divan = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
+regex = { workspace = true }
 
 [[bench]]
 name = "parser"

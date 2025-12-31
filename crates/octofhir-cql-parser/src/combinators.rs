@@ -166,10 +166,27 @@ pub fn string_parser<'a>(input: &mut Input<'a>) -> PResult<String> {
                     alt((
                         '\\'.map(|_| StringChar::Single('\\')),
                         '\''.map(|_| StringChar::Single('\'')),
+                        '"'.map(|_| StringChar::Single('"')),
                         'n'.map(|_| StringChar::Single('\n')),
                         'r'.map(|_| StringChar::Single('\r')),
                         't'.map(|_| StringChar::Single('\t')),
                         'f'.map(|_| StringChar::Single('\x0C')),
+                        // Unicode escape \uXXXX
+                        preceded(
+                            'u',
+                            take_while(4, |c: char| c.is_ascii_hexdigit()),
+                        )
+                        .map(|hex: &str| {
+                            if hex.len() == 4 {
+                                if let Ok(code) = u32::from_str_radix(hex, 16) {
+                                    if let Some(c) = char::from_u32(code) {
+                                        return StringChar::Single(c);
+                                    }
+                                }
+                            }
+                            // Fallback: keep as literal
+                            StringChar::Single('u')
+                        }),
                         // Keep unknown escape sequences as-is (e.g., \d, \s for regex)
                         any.map(|c| StringChar::Escape('\\', c)),
                     )),
@@ -214,18 +231,33 @@ pub fn decimal_parser<'a>(input: &mut Input<'a>) -> PResult<Decimal> {
 pub fn number_parser<'a>(input: &mut Input<'a>) -> PResult<Literal> {
     alt((
         // Decimal: digits.digits
+        // CQL spec: max 28 integer digits, max 8 decimal places
         (digit1, '.', digit1)
             .take()
-            .map(|s: &str| Literal::Decimal(Decimal::from_str(s).unwrap_or_default())),
+            .verify_map(|s: &str| {
+                let parts: Vec<&str> = s.split('.').collect();
+                if parts.len() != 2 {
+                    return None;
+                }
+                let integer_part = parts[0];
+                let decimal_part = parts[1];
+                // Check constraints: max 28 integer digits, max 8 decimal places
+                if integer_part.len() > 28 || decimal_part.len() > 8 {
+                    return None;
+                }
+                Decimal::from_str(s).ok().map(Literal::Decimal)
+            }),
         // Long: digitsL or digitsl
         (digit1, one_of(['L', 'l']))
             .take()
-            .map(|s: &str| {
+            .verify_map(|s: &str| {
                 let num_str = s.trim_end_matches(['L', 'l']);
-                Literal::Long(num_str.parse().unwrap_or(0))
+                num_str.parse::<i64>().ok().map(Literal::Long)
             }),
         // Integer: digits
-        digit1.map(|s: &str| Literal::Integer(s.parse().unwrap_or(0))),
+        digit1.verify_map(|s: &str| {
+            s.parse::<i32>().ok().map(Literal::Integer)
+        }),
     ))
     .parse_next(input)
 }
@@ -249,9 +281,10 @@ fn four_digit_year<'a>(input: &mut Input<'a>) -> PResult<i32> {
         .parse_next(input)
 }
 
-/// Parse milliseconds (1-3 digits)
+/// Parse milliseconds (1-3 digits, or more which indicates semantic error)
 fn milliseconds<'a>(input: &mut Input<'a>) -> PResult<u16> {
-    take_while(1..=3, |c: char| c.is_ascii_digit())
+    take_while(1.., |c: char| c.is_ascii_digit())
+        .verify(|s: &str| s.len() <= 3)
         .map(|s: &str| {
             let num: u16 = s.parse().unwrap_or(0);
             // Pad to 3 digits: "1" -> 100, "12" -> 120, "123" -> 123
@@ -424,6 +457,27 @@ pub fn temporal_literal_parser<'a>(input: &mut Input<'a>) -> PResult<Literal> {
                 Literal::DateTime(dt)
             },
         ),
+        // DateTime with trailing T but no time components (e.g., @2015-02-10T)
+        preceded(
+            '@',
+            (
+                four_digit_year,
+                opt(preceded('-', two_digits)),
+                opt(preceded('-', two_digits)),
+                'T',
+            ),
+        )
+        .map(|(year, month, day, _t)| {
+            let mut date = DateLiteral::new(year);
+            if let Some(m) = month {
+                date = date.with_month(m);
+            }
+            if let Some(d) = day {
+                date = date.with_day(d);
+            }
+            // DateTime with date but no time components
+            Literal::DateTime(DateTimeLiteral::new(date))
+        }),
         // Date only (no 'T')
         date_literal_parser.map(Literal::Date),
     ))

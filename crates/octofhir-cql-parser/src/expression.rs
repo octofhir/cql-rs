@@ -12,12 +12,12 @@ use octofhir_cql_ast::{
     AggregateClause, AsCastExpr, BetweenExpr, BinaryOp, BinaryOpExpr, CaseExpr, CaseItem, ConvertExpr,
     DateConstructorExpr, DateTimeComponent, DateTimeComponentExpr, DateTimeConstructorExpr,
     DifferenceBetweenExpr, DurationBetweenExpr, Expression, FunctionRefExpr, Identifier,
-    IdentifierRef, IfExpr, IndexerExpr, IntervalExpr, IntervalOp, IntervalOpExpr,
-    IntervalTypeSpecifier, IsTypeExpr, ListExpr, ListTypeSpecifier, Literal, MinMaxValueExpr,
-    NamedTypeSpecifier, PropertyAccess, QuantityLiteral, Query, QuerySource, Retrieve,
-    ReturnClause, SameAsExpr, SameOrAfterExpr, SameOrBeforeExpr, SortClause, SortDirection,
-    SortItem, Spanned, TemporalPrecision, TimeConstructorExpr, TupleElement, TupleExpr,
-    TypeSpecifier, UnaryOp, UnaryOpExpr,
+    IdentifierRef, IfExpr, IndexerExpr, InstanceElement, InstanceExpr, IntervalExpr, IntervalOp,
+    IntervalOpExpr, IntervalTypeSpecifier, IsNullExpr, IsTypeExpr, ListExpr, ListTypeSpecifier,
+    Literal, MinMaxValueExpr, NamedTypeSpecifier, PropertyAccess, QuantityLiteral, Query,
+    QuerySource, Retrieve, ReturnClause, SameAsExpr, SameOrAfterExpr, SameOrBeforeExpr, SortClause,
+    SortDirection, SortItem, Spanned, TemporalPrecision, TimeConstructorExpr, TupleElement,
+    TupleExpr, TypeSpecifier, UnaryOp, UnaryOpExpr,
 };
 use rust_decimal::Decimal;
 use octofhir_cql_diagnostics::Span;
@@ -635,7 +635,7 @@ fn multiplicative_expression<'a>(input: &mut Input<'a>) -> PResult<Spanned<Expre
 
 /// Parse power expression (^, right-associative)
 fn power_expression<'a>(input: &mut Input<'a>) -> PResult<Spanned<Expression>> {
-    let left = unary_expression(input)?;
+    let left = type_expression(input)?;
 
     ws.parse_next(input)?;
     if lit("^").parse_next(input).is_ok() {
@@ -649,6 +649,72 @@ fn power_expression<'a>(input: &mut Input<'a>) -> PResult<Spanned<Expression>> {
     } else {
         Ok(left)
     }
+}
+
+/// Parse type expression (is null, is Type, as Type)
+/// This level handles type testing operators that bind looser than unary/component extraction
+fn type_expression<'a>(input: &mut Input<'a>) -> PResult<Spanned<Expression>> {
+    let mut base = unary_expression(input)?;
+
+    loop {
+        ws.parse_next(input)?;
+
+        // Parse "as Type" expression
+        if padded_keyword("as").parse_next(input).is_ok() {
+            ws.parse_next(input)?;
+            let type_spec = type_specifier_parser(input)?;
+            base = dummy_span(Expression::As(AsCastExpr {
+                operand: Box::new(base),
+                as_type: dummy_span(type_spec),
+                strict: false,
+            }));
+            continue;
+        }
+
+        // Parse "is null", "is not null", or "is Type" expression
+        if padded_keyword("is").parse_next(input).is_ok() {
+            ws.parse_next(input)?;
+
+            // Check for "is not null"
+            let checkpoint = *input;
+            if padded_keyword("not").parse_next(input).is_ok() {
+                ws.parse_next(input)?;
+                if keyword("null").parse_next(input).is_ok() {
+                    // "is not null" - wrap in Not(IsNull)
+                    base = dummy_span(Expression::UnaryOp(UnaryOpExpr {
+                        op: UnaryOp::Not,
+                        operand: Box::new(dummy_span(Expression::IsNull(IsNullExpr {
+                            operand: Box::new(base),
+                        }))),
+                    }));
+                    continue;
+                }
+                // Not "is not null", restore position
+                *input = checkpoint;
+                ws.parse_next(input)?;
+            }
+
+            // Check for "is null"
+            if keyword("null").parse_next(input).is_ok() {
+                base = dummy_span(Expression::IsNull(IsNullExpr {
+                    operand: Box::new(base),
+                }));
+                continue;
+            }
+
+            // Parse type specifier (handles generics like List<String>)
+            let type_spec = type_specifier_parser(input)?;
+            base = dummy_span(Expression::Is(IsTypeExpr {
+                operand: Box::new(base),
+                is_type: dummy_span(type_spec),
+            }));
+            continue;
+        }
+
+        break;
+    }
+
+    Ok(base)
 }
 
 /// Parse unary expression (-, +, not, exists, component extraction)
@@ -974,8 +1040,9 @@ fn duration_difference_between<'a>(input: &mut Input<'a>) -> PResult<Spanned<Exp
 
     ws.parse_next(input)?;
 
-    // Parse low expression (use equality_expression to stop before 'and')
-    let low = equality_expression(input)?;
+    // Parse low expression - use interval_operator_expression to stop before comparison operators
+    // This ensures "months between A and B = 5" is parsed as "(months between A and B) = 5"
+    let low = interval_operator_expression(input)?;
 
     ws.parse_next(input)?;
 
@@ -987,8 +1054,8 @@ fn duration_difference_between<'a>(input: &mut Input<'a>) -> PResult<Spanned<Exp
 
     ws.parse_next(input)?;
 
-    // Parse high expression (use equality_expression for consistency)
-    let high = equality_expression(input)?;
+    // Parse high expression - also use interval_operator_expression
+    let high = interval_operator_expression(input)?;
 
     if is_difference {
         Ok(dummy_span(Expression::DifferenceBetween(
@@ -1059,10 +1126,39 @@ fn postfix_expression<'a>(input: &mut Input<'a>) -> PResult<Spanned<Expression>>
         if lit(".").parse_next(input).is_ok() {
             ws.parse_next(input)?;
             let prop = identifier_parser(input)?;
-            base = dummy_span(Expression::Property(PropertyAccess {
-                source: Box::new(base),
-                property: prop,
-            }));
+            ws.parse_next(input)?;
+
+            // Check if this is a fluent function call: .method()
+            if lit("(").parse_next(input).is_ok() {
+                ws.parse_next(input)?;
+                let args = if lit(")").parse_next(input).is_ok() {
+                    vec![base]
+                } else {
+                    let mut args = vec![base];
+                    loop {
+                        let arg = expression_with_dummy_spans(input)?;
+                        args.push(arg);
+                        ws.parse_next(input)?;
+                        if lit(",").parse_next(input).is_ok() {
+                            ws.parse_next(input)?;
+                        } else {
+                            break;
+                        }
+                    }
+                    lit(")").parse_next(input)?;
+                    args
+                };
+                base = dummy_span(Expression::FunctionRef(FunctionRefExpr {
+                    library: None,
+                    name: prop,
+                    arguments: args,
+                }));
+            } else {
+                base = dummy_span(Expression::Property(PropertyAccess {
+                    source: Box::new(base),
+                    property: prop,
+                }));
+            }
             continue;
         }
 
@@ -1078,29 +1174,9 @@ fn postfix_expression<'a>(input: &mut Input<'a>) -> PResult<Spanned<Expression>>
             continue;
         }
 
-        if padded_keyword("as").parse_next(input).is_ok() {
-            ws.parse_next(input)?;
-            // Parse type specifier (handles generics like List<String>)
-            let type_spec = type_specifier_parser(input)?;
-            base = dummy_span(Expression::As(AsCastExpr {
-                operand: Box::new(base),
-                as_type: dummy_span(type_spec),
-                strict: false,
-            }));
-            continue;
-        }
-
-        // Parse "is Type" expression
-        if padded_keyword("is").parse_next(input).is_ok() {
-            ws.parse_next(input)?;
-            // Parse type specifier (handles generics like List<String>)
-            let type_spec = type_specifier_parser(input)?;
-            base = dummy_span(Expression::Is(IsTypeExpr {
-                operand: Box::new(base),
-                is_type: dummy_span(type_spec),
-            }));
-            continue;
-        }
+        // Note: "is null", "is Type", and "as Type" are handled in type_expression()
+        // at a higher precedence level to ensure proper parsing of expressions like
+        // "hour from @2015-02-10T is null" as "(hour from @2015-02-10T) is null"
 
         break;
     }
@@ -1357,11 +1433,38 @@ fn list_expression<'a>(input: &mut Input<'a>) -> PResult<Spanned<Expression>> {
     })))
 }
 
-/// Parse identifier or function call
+/// Parse identifier, qualified identifier, function call, or instance selector
 fn identifier_or_function_call<'a>(input: &mut Input<'a>) -> PResult<Spanned<Expression>> {
-    let id = identifier_parser(input)?;
+    // Use identifier_or_keyword_parser for the initial identifier since it might be a namespace
+    // like "System" followed by a type that is also a keyword (e.g., "ValueSet", "Code")
+    let mut id = identifier_or_keyword_parser(input)?;
     ws.parse_next(input)?;
 
+    // Check for qualified identifier (e.g., System.ValueSet)
+    // Type names like ValueSet, Code, Concept can be keywords
+    let mut namespace: Option<Identifier> = None;
+    let checkpoint = *input;
+    if lit(".").parse_next(input).is_ok() {
+        ws.parse_next(input)?;
+        // Use identifier_or_keyword_parser since type names can be keywords
+        if let Ok(second_id) = identifier_or_keyword_parser(input) {
+            ws.parse_next(input)?;
+            // Check if this is followed by { (instance selector) or ( (function call)
+            // If not, revert - this is property access
+            let next_checkpoint = *input;
+            if lit("{").parse_next(input).is_ok() || lit("(").parse_next(input).is_ok() {
+                *input = next_checkpoint;
+                namespace = Some(id);
+                id = second_id;
+            } else {
+                *input = checkpoint;
+            }
+        } else {
+            *input = checkpoint;
+        }
+    }
+
+    // Check for function call
     if lit("(").parse_next(input).is_ok() {
         ws.parse_next(input)?;
 
@@ -1389,9 +1492,47 @@ fn identifier_or_function_call<'a>(input: &mut Input<'a>) -> PResult<Spanned<Exp
         };
 
         Ok(dummy_span(Expression::FunctionRef(FunctionRefExpr {
-            library: None,
+            library: namespace,
             name: id,
             arguments: args,
+        })))
+    // Check for instance selector (type selector): Type { field: value, ... }
+    } else if lit("{").parse_next(input).is_ok() {
+        ws.parse_next(input)?;
+
+        // Parse instance elements
+        // Note: Use identifier_or_keyword_parser since field names can be keywords like 'code'
+        let mut elements = Vec::new();
+        if lit("}").parse_next(input).is_err() {
+            loop {
+                ws.parse_next(input)?;
+                let field_name = identifier_or_keyword_parser(input)?;
+                ws.parse_next(input)?;
+                lit(":").parse_next(input)?;
+                ws.parse_next(input)?;
+                let value = expression_with_dummy_spans(input)?;
+                elements.push(InstanceElement {
+                    name: field_name,
+                    value: Box::new(value),
+                });
+                ws.parse_next(input)?;
+                if lit(",").parse_next(input).is_ok() {
+                    ws.parse_next(input)?;
+                } else {
+                    break;
+                }
+            }
+            lit("}").parse_next(input)?;
+        }
+
+        let type_spec = TypeSpecifier::Named(NamedTypeSpecifier {
+            namespace: namespace.map(|ns| ns.name),
+            name: id.name,
+        });
+
+        Ok(dummy_span(Expression::Instance(InstanceExpr {
+            class_type: dummy_span(type_spec),
+            elements,
         })))
     } else {
         Ok(dummy_span(Expression::IdentifierRef(IdentifierRef {

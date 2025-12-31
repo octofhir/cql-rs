@@ -19,7 +19,7 @@ fn test_integer_literal_type() {
 
 #[test]
 fn test_decimal_literal_type() {
-    let value = CqlValue::decimal("3.14");
+    let value = CqlValue::decimal("3.14".parse().unwrap());
     assert!(matches!(value, CqlValue::Decimal(_)));
 }
 
@@ -43,11 +43,11 @@ fn test_null_type() {
 
 #[test]
 fn test_list_type_homogeneous() {
-    let list = CqlValue::list(vec![
+    let list = CqlValue::List(CqlList::from_elements(vec![
         CqlValue::integer(1),
         CqlValue::integer(2),
         CqlValue::integer(3),
-    ]);
+    ]));
 
     match list {
         CqlValue::List(l) => {
@@ -63,11 +63,11 @@ fn test_list_type_homogeneous() {
 #[test]
 fn test_list_type_heterogeneous() {
     // Lists can contain mixed types
-    let list = CqlValue::list(vec![
+    let list = CqlValue::List(CqlList::from_elements(vec![
         CqlValue::integer(1),
         CqlValue::string("two"),
         CqlValue::boolean(true),
-    ]);
+    ]));
 
     match list {
         CqlValue::List(l) => {
@@ -99,6 +99,7 @@ fn test_tuple_type() {
 #[test]
 fn test_interval_type() {
     let interval = CqlInterval {
+        point_type: CqlType::Integer,
         low: Some(Box::new(CqlValue::integer(1))),
         high: Some(Box::new(CqlValue::integer(10))),
         low_closed: true,
@@ -125,7 +126,7 @@ fn test_code_type() {
 #[test]
 fn test_concept_type() {
     let concept = CqlConcept {
-        codes: vec![CqlCode {
+        codes: smallvec::smallvec![CqlCode {
             system: "http://loinc.org".to_string(),
             version: None,
             code: "8480-6".to_string(),
@@ -163,7 +164,7 @@ fn test_time_type() {
 fn test_quantity_type() {
     let qty = CqlQuantity {
         value: "120".parse().unwrap(),
-        unit: "mmHg".to_string(),
+        unit: Some("mmHg".to_string()),
     };
     let value = CqlValue::Quantity(qty);
     assert!(matches!(value, CqlValue::Quantity(_)));
@@ -174,11 +175,11 @@ fn test_ratio_type() {
     let ratio = CqlRatio {
         numerator: CqlQuantity {
             value: "1".parse().unwrap(),
-            unit: "mg".to_string(),
+            unit: Some("mg".to_string()),
         },
         denominator: CqlQuantity {
             value: "1".parse().unwrap(),
-            unit: "dL".to_string(),
+            unit: Some("dL".to_string()),
         },
     };
     let value = CqlValue::Ratio(ratio);
@@ -187,10 +188,10 @@ fn test_ratio_type() {
 
 #[test]
 fn test_nested_list_type() {
-    let nested = CqlValue::list(vec![
-        CqlValue::list(vec![CqlValue::integer(1), CqlValue::integer(2)]),
-        CqlValue::list(vec![CqlValue::integer(3), CqlValue::integer(4)]),
-    ]);
+    let nested = CqlValue::List(CqlList::from_elements(vec![
+        CqlValue::List(CqlList::from_elements(vec![CqlValue::integer(1), CqlValue::integer(2)])),
+        CqlValue::List(CqlList::from_elements(vec![CqlValue::integer(3), CqlValue::integer(4)])),
+    ]));
 
     match nested {
         CqlValue::List(outer) => {
@@ -222,7 +223,7 @@ fn test_nested_tuple_type() {
 
 #[test]
 fn test_list_of_tuples() {
-    let list = CqlValue::list(vec![
+    let list = CqlValue::List(CqlList::from_elements(vec![
         CqlValue::Tuple(CqlTuple::from_elements([
             ("id", CqlValue::string("1")),
             ("value", CqlValue::integer(10)),
@@ -231,7 +232,7 @@ fn test_list_of_tuples() {
             ("id", CqlValue::string("2")),
             ("value", CqlValue::integer(20)),
         ])),
-    ]);
+    ]));
 
     match list {
         CqlValue::List(l) => {
@@ -264,7 +265,7 @@ fn test_nullable_type() {
 
 #[test]
 fn test_empty_list_type() {
-    let empty = CqlValue::list(vec![]);
+    let empty = CqlValue::List(CqlList::new(CqlType::Any));
     match empty {
         CqlValue::List(l) => {
             assert_eq!(l.elements.len(), 0);
@@ -275,11 +276,11 @@ fn test_empty_list_type() {
 
 #[test]
 fn test_list_with_null_elements() {
-    let list = CqlValue::list(vec![
+    let list = CqlValue::List(CqlList::from_elements(vec![
         CqlValue::integer(1),
         CqlValue::Null,
         CqlValue::integer(3),
-    ]);
+    ]));
 
     match list {
         CqlValue::List(l) => {
@@ -294,6 +295,7 @@ fn test_list_with_null_elements() {
 fn test_interval_with_null_bounds() {
     // Intervals can have null bounds
     let interval = CqlInterval {
+        point_type: CqlType::Integer,
         low: None,
         high: Some(Box::new(CqlValue::integer(10))),
         low_closed: false,

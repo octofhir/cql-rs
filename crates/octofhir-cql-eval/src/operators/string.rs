@@ -81,6 +81,7 @@ impl CqlEngine {
     /// Evaluate Split operator
     ///
     /// Splits a string by a separator into a list of strings.
+    /// If separator is null, returns a list with the original string.
     pub fn eval_split(&self, expr: &SplitExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
         let string_to_split = self.evaluate(&expr.string_to_split, ctx)?;
 
@@ -88,19 +89,25 @@ impl CqlEngine {
             return Ok(CqlValue::Null);
         }
 
+        let s = match &string_to_split {
+            CqlValue::String(s) => s.clone(),
+            _ => return Err(EvalError::type_mismatch("String", string_to_split.get_type().name())),
+        };
+
         let separator = if let Some(sep_expr) = &expr.separator {
             match self.evaluate(sep_expr, ctx)? {
-                CqlValue::Null => return Ok(CqlValue::Null),
+                CqlValue::Null => {
+                    // Per CQL spec, if separator is null, return list with the original string
+                    return Ok(CqlValue::List(CqlList {
+                        element_type: CqlType::String,
+                        elements: vec![CqlValue::string(&s)],
+                    }));
+                }
                 CqlValue::String(s) => s,
                 other => return Err(EvalError::type_mismatch("String", other.get_type().name())),
             }
         } else {
             String::new() // Default to empty separator if not provided
-        };
-
-        let s = match &string_to_split {
-            CqlValue::String(s) => s,
-            _ => return Err(EvalError::type_mismatch("String", string_to_split.get_type().name())),
         };
 
         let parts: Vec<CqlValue> = s.split(separator.as_str()).map(|p| CqlValue::string(p)).collect();
@@ -423,8 +430,46 @@ impl CqlEngine {
 
         let regex = Regex::new(p).map_err(|_| EvalError::InvalidRegex { pattern: p.clone() })?;
 
-        Ok(CqlValue::String(regex.replace_all(s, sub.as_str()).to_string()))
+        // Convert CQL/Java-style replacement escapes to Rust regex format
+        // In CQL/Java: \$ means literal $, \\ means literal \
+        // In Rust regex: $$ means literal $, $ with digit means backreference
+        let rust_sub = convert_cql_replacement_to_rust(sub);
+
+        Ok(CqlValue::String(regex.replace_all(s, rust_sub.as_str()).to_string()))
     }
+}
+
+/// Convert CQL/Java-style replacement string escapes to Rust regex format
+/// - \$ in CQL -> $$ in Rust (literal dollar sign)
+/// - \\ in CQL -> \ in Rust (literal backslash)
+fn convert_cql_replacement_to_rust(s: &str) -> String {
+    let mut result = String::with_capacity(s.len());
+    let mut chars = s.chars().peekable();
+
+    while let Some(c) = chars.next() {
+        if c == '\\' {
+            match chars.peek() {
+                Some('$') => {
+                    // \$ -> $$ (literal dollar sign)
+                    chars.next();
+                    result.push_str("$$");
+                }
+                Some('\\') => {
+                    // \\ -> \ (literal backslash)
+                    chars.next();
+                    result.push('\\');
+                }
+                _ => {
+                    // Other escape sequences pass through
+                    result.push(c);
+                }
+            }
+        } else {
+            result.push(c);
+        }
+    }
+
+    result
 }
 
 /// Trait extension for pipe method

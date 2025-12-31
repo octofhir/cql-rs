@@ -13,8 +13,8 @@ use octofhir_cql_elm::{
     DurationBetweenExpression, SameAsExpression, SameOrAfterExpression, SameOrBeforeExpression,
     TimeExpression, UnaryExpression,
 };
-use octofhir_cql_types::{CqlDate, CqlDateTime, CqlTime, CqlType, CqlValue, DateTimePrecision};
-use chrono::Datelike;
+use octofhir_cql_types::{CqlDate, CqlDateTime, CqlInterval, CqlTime, CqlType, CqlValue, DateTimePrecision};
+use chrono::{Datelike, Timelike};
 
 /// Convert ELM DateTimePrecision to types DateTimePrecision
 fn convert_precision(elm_precision: &octofhir_cql_elm::DateTimePrecision) -> DateTimePrecision {
@@ -45,6 +45,14 @@ impl CqlEngine {
             CqlValue::Integer(y) => *y,
             _ => return Err(EvalError::type_mismatch("Integer", year.get_type().name())),
         };
+
+        // CQL spec: valid years are 1-9999
+        if year_val < 1 || year_val > 9999 {
+            return Err(EvalError::overflow(format!(
+                "Date constructor: year {} out of range (1-9999)",
+                year_val
+            )));
+        }
 
         let month_val = if let Some(month_expr) = &expr.month {
             match self.evaluate(month_expr, ctx)? {
@@ -106,6 +114,14 @@ impl CqlEngine {
             _ => return Err(EvalError::type_mismatch("Integer", year.get_type().name())),
         };
 
+        // CQL spec: valid years are 1-9999
+        if year_val < 1 || year_val > 9999 {
+            return Err(EvalError::overflow(format!(
+                "DateTime constructor: year {} out of range (1-9999)",
+                year_val
+            )));
+        }
+
         let month_val = eval_optional_int(&expr.month, self, ctx)?;
         let day_val = eval_optional_int(&expr.day, self, ctx)?;
         let hour_val = eval_optional_int(&expr.hour, self, ctx)?;
@@ -153,6 +169,26 @@ impl CqlEngine {
         let minute_val = eval_optional_int(&expr.minute, self, ctx)?;
         let second_val = eval_optional_int(&expr.second, self, ctx)?;
         let millisecond_val = eval_optional_int(&expr.millisecond, self, ctx)?;
+
+        // Validate time component bounds
+        if hour_val > 23 {
+            return Err(EvalError::invalid_operand("Time", "hour must be 0-23"));
+        }
+        if let Some(m) = minute_val {
+            if m > 59 {
+                return Err(EvalError::invalid_operand("Time", "minute must be 0-59"));
+            }
+        }
+        if let Some(s) = second_val {
+            if s > 59 {
+                return Err(EvalError::invalid_operand("Time", "second must be 0-59"));
+            }
+        }
+        if let Some(ms) = millisecond_val {
+            if ms > 999 {
+                return Err(EvalError::invalid_operand("Time", "millisecond must be 0-999"));
+            }
+        }
 
         Ok(CqlValue::Time(CqlTime {
             hour: hour_val,
@@ -407,6 +443,32 @@ impl CqlEngine {
             (CqlValue::Time(t1), CqlValue::Time(t2)) => {
                 same_or_before_times(t1, t2, precision.as_ref())
             }
+            // Interval on or before point: interval.end <= point
+            (CqlValue::Interval(interval), point) if !matches!(point, CqlValue::Interval(_)) => {
+                if let Some(end) = &interval.high {
+                    value_same_or_before(end, point, precision.as_ref())
+                } else {
+                    // Unbounded high means interval extends to infinity, so never on or before a point
+                    Ok(CqlValue::Boolean(false))
+                }
+            }
+            // Point on or before interval: point <= interval.start
+            (point, CqlValue::Interval(interval)) if !matches!(point, CqlValue::Interval(_)) => {
+                if let Some(start) = &interval.low {
+                    value_same_or_before(point, start, precision.as_ref())
+                } else {
+                    // Unbounded low means interval extends from -infinity, so any point is not <= start
+                    Ok(CqlValue::Boolean(false))
+                }
+            }
+            // Interval on or before interval: first.end <= second.start
+            (CqlValue::Interval(i1), CqlValue::Interval(i2)) => {
+                if let (Some(end1), Some(start2)) = (&i1.high, &i2.low) {
+                    value_same_or_before(end1, start2, precision.as_ref())
+                } else {
+                    Ok(CqlValue::Null)
+                }
+            }
             _ => Err(EvalError::unsupported_operator(
                 "SameOrBefore",
                 format!("{}, {}", left.get_type().name(), right.get_type().name()),
@@ -438,6 +500,32 @@ impl CqlEngine {
             }
             (CqlValue::Time(t1), CqlValue::Time(t2)) => {
                 same_or_after_times(t1, t2, precision.as_ref())
+            }
+            // Interval on or after point: interval.start >= point
+            (CqlValue::Interval(interval), point) if !matches!(point, CqlValue::Interval(_)) => {
+                if let Some(start) = &interval.low {
+                    value_same_or_after(start, point, precision.as_ref())
+                } else {
+                    // Unbounded low means interval extends from -infinity, so never on or after a point
+                    Ok(CqlValue::Boolean(false))
+                }
+            }
+            // Point on or after interval: point >= interval.end
+            (point, CqlValue::Interval(interval)) if !matches!(point, CqlValue::Interval(_)) => {
+                if let Some(end) = &interval.high {
+                    value_same_or_after(point, end, precision.as_ref())
+                } else {
+                    // Unbounded high means interval extends to infinity, so point is never >= end
+                    Ok(CqlValue::Boolean(false))
+                }
+            }
+            // Interval on or after interval: first.start >= second.end
+            (CqlValue::Interval(i1), CqlValue::Interval(i2)) => {
+                if let (Some(start1), Some(end2)) = (&i1.low, &i2.high) {
+                    value_same_or_after(start1, end2, precision.as_ref())
+                } else {
+                    Ok(CqlValue::Null)
+                }
             }
             _ => Err(EvalError::unsupported_operator(
                 "SameOrAfter",
@@ -650,11 +738,119 @@ fn duration_between_dates(d1: &CqlDate, d2: &CqlDate, precision: &DateTimePrecis
 }
 
 fn duration_between_datetimes(dt1: &CqlDateTime, dt2: &CqlDateTime, precision: &DateTimePrecision) -> EvalResult<CqlValue> {
-    // For sub-day precision (hour, minute, second, millisecond), we need to include the time components
+    // Check if either DateTime has uncertainty that affects the precision we're calculating
+    let dt1_has_uncertainty = has_uncertainty_at_precision(dt1, precision);
+    let dt2_has_uncertainty = has_uncertainty_at_precision(dt2, precision);
+
+    if dt1_has_uncertainty || dt2_has_uncertainty {
+        // Calculate duration using boundaries to get an interval
+        // Min duration: later start (high boundary of dt1) to earlier end (low boundary of dt2)
+        // Max duration: earlier start (low boundary of dt1) to later end (high boundary of dt2)
+        let min_duration = calculate_single_duration(
+            &dt1.high_boundary(),
+            &dt2.low_boundary(),
+            precision,
+        )?;
+        let max_duration = calculate_single_duration(
+            &dt1.low_boundary(),
+            &dt2.high_boundary(),
+            precision,
+        )?;
+
+        match (min_duration, max_duration) {
+            (CqlValue::Integer(min), CqlValue::Integer(max)) => {
+                Ok(CqlValue::Interval(CqlInterval::new(
+                    CqlType::Integer,
+                    Some(CqlValue::Integer(min)),
+                    true,
+                    Some(CqlValue::Integer(max)),
+                    true,
+                )))
+            }
+            _ => Ok(CqlValue::Null),
+        }
+    } else {
+        // No uncertainty - calculate single duration value
+        calculate_single_duration(dt1, dt2, precision)
+    }
+}
+
+/// Check if a DateTime has uncertainty that affects the given precision
+fn has_uncertainty_at_precision(dt: &CqlDateTime, precision: &DateTimePrecision) -> bool {
     match precision {
-        DateTimePrecision::Hour | DateTimePrecision::Minute |
+        // For year precision, we need month to know if the "anniversary" has passed
+        DateTimePrecision::Year => dt.month.is_none(),
+        // For month precision, we need day to know if the "month anniversary" has passed
+        DateTimePrecision::Month => dt.day.is_none(),
+        DateTimePrecision::Day => dt.month.is_none() || dt.day.is_none(),
+        DateTimePrecision::Hour => dt.month.is_none() || dt.day.is_none() || dt.hour.is_none(),
+        DateTimePrecision::Minute => {
+            dt.month.is_none() || dt.day.is_none() || dt.hour.is_none() || dt.minute.is_none()
+        }
+        DateTimePrecision::Second => {
+            dt.month.is_none()
+                || dt.day.is_none()
+                || dt.hour.is_none()
+                || dt.minute.is_none()
+                || dt.second.is_none()
+        }
+        DateTimePrecision::Millisecond => {
+            dt.month.is_none()
+                || dt.day.is_none()
+                || dt.hour.is_none()
+                || dt.minute.is_none()
+                || dt.second.is_none()
+                || dt.millisecond.is_none()
+        }
+    }
+}
+
+/// Check if a DateTime has uncertainty for DifferenceBetween at the given precision
+/// Unlike Duration, Difference just counts boundaries and only needs the precision component itself
+fn has_uncertainty_for_difference(dt: &CqlDateTime, precision: &DateTimePrecision) -> bool {
+    match precision {
+        // Year is always present, so no uncertainty
+        DateTimePrecision::Year => false,
+        // Month precision: uncertain if month is missing
+        DateTimePrecision::Month => dt.month.is_none(),
+        // Day precision: uncertain if month or day is missing
+        DateTimePrecision::Day => dt.month.is_none() || dt.day.is_none(),
+        // Hour precision: uncertain if any date/time component is missing
+        DateTimePrecision::Hour => dt.month.is_none() || dt.day.is_none() || dt.hour.is_none(),
+        DateTimePrecision::Minute => {
+            dt.month.is_none() || dt.day.is_none() || dt.hour.is_none() || dt.minute.is_none()
+        }
+        DateTimePrecision::Second => {
+            dt.month.is_none()
+                || dt.day.is_none()
+                || dt.hour.is_none()
+                || dt.minute.is_none()
+                || dt.second.is_none()
+        }
+        DateTimePrecision::Millisecond => {
+            dt.month.is_none()
+                || dt.day.is_none()
+                || dt.hour.is_none()
+                || dt.minute.is_none()
+                || dt.second.is_none()
+                || dt.millisecond.is_none()
+        }
+    }
+}
+
+/// Calculate a single duration value between two fully specified DateTimes
+fn calculate_single_duration(
+    dt1: &CqlDateTime,
+    dt2: &CqlDateTime,
+    precision: &DateTimePrecision,
+) -> EvalResult<CqlValue> {
+    // For Day precision and finer, we need to account for timezone offsets
+    // to compute actual elapsed time, not just calendar differences
+    match precision {
+        DateTimePrecision::Day | DateTimePrecision::Hour | DateTimePrecision::Minute |
         DateTimePrecision::Second | DateTimePrecision::Millisecond => {
             // Need to create full datetime for proper calculation
+            // IMPORTANT: Apply timezone offset to get UTC time for accurate comparison
             let naive_dt1 = chrono::NaiveDate::from_ymd_opt(
                 dt1.year,
                 dt1.month.unwrap_or(1) as u32,
@@ -687,8 +883,19 @@ fn duration_between_datetimes(dt1: &CqlDateTime, dt2: &CqlDateTime, precision: &
 
             match (naive_dt1, naive_dt2) {
                 (Some(ndt1), Some(ndt2)) => {
-                    let duration = ndt2.signed_duration_since(ndt1);
+                    // Apply timezone offsets to normalize to UTC
+                    // Timezone offset is in minutes, stored as i16
+                    // To convert local to UTC: subtract offset
+                    let offset1_minutes = dt1.timezone_offset.unwrap_or(0) as i64;
+                    let offset2_minutes = dt2.timezone_offset.unwrap_or(0) as i64;
+
+                    // Convert offsets to chrono Duration
+                    let utc_dt1 = ndt1 - chrono::TimeDelta::minutes(offset1_minutes);
+                    let utc_dt2 = ndt2 - chrono::TimeDelta::minutes(offset2_minutes);
+
+                    let duration = utc_dt2.signed_duration_since(utc_dt1);
                     let result = match precision {
+                        DateTimePrecision::Day => duration.num_days() as i32,
                         DateTimePrecision::Hour => duration.num_hours() as i32,
                         DateTimePrecision::Minute => duration.num_minutes() as i32,
                         DateTimePrecision::Second => duration.num_seconds() as i32,
@@ -701,7 +908,7 @@ fn duration_between_datetimes(dt1: &CqlDateTime, dt2: &CqlDateTime, precision: &
             }
         }
         _ => {
-            // For day-level precision and above, use date-only comparison
+            // For month-level precision and above, use date-only comparison
             let d1 = dt1.date();
             let d2 = dt2.date();
             duration_between_dates(&d1, &d2, precision)
@@ -731,7 +938,128 @@ fn difference_between_dates(d1: &CqlDate, d2: &CqlDate, precision: &DateTimePrec
 }
 
 fn difference_between_datetimes(dt1: &CqlDateTime, dt2: &CqlDateTime, precision: &DateTimePrecision) -> EvalResult<CqlValue> {
-    duration_between_datetimes(dt1, dt2, precision)
+    // Check if either DateTime has uncertainty that affects the precision we're calculating
+    // For DifferenceBetween, uncertainty occurs when the required precision component is missing
+    // (unlike Duration, Difference just counts boundaries and doesn't need finer precision)
+    let dt1_has_uncertainty = has_uncertainty_for_difference(dt1, precision);
+    let dt2_has_uncertainty = has_uncertainty_for_difference(dt2, precision);
+
+    if dt1_has_uncertainty || dt2_has_uncertainty {
+        // Calculate difference using boundaries to get an interval
+        // Min difference: later start (high boundary of dt1) to earlier end (low boundary of dt2)
+        // Max difference: earlier start (low boundary of dt1) to later end (high boundary of dt2)
+        let min_diff = calculate_single_difference(
+            &dt1.high_boundary(),
+            &dt2.low_boundary(),
+            precision,
+        )?;
+        let max_diff = calculate_single_difference(
+            &dt1.low_boundary(),
+            &dt2.high_boundary(),
+            precision,
+        )?;
+
+        match (min_diff, max_diff) {
+            (CqlValue::Integer(min), CqlValue::Integer(max)) => {
+                Ok(CqlValue::Interval(CqlInterval::new(
+                    CqlType::Integer,
+                    Some(CqlValue::Integer(min)),
+                    true,
+                    Some(CqlValue::Integer(max)),
+                    true,
+                )))
+            }
+            _ => Ok(CqlValue::Null),
+        }
+    } else {
+        // No uncertainty - calculate single difference value
+        calculate_single_difference(dt1, dt2, precision)
+    }
+}
+
+/// Calculate a single difference value between two fully specified DateTimes
+fn calculate_single_difference(
+    dt1: &CqlDateTime,
+    dt2: &CqlDateTime,
+    precision: &DateTimePrecision,
+) -> EvalResult<CqlValue> {
+    // DifferenceBetween counts the number of boundaries crossed (not complete periods)
+    match precision {
+        // Year difference: just count year boundaries (year2 - year1)
+        DateTimePrecision::Year => {
+            Ok(CqlValue::Integer(dt2.year - dt1.year))
+        }
+        // Month difference: count month boundaries
+        DateTimePrecision::Month => {
+            let m1 = dt1.month.unwrap_or(1) as i32;
+            let m2 = dt2.month.unwrap_or(1) as i32;
+            let months = (dt2.year - dt1.year) * 12 + (m2 - m1);
+            Ok(CqlValue::Integer(months))
+        }
+        DateTimePrecision::Day | DateTimePrecision::Hour | DateTimePrecision::Minute |
+        DateTimePrecision::Second | DateTimePrecision::Millisecond => {
+            // Normalize to UTC first
+            let utc1 = normalize_datetime_to_utc(dt1);
+            let utc2 = normalize_datetime_to_utc(dt2);
+
+            // For DifferenceBetween, compute calendar differences (not elapsed time)
+            match precision {
+                DateTimePrecision::Day => {
+                    // Count day boundaries crossed
+                    let d1 = utc1.date();
+                    let d2 = utc2.date();
+                    duration_between_dates(&d1, &d2, precision)
+                }
+                DateTimePrecision::Hour | DateTimePrecision::Minute |
+                DateTimePrecision::Second | DateTimePrecision::Millisecond => {
+                    // For sub-day precision, use the UTC-normalized elapsed time
+                    calculate_single_duration(&utc1, &utc2, precision)
+                }
+                _ => Ok(CqlValue::Null),
+            }
+        }
+    }
+}
+
+/// Normalize a CqlDateTime to UTC by applying timezone offset
+fn normalize_datetime_to_utc(dt: &CqlDateTime) -> CqlDateTime {
+    let offset_minutes = dt.timezone_offset.unwrap_or(0);
+    if offset_minutes == 0 {
+        return dt.clone();
+    }
+
+    // Create a NaiveDateTime and apply offset
+    let naive = chrono::NaiveDate::from_ymd_opt(
+        dt.year,
+        dt.month.unwrap_or(1) as u32,
+        dt.day.unwrap_or(1) as u32,
+    )
+    .and_then(|d| {
+        chrono::NaiveTime::from_hms_milli_opt(
+            dt.hour.unwrap_or(0) as u32,
+            dt.minute.unwrap_or(0) as u32,
+            dt.second.unwrap_or(0) as u32,
+            dt.millisecond.unwrap_or(0) as u32,
+        )
+        .map(|t| chrono::NaiveDateTime::new(d, t))
+    });
+
+    match naive {
+        Some(ndt) => {
+            let utc = ndt - chrono::TimeDelta::minutes(offset_minutes as i64);
+            CqlDateTime {
+                year: utc.date().year(),
+                month: Some(utc.date().month() as u8),
+                day: Some(utc.date().day() as u8),
+                hour: Some(utc.time().hour() as u8),
+                minute: Some(utc.time().minute() as u8),
+                second: Some(utc.time().second() as u8),
+                millisecond: Some((utc.time().nanosecond() / 1_000_000) as u16),
+                timezone_offset: Some(0), // UTC
+            }
+        }
+        None => dt.clone(),
+    }
 }
 
 fn difference_between_times(t1: &CqlTime, t2: &CqlTime, precision: &DateTimePrecision) -> EvalResult<CqlValue> {
@@ -762,9 +1090,79 @@ fn same_as_dates(d1: &CqlDate, d2: &CqlDate, precision: Option<&DateTimePrecisio
     }
 }
 
+/// Normalize a DateTime to UTC by applying timezone offset
+fn normalize_to_utc(dt: &CqlDateTime) -> CqlDateTime {
+    let offset = dt.timezone_offset.unwrap_or(0);
+    if offset == 0 {
+        return dt.clone();
+    }
+
+    // Convert datetime components to total minutes from year start
+    let mut total_minutes: i64 = 0;
+    total_minutes += dt.hour.unwrap_or(0) as i64 * 60;
+    total_minutes += dt.minute.unwrap_or(0) as i64;
+    total_minutes -= offset as i64; // Subtract offset to get UTC
+
+    // Handle overflow/underflow across days
+    let mut day = dt.day.unwrap_or(1) as i32;
+    let mut month = dt.month.unwrap_or(1) as i32;
+    let mut year = dt.year;
+    let mut hour = (total_minutes / 60) % 24;
+    let mut minute = total_minutes % 60;
+
+    if total_minutes < 0 {
+        // Went back to previous day
+        hour = 24 + (total_minutes / 60);
+        minute = (60 + (total_minutes % 60)) % 60;
+        day -= 1;
+        if day < 1 {
+            month -= 1;
+            if month < 1 {
+                month = 12;
+                year -= 1;
+            }
+            day = days_in_month(year, month as u8) as i32;
+        }
+    } else if hour >= 24 {
+        // Went to next day
+        hour %= 24;
+        day += 1;
+        let days = days_in_month(year, month as u8) as i32;
+        if day > days {
+            day = 1;
+            month += 1;
+            if month > 12 {
+                month = 1;
+                year += 1;
+            }
+        }
+    }
+
+    CqlDateTime {
+        year,
+        month: Some(month as u8),
+        day: Some(day as u8),
+        hour: Some(hour as u8),
+        minute: Some(minute as u8),
+        second: dt.second,
+        millisecond: dt.millisecond,
+        timezone_offset: Some(0), // Now in UTC
+    }
+}
+
 fn same_as_datetimes(dt1: &CqlDateTime, dt2: &CqlDateTime, precision: Option<&DateTimePrecision>) -> EvalResult<CqlValue> {
     let default_precision = dt1.precision().min(dt2.precision());
     let prec = precision.unwrap_or(&default_precision);
+
+    // Normalize to UTC if both have timezone offsets and we're comparing at hour precision or finer
+    let (dt1, dt2) = if *prec >= DateTimePrecision::Hour
+        && dt1.timezone_offset.is_some()
+        && dt2.timezone_offset.is_some()
+    {
+        (normalize_to_utc(dt1), normalize_to_utc(dt2))
+    } else {
+        (dt1.clone(), dt2.clone())
+    };
 
     // Compare up to the specified precision
     if dt1.year != dt2.year {
@@ -880,13 +1278,73 @@ fn same_or_before_datetimes(dt1: &CqlDateTime, dt2: &CqlDateTime, precision: Opt
         return Ok(CqlValue::Boolean(true));
     }
 
-    // Convert to dates for comparison
-    let d1 = dt1.date();
-    let d2 = dt2.date();
-    match d1.partial_cmp(&d2) {
+    // Normalize to UTC if both have timezone offsets
+    let (dt1_norm, dt2_norm) = if dt1.timezone_offset.is_some() && dt2.timezone_offset.is_some() {
+        (normalize_to_utc(dt1), normalize_to_utc(dt2))
+    } else {
+        (dt1.clone(), dt2.clone())
+    };
+
+    // Compare the normalized datetimes
+    match datetime_cmp(&dt1_norm, &dt2_norm) {
         Some(std::cmp::Ordering::Less) => Ok(CqlValue::Boolean(true)),
         Some(std::cmp::Ordering::Greater) => Ok(CqlValue::Boolean(false)),
         _ => Ok(same),
+    }
+}
+
+/// Compare two datetimes component by component
+fn datetime_cmp(dt1: &CqlDateTime, dt2: &CqlDateTime) -> Option<std::cmp::Ordering> {
+    use std::cmp::Ordering;
+
+    match dt1.year.cmp(&dt2.year) {
+        Ordering::Equal => {}
+        other => return Some(other),
+    }
+
+    match (dt1.month, dt2.month) {
+        (Some(m1), Some(m2)) => match m1.cmp(&m2) {
+            Ordering::Equal => {}
+            other => return Some(other),
+        },
+        _ => return None,
+    }
+
+    match (dt1.day, dt2.day) {
+        (Some(d1), Some(d2)) => match d1.cmp(&d2) {
+            Ordering::Equal => {}
+            other => return Some(other),
+        },
+        _ => return None,
+    }
+
+    match (dt1.hour, dt2.hour) {
+        (Some(h1), Some(h2)) => match h1.cmp(&h2) {
+            Ordering::Equal => {}
+            other => return Some(other),
+        },
+        _ => return None,
+    }
+
+    match (dt1.minute, dt2.minute) {
+        (Some(m1), Some(m2)) => match m1.cmp(&m2) {
+            Ordering::Equal => {}
+            other => return Some(other),
+        },
+        _ => return None,
+    }
+
+    match (dt1.second, dt2.second) {
+        (Some(s1), Some(s2)) => match s1.cmp(&s2) {
+            Ordering::Equal => {}
+            other => return Some(other),
+        },
+        _ => return None,
+    }
+
+    match (dt1.millisecond, dt2.millisecond) {
+        (Some(ms1), Some(ms2)) => Some(ms1.cmp(&ms2)),
+        _ => None,
     }
 }
 
@@ -922,9 +1380,15 @@ fn same_or_after_datetimes(dt1: &CqlDateTime, dt2: &CqlDateTime, precision: Opti
         return Ok(CqlValue::Boolean(true));
     }
 
-    let d1 = dt1.date();
-    let d2 = dt2.date();
-    match d1.partial_cmp(&d2) {
+    // Normalize to UTC if both have timezone offsets
+    let (dt1_norm, dt2_norm) = if dt1.timezone_offset.is_some() && dt2.timezone_offset.is_some() {
+        (normalize_to_utc(dt1), normalize_to_utc(dt2))
+    } else {
+        (dt1.clone(), dt2.clone())
+    };
+
+    // Compare the normalized datetimes
+    match datetime_cmp(&dt1_norm, &dt2_norm) {
         Some(std::cmp::Ordering::Greater) => Ok(CqlValue::Boolean(true)),
         Some(std::cmp::Ordering::Less) => Ok(CqlValue::Boolean(false)),
         _ => Ok(same),
@@ -986,6 +1450,16 @@ fn before_dates_with_precision(d1: &CqlDate, d2: &CqlDate, precision: &DateTimeP
 }
 
 fn before_datetimes_with_precision(dt1: &CqlDateTime, dt2: &CqlDateTime, precision: &DateTimePrecision) -> EvalResult<CqlValue> {
+    // Normalize to UTC if both have timezone offsets and we're comparing at hour precision or finer
+    let (dt1, dt2) = if *precision >= DateTimePrecision::Hour
+        && dt1.timezone_offset.is_some()
+        && dt2.timezone_offset.is_some()
+    {
+        (normalize_to_utc(dt1), normalize_to_utc(dt2))
+    } else {
+        (dt1.clone(), dt2.clone())
+    };
+
     // Compare year
     if dt1.year < dt2.year {
         return Ok(CqlValue::Boolean(true));
@@ -1323,6 +1797,48 @@ fn after_times_with_precision(t1: &CqlTime, t2: &CqlTime, precision: &DateTimePr
     match (t1.millisecond, t2.millisecond) {
         (Some(ms1), Some(ms2)) => Ok(CqlValue::Boolean(ms1 > ms2)),
         _ => Ok(CqlValue::Null),
+    }
+}
+
+/// Generic value comparison helper for same_or_before operations
+/// Supports Integer, Decimal, Quantity, Date, DateTime, Time
+fn value_same_or_before(left: &CqlValue, right: &CqlValue, precision: Option<&DateTimePrecision>) -> EvalResult<CqlValue> {
+    match (left, right) {
+        (CqlValue::Integer(l), CqlValue::Integer(r)) => Ok(CqlValue::Boolean(*l <= *r)),
+        (CqlValue::Decimal(l), CqlValue::Decimal(r)) => Ok(CqlValue::Boolean(*l <= *r)),
+        (CqlValue::Long(l), CqlValue::Long(r)) => Ok(CqlValue::Boolean(*l <= *r)),
+        (CqlValue::Quantity(l), CqlValue::Quantity(r)) => {
+            // TODO: Handle unit conversion if needed
+            Ok(CqlValue::Boolean(l.value <= r.value))
+        }
+        (CqlValue::Date(d1), CqlValue::Date(d2)) => same_or_before_dates(d1, d2, precision),
+        (CqlValue::DateTime(dt1), CqlValue::DateTime(dt2)) => same_or_before_datetimes(dt1, dt2, precision),
+        (CqlValue::Time(t1), CqlValue::Time(t2)) => same_or_before_times(t1, t2, precision),
+        _ => Err(EvalError::unsupported_operator(
+            "SameOrBefore",
+            format!("{}, {}", left.get_type().name(), right.get_type().name()),
+        )),
+    }
+}
+
+/// Generic value comparison helper for same_or_after operations
+/// Supports Integer, Decimal, Quantity, Date, DateTime, Time
+fn value_same_or_after(left: &CqlValue, right: &CqlValue, precision: Option<&DateTimePrecision>) -> EvalResult<CqlValue> {
+    match (left, right) {
+        (CqlValue::Integer(l), CqlValue::Integer(r)) => Ok(CqlValue::Boolean(*l >= *r)),
+        (CqlValue::Decimal(l), CqlValue::Decimal(r)) => Ok(CqlValue::Boolean(*l >= *r)),
+        (CqlValue::Long(l), CqlValue::Long(r)) => Ok(CqlValue::Boolean(*l >= *r)),
+        (CqlValue::Quantity(l), CqlValue::Quantity(r)) => {
+            // TODO: Handle unit conversion if needed
+            Ok(CqlValue::Boolean(l.value >= r.value))
+        }
+        (CqlValue::Date(d1), CqlValue::Date(d2)) => same_or_after_dates(d1, d2, precision),
+        (CqlValue::DateTime(dt1), CqlValue::DateTime(dt2)) => same_or_after_datetimes(dt1, dt2, precision),
+        (CqlValue::Time(t1), CqlValue::Time(t2)) => same_or_after_times(t1, t2, precision),
+        _ => Err(EvalError::unsupported_operator(
+            "SameOrAfter",
+            format!("{}, {}", left.get_type().name(), right.get_type().name()),
+        )),
     }
 }
 

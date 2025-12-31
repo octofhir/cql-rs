@@ -214,8 +214,27 @@ impl fmt::Display for CqlValue {
             Self::Boolean(b) => write!(f, "{}", b),
             Self::Integer(i) => write!(f, "{}", i),
             Self::Long(l) => write!(f, "{}L", l),
-            Self::Decimal(d) => write!(f, "{}", d),
-            Self::String(s) => write!(f, "'{}'", s),
+            Self::Decimal(d) => {
+                // Ensure at least one decimal place for CQL compliance
+                let s = d.to_string();
+                if s.contains('.') {
+                    write!(f, "{}", s)
+                } else {
+                    write!(f, "{}.0", s)
+                }
+            }
+            Self::String(s) => {
+                // Escape quotes using unicode escapes per CQL spec
+                write!(f, "'")?;
+                for c in s.chars() {
+                    match c {
+                        '\'' => write!(f, "\\u0027")?,
+                        '"' => write!(f, "\\u0022")?,
+                        _ => write!(f, "{}", c)?,
+                    }
+                }
+                write!(f, "'")
+            }
             Self::Date(d) => write!(f, "@{}", d),
             Self::DateTime(dt) => write!(f, "@{}", dt),
             Self::Time(t) => write!(f, "@T{}", t),
@@ -321,6 +340,23 @@ impl fmt::Display for DateTimePrecision {
             Self::Second => write!(f, "second"),
             Self::Millisecond => write!(f, "millisecond"),
         }
+    }
+}
+
+/// Helper function to get the number of days in a month
+fn days_in_month(year: i32, month: u8) -> u8 {
+    match month {
+        1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
+        4 | 6 | 9 | 11 => 30,
+        2 => {
+            // Check for leap year
+            if (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0) {
+                29
+            } else {
+                28
+            }
+        }
+        _ => 31, // Default fallback
     }
 }
 
@@ -534,6 +570,74 @@ impl CqlDateTime {
         }
     }
 
+    /// Truncate this datetime to the specified precision
+    /// Returns a new CqlDateTime with only components up to the given precision
+    pub fn truncate_to_precision(&self, precision: DateTimePrecision) -> Self {
+        match precision {
+            DateTimePrecision::Year => Self {
+                year: self.year,
+                month: None,
+                day: None,
+                hour: None,
+                minute: None,
+                second: None,
+                millisecond: None,
+                timezone_offset: self.timezone_offset,
+            },
+            DateTimePrecision::Month => Self {
+                year: self.year,
+                month: self.month,
+                day: None,
+                hour: None,
+                minute: None,
+                second: None,
+                millisecond: None,
+                timezone_offset: self.timezone_offset,
+            },
+            DateTimePrecision::Day => Self {
+                year: self.year,
+                month: self.month,
+                day: self.day,
+                hour: None,
+                minute: None,
+                second: None,
+                millisecond: None,
+                timezone_offset: self.timezone_offset,
+            },
+            DateTimePrecision::Hour => Self {
+                year: self.year,
+                month: self.month,
+                day: self.day,
+                hour: self.hour,
+                minute: None,
+                second: None,
+                millisecond: None,
+                timezone_offset: self.timezone_offset,
+            },
+            DateTimePrecision::Minute => Self {
+                year: self.year,
+                month: self.month,
+                day: self.day,
+                hour: self.hour,
+                minute: self.minute,
+                second: None,
+                millisecond: None,
+                timezone_offset: self.timezone_offset,
+            },
+            DateTimePrecision::Second => Self {
+                year: self.year,
+                month: self.month,
+                day: self.day,
+                hour: self.hour,
+                minute: self.minute,
+                second: self.second,
+                millisecond: None,
+                timezone_offset: self.timezone_offset,
+            },
+            DateTimePrecision::Millisecond => self.clone(),
+        }
+    }
+
     /// Extract the date portion
     pub fn date(&self) -> CqlDate {
         CqlDate {
@@ -629,6 +733,52 @@ impl CqlDateTime {
         };
         let offset = hours * 60 + mins;
         Some(if negative { -offset } else { offset })
+    }
+
+    /// Check if this DateTime has any uncertain components
+    /// A component is uncertain if it's None but required for the given precision
+    pub fn has_uncertainty(&self) -> bool {
+        // If any component between year and the precision level is None, there's uncertainty
+        // Year is always required, so we check month onwards
+        self.month.is_none() ||
+            (self.month.is_some() && self.day.is_none()) ||
+            (self.day.is_some() && self.hour.is_none()) ||
+            (self.hour.is_some() && self.minute.is_none()) ||
+            (self.minute.is_some() && self.second.is_none()) ||
+            (self.second.is_some() && self.millisecond.is_none())
+    }
+
+    /// Get the low (earliest) boundary of this DateTime
+    /// Fills in missing components with their minimum values
+    pub fn low_boundary(&self) -> CqlDateTime {
+        CqlDateTime {
+            year: self.year,
+            month: Some(self.month.unwrap_or(1)),
+            day: Some(self.day.unwrap_or(1)),
+            hour: Some(self.hour.unwrap_or(0)),
+            minute: Some(self.minute.unwrap_or(0)),
+            second: Some(self.second.unwrap_or(0)),
+            millisecond: Some(self.millisecond.unwrap_or(0)),
+            timezone_offset: self.timezone_offset,
+        }
+    }
+
+    /// Get the high (latest) boundary of this DateTime
+    /// Fills in missing components with their maximum values
+    pub fn high_boundary(&self) -> CqlDateTime {
+        let month = self.month.unwrap_or(12);
+        let day = self.day.unwrap_or_else(|| days_in_month(self.year, month));
+
+        CqlDateTime {
+            year: self.year,
+            month: Some(month),
+            day: Some(day),
+            hour: Some(self.hour.unwrap_or(23)),
+            minute: Some(self.minute.unwrap_or(59)),
+            second: Some(self.second.unwrap_or(59)),
+            millisecond: Some(self.millisecond.unwrap_or(999)),
+            timezone_offset: self.timezone_offset,
+        }
     }
 
     /// Parse time components from a time string
@@ -765,6 +915,32 @@ impl CqlTime {
         }
     }
 
+    /// Truncate this time to the specified precision
+    /// Returns a new CqlTime with only components up to the given precision
+    pub fn truncate_to_precision(&self, precision: DateTimePrecision) -> Self {
+        match precision {
+            DateTimePrecision::Year | DateTimePrecision::Month | DateTimePrecision::Day | DateTimePrecision::Hour => Self {
+                hour: self.hour,
+                minute: None,
+                second: None,
+                millisecond: None,
+            },
+            DateTimePrecision::Minute => Self {
+                hour: self.hour,
+                minute: self.minute,
+                second: None,
+                millisecond: None,
+            },
+            DateTimePrecision::Second => Self {
+                hour: self.hour,
+                minute: self.minute,
+                second: self.second,
+                millisecond: None,
+            },
+            DateTimePrecision::Millisecond => self.clone(),
+        }
+    }
+
     /// Convert to total milliseconds since midnight
     pub fn to_milliseconds(&self) -> Option<u32> {
         let hour_ms = self.hour as u32 * 3_600_000;
@@ -777,6 +953,7 @@ impl CqlTime {
     /// Parse from ISO 8601 time string
     /// Supports formats like: 14:30:00.000, 14:30:00, 14:30, 14
     /// Also handles @T prefix: @T14:30:00.000
+    /// Returns None for invalid time values (hour > 23, minute > 59, second > 59)
     pub fn parse(s: &str) -> Option<Self> {
         // Strip @T prefix if present (used in CQL/ELM literals)
         let s = s.strip_prefix("@T").unwrap_or(s);
@@ -785,6 +962,9 @@ impl CqlTime {
         let (time_str, ms) = if let Some(dot_idx) = s.find('.') {
             let ms_str = &s[dot_idx + 1..];
             let ms: u16 = ms_str.parse().ok().unwrap_or(0);
+            if ms > 999 {
+                return None;
+            }
             (&s[..dot_idx], Some(ms))
         } else {
             (s, None)
@@ -793,7 +973,10 @@ impl CqlTime {
         let parts: Vec<&str> = time_str.split(':').collect();
         match parts.len() {
             1 => {
-                let hour = parts[0].parse().ok()?;
+                let hour: u8 = parts[0].parse().ok()?;
+                if hour > 23 {
+                    return None;
+                }
                 Some(Self {
                     hour,
                     minute: None,
@@ -802,8 +985,11 @@ impl CqlTime {
                 })
             }
             2 => {
-                let hour = parts[0].parse().ok()?;
-                let minute = parts[1].parse().ok()?;
+                let hour: u8 = parts[0].parse().ok()?;
+                let minute: u8 = parts[1].parse().ok()?;
+                if hour > 23 || minute > 59 {
+                    return None;
+                }
                 Some(Self {
                     hour,
                     minute: Some(minute),
@@ -812,9 +998,12 @@ impl CqlTime {
                 })
             }
             3 | _ => {
-                let hour = parts.first()?.parse().ok()?;
-                let minute = parts.get(1)?.parse().ok()?;
-                let second = parts.get(2)?.parse().ok()?;
+                let hour: u8 = parts.first()?.parse().ok()?;
+                let minute: u8 = parts.get(1)?.parse().ok()?;
+                let second: u8 = parts.get(2)?.parse().ok()?;
+                if hour > 23 || minute > 59 || second > 59 {
+                    return None;
+                }
                 Some(Self {
                     hour,
                     minute: Some(minute),
@@ -1168,7 +1357,7 @@ impl fmt::Display for CqlList {
         write!(f, "{{")?;
         for (i, elem) in self.elements.iter().enumerate() {
             if i > 0 {
-                write!(f, ",")?;  // No space after comma to match spec format
+                write!(f, ", ")?;  // Space after comma for spec compliance
             }
             write!(f, "{}", elem)?;
         }
@@ -1240,13 +1429,29 @@ impl CqlInterval {
         }
     }
 
-    /// Get the low bound
+    /// Get the low bound (None if unbounded or null)
     pub fn low(&self) -> Option<&CqlValue> {
+        match self.low.as_deref() {
+            Some(CqlValue::Null) => None, // null boundary = unbounded
+            other => other,
+        }
+    }
+
+    /// Get the high bound (None if unbounded or null)
+    pub fn high(&self) -> Option<&CqlValue> {
+        match self.high.as_deref() {
+            Some(CqlValue::Null) => None, // null boundary = unbounded
+            other => other,
+        }
+    }
+
+    /// Get the raw low bound (including null values)
+    pub fn low_raw(&self) -> Option<&CqlValue> {
         self.low.as_deref()
     }
 
-    /// Get the high bound
-    pub fn high(&self) -> Option<&CqlValue> {
+    /// Get the raw high bound (including null values)
+    pub fn high_raw(&self) -> Option<&CqlValue> {
         self.high.as_deref()
     }
 }
@@ -1264,11 +1469,12 @@ impl Eq for CqlInterval {}
 
 impl fmt::Display for CqlInterval {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        // Format as Interval[low, high] or Interval(low, high) etc. without extra spaces
+        // Format as "[ low, high ]" with spaces inside brackets to match CQL test expectations
+        // Note: "Interval" prefix is added by the test runner
         if self.low_closed {
-            write!(f, "[")?;
+            write!(f, "[ ")?;
         } else {
-            write!(f, "(")?;
+            write!(f, "( ")?;
         }
 
         match &self.low {
@@ -1284,9 +1490,9 @@ impl fmt::Display for CqlInterval {
         }
 
         if self.high_closed {
-            write!(f, "]")
+            write!(f, " ]")
         } else {
-            write!(f, ")")
+            write!(f, " )")
         }
     }
 }
@@ -1420,14 +1626,14 @@ mod tests {
             CqlValue::integer(1),
             CqlValue::integer(10),
         );
-        assert_eq!(interval.to_string(), "[1, 10]");
+        assert_eq!(interval.to_string(), "[ 1, 10 ]");
 
         let open = CqlInterval::open(
             CqlType::Integer,
             CqlValue::integer(1),
             CqlValue::integer(10),
         );
-        assert_eq!(open.to_string(), "(1, 10)");
+        assert_eq!(open.to_string(), "( 1, 10 )");
     }
 
     #[test]

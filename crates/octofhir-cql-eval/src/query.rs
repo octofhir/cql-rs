@@ -502,7 +502,16 @@ impl CqlEngine {
         // Sort based on direction
         let direction = sort_item.direction;
         keyed.sort_by(|(_, k1), (_, k2)| {
-            let cmp = cql_compare(k1, k2).unwrap_or(Some(Ordering::Equal)).unwrap_or(Ordering::Equal);
+            let cmp_result = cql_compare(k1, k2);
+            let cmp = match &cmp_result {
+                Ok(Some(ord)) => *ord,
+                Ok(None) => {
+                    // When comparison is indeterminate (e.g., different precision),
+                    // use secondary sort: less precise values come first
+                    datetime_precision_compare(k1, k2)
+                }
+                Err(_) => Ordering::Equal,
+            };
             match direction {
                 SortDirection::Asc | SortDirection::Ascending => cmp,
                 SortDirection::Desc | SortDirection::Descending => cmp.reverse(),
@@ -609,10 +618,70 @@ impl CqlEngine {
             }
         }
 
-        // Add type information
-        result_elements.push(("__type".to_string(), CqlValue::string(&instance.class_type)));
+        // Extract simple type name from qualified name
+        let type_name = instance.class_type
+            .rsplit('}')
+            .next()
+            .unwrap_or(&instance.class_type)
+            .rsplit('.')
+            .next()
+            .unwrap_or(&instance.class_type);
 
-        Ok(CqlValue::Tuple(octofhir_cql_types::CqlTuple::from_elements(result_elements)))
+        // Handle CQL system types specially
+        match type_name {
+            "Code" => {
+                let code = get_string_element(&result_elements, "code").unwrap_or_default();
+                let system = get_string_element(&result_elements, "system").unwrap_or_default();
+                let version = get_string_element(&result_elements, "version");
+                let display = get_string_element(&result_elements, "display");
+                Ok(CqlValue::Code(octofhir_cql_types::CqlCode {
+                    code,
+                    system,
+                    version,
+                    display,
+                }))
+            }
+            "Concept" => {
+                let codes: Vec<octofhir_cql_types::CqlCode> = result_elements.iter()
+                    .filter(|(name, _)| name == "codes")
+                    .filter_map(|(_, v)| match v {
+                        CqlValue::Code(c) => Some(c.clone()),
+                        CqlValue::List(l) => {
+                            let codes: Vec<_> = l.elements.iter()
+                                .filter_map(|e| match e {
+                                    CqlValue::Code(c) => Some(c.clone()),
+                                    _ => None,
+                                })
+                                .collect();
+                            if codes.is_empty() { None } else { Some(codes[0].clone()) }
+                        }
+                        _ => None,
+                    })
+                    .collect();
+                let display = get_string_element(&result_elements, "display");
+                Ok(CqlValue::Concept(octofhir_cql_types::CqlConcept {
+                    codes: codes.into(),
+                    display,
+                }))
+            }
+            "Quantity" => {
+                let value = result_elements.iter()
+                    .find(|(name, _)| name == "value")
+                    .and_then(|(_, v)| match v {
+                        CqlValue::Decimal(d) => Some(*d),
+                        CqlValue::Integer(i) => Some(rust_decimal::Decimal::from(*i)),
+                        _ => None,
+                    })
+                    .unwrap_or_default();
+                let unit = get_string_element(&result_elements, "unit");
+                Ok(CqlValue::Quantity(octofhir_cql_types::CqlQuantity { value, unit }))
+            }
+            _ => {
+                // Default: return as Tuple with type information
+                result_elements.push(("__type".to_string(), CqlValue::string(&instance.class_type)));
+                Ok(CqlValue::Tuple(octofhir_cql_types::CqlTuple::from_elements(result_elements)))
+            }
+        }
     }
 
     /// Evaluate a Message expression
@@ -633,6 +702,64 @@ impl CqlEngine {
         // For now, we just return the source
 
         Ok(source)
+    }
+}
+
+/// Helper function to extract a string value from tuple elements
+fn get_string_element(elements: &[(String, CqlValue)], name: &str) -> Option<String> {
+    elements.iter()
+        .find(|(n, _)| n == name)
+        .and_then(|(_, v)| match v {
+            CqlValue::String(s) => Some(s.clone()),
+            _ => None,
+        })
+}
+
+/// Compare DateTime/Date values by precision when cql_compare returns None.
+/// Less precise values come first in ascending order.
+fn datetime_precision_compare(a: &CqlValue, b: &CqlValue) -> Ordering {
+    match (a, b) {
+        (CqlValue::DateTime(da), CqlValue::DateTime(db)) => {
+            let precision_a = datetime_precision(da);
+            let precision_b = datetime_precision(db);
+            precision_a.cmp(&precision_b)
+        }
+        (CqlValue::Date(da), CqlValue::Date(db)) => {
+            let precision_a = date_precision(da);
+            let precision_b = date_precision(db);
+            precision_a.cmp(&precision_b)
+        }
+        _ => Ordering::Equal,
+    }
+}
+
+/// Calculate DateTime precision level (higher = more precise)
+fn datetime_precision(dt: &octofhir_cql_types::CqlDateTime) -> u8 {
+    if dt.millisecond.is_some() {
+        7
+    } else if dt.second.is_some() {
+        6
+    } else if dt.minute.is_some() {
+        5
+    } else if dt.hour.is_some() {
+        4
+    } else if dt.day.is_some() {
+        3
+    } else if dt.month.is_some() {
+        2
+    } else {
+        1
+    }
+}
+
+/// Calculate Date precision level (higher = more precise)
+fn date_precision(d: &octofhir_cql_types::CqlDate) -> u8 {
+    if d.day.is_some() {
+        3
+    } else if d.month.is_some() {
+        2
+    } else {
+        1
     }
 }
 

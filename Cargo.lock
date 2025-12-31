@@ -1283,6 +1283,7 @@ dependencies = [
  "pretty_assertions",
  "proptest",
  "quick-xml",
+ "regex",
  "rstest",
  "rust_decimal",
  "rustyline",

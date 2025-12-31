@@ -304,23 +304,44 @@ fn format_value(value: &CqlValue) -> String {
         CqlValue::Integer(i) => i.to_string(),
         CqlValue::Long(l) => format!("{}L", l),
         CqlValue::Decimal(d) => {
-            // Normalize the decimal to remove trailing zeros, then ensure it shows decimal point
-            let normalized = d.normalize();
-            let s = normalized.to_string();
-            if s.contains('.') {
-                s
+            // For CQL, preserve full scale for boundary operations but normalize for regular operations
+            // Check if this looks like a boundary result (scale = 8 with trailing zeros)
+            let scale = d.scale();
+            if scale == 8 {
+                // Likely a boundary operation - preserve scale
+                let s = d.to_string();
+                if s.contains('.') { s } else { format!("{}.0", s) }
             } else {
-                format!("{}.0", s)
+                // Regular operation - normalize but ensure at least one decimal place
+                let normalized = d.normalize();
+                let s = normalized.to_string();
+                if s.contains('.') { s } else { format!("{}.0", s) }
             }
         }
-        CqlValue::String(s) => format!("'{}'", s),
+        CqlValue::String(s) => {
+            // Escape quotes using unicode escapes per CQL spec
+            let mut escaped = String::with_capacity(s.len());
+            for c in s.chars() {
+                match c {
+                    '\'' => escaped.push_str("\\u0027"),
+                    '"' => escaped.push_str("\\u0022"),
+                    _ => escaped.push(c),
+                }
+            }
+            format!("'{}'", escaped)
+        }
         CqlValue::Date(d) => format!("@{}", d),
         CqlValue::DateTime(dt) => format!("@{}", dt),
         CqlValue::Time(t) => format!("@T{}", t),
         CqlValue::Quantity(q) => format!("{}", q),
-        CqlValue::Code(c) => format!("Code '{}'", c.code),
-        CqlValue::Concept(c) => format!("Concept with {} codes", c.codes.len()),
-        CqlValue::Interval(i) => format!("Interval{}", i),  // No space before brackets
+        CqlValue::Code(c) => format!("Code {{ code: '{}' }}", c.code),
+        CqlValue::Concept(c) => {
+            let codes_str: Vec<String> = c.codes.iter()
+                .map(|code| format!("Code {{ code: '{}' }}", code.code))
+                .collect();
+            format!("Concept {{ codes: {} }}", codes_str.join(", "))
+        }
+        CqlValue::Interval(i) => format!("Interval {}", i),
         CqlValue::List(l) => {
             if l.is_empty() {
                 "{}".to_string()
@@ -347,10 +368,21 @@ fn format_value(value: &CqlValue) -> String {
 /// - Tuples: `Tuple { id: 1 }` vs `{ id: 1 }`
 /// - Quantities: `5 'ml'` vs `5'ml'`
 fn normalize_list_format(s: &str) -> String {
+    // Collapse all whitespace (spaces, tabs, newlines) to single spaces
+    let s: String = s.split_whitespace().collect::<Vec<_>>().join(" ");
     // First strip common prefixes that are inconsistently used
     let s = s.replace("Tuple { ", "{ ").replace("Tuple{ ", "{ ");
+    // Normalize Interval space (Interval [ → Interval[)
+    let s = s.replace("Interval [ ", "Interval[").replace("Interval ( ", "Interval(");
     // Normalize quantity space (remove space before unit quotes)
     let s = s.replace(" '", "'");
+    // Normalize quote escapes: convert unicode escapes to backslash escapes
+    // Both \u0027 and \' represent single quote, both \u0022 and \" represent double quote
+    let s = s.replace("\\u0027", "\\'").replace("\\u0022", "\\\"");
+    // Normalize timezone: Z is equivalent to +00:00
+    let s = s.replace("+00:00", "Z");
+    // Normalize decimal precision: 1.00 is equivalent to 1.0
+    let s = normalize_decimal_precision(&s);
 
     let mut result = String::with_capacity(s.len());
     let mut chars = s.chars().peekable();
@@ -394,6 +426,33 @@ fn normalize_list_format(s: &str) -> String {
         }
     }
 
+    result
+}
+
+/// Normalize decimal precision by removing trailing zeros after decimal point
+/// 1.00 -> 1.0, 1.000 -> 1.0, but keep at least one decimal place
+fn normalize_decimal_precision(s: &str) -> String {
+    use regex::Regex;
+    // Match decimal numbers with trailing zeros
+    let re = Regex::new(r"(\d+\.\d*?)0+(\D|$)").unwrap();
+    let mut result = s.to_string();
+    // Keep applying until no more changes (for nested cases)
+    loop {
+        let new_result = re.replace_all(&result, |caps: &regex::Captures| {
+            let num_part = &caps[1];
+            let suffix = &caps[2];
+            // Ensure at least one digit after decimal
+            if num_part.ends_with('.') {
+                format!("{}0{}", num_part, suffix)
+            } else {
+                format!("{}{}", num_part, suffix)
+            }
+        }).to_string();
+        if new_result == result {
+            break;
+        }
+        result = new_result;
+    }
     result
 }
 

@@ -236,15 +236,15 @@ fn test_equivalent_strings_case_insensitive() {
 
 #[test]
 fn test_cql_equal_integers() {
-    assert!(cql_equal(&CqlValue::Integer(5), &CqlValue::Integer(5)).unwrap());
-    assert!(!cql_equal(&CqlValue::Integer(5), &CqlValue::Integer(6)).unwrap());
+    assert_eq!(cql_equal(&CqlValue::Integer(5), &CqlValue::Integer(5)).unwrap(), Some(true));
+    assert_eq!(cql_equal(&CqlValue::Integer(5), &CqlValue::Integer(6)).unwrap(), Some(false));
 }
 
 #[test]
 fn test_cql_equal_cross_type_numeric() {
-    assert!(cql_equal(&CqlValue::Integer(5), &CqlValue::Long(5)).unwrap());
-    assert!(cql_equal(&CqlValue::Integer(5), &CqlValue::Decimal(Decimal::from(5))).unwrap());
-    assert!(cql_equal(&CqlValue::Long(5), &CqlValue::Decimal(Decimal::from(5))).unwrap());
+    assert_eq!(cql_equal(&CqlValue::Integer(5), &CqlValue::Long(5)).unwrap(), Some(true));
+    assert_eq!(cql_equal(&CqlValue::Integer(5), &CqlValue::Decimal(Decimal::from(5))).unwrap(), Some(true));
+    assert_eq!(cql_equal(&CqlValue::Long(5), &CqlValue::Decimal(Decimal::from(5))).unwrap(), Some(true));
 }
 
 #[test]
@@ -253,8 +253,8 @@ fn test_cql_equal_dates() {
     let d2 = CqlValue::Date(CqlDate::new(2024, 1, 15));
     let d3 = CqlValue::Date(CqlDate::new(2024, 1, 16));
 
-    assert!(cql_equal(&d1, &d2).unwrap());
-    assert!(!cql_equal(&d1, &d3).unwrap());
+    assert_eq!(cql_equal(&d1, &d2).unwrap(), Some(true));
+    assert_eq!(cql_equal(&d1, &d3).unwrap(), Some(false));
 }
 
 #[test]
@@ -272,8 +272,8 @@ fn test_cql_equal_lists() {
         elements: vec![CqlValue::Integer(1), CqlValue::Integer(3)],
     });
 
-    assert!(cql_equal(&list1, &list2).unwrap());
-    assert!(!cql_equal(&list1, &list3).unwrap());
+    assert_eq!(cql_equal(&list1, &list2).unwrap(), Some(true));
+    assert_eq!(cql_equal(&list1, &list3).unwrap(), Some(false));
 }
 
 #[test]
@@ -287,7 +287,7 @@ fn test_cql_equal_lists_different_length() {
         elements: vec![CqlValue::Integer(1)],
     });
 
-    assert!(!cql_equal(&list1, &list2).unwrap());
+    assert_eq!(cql_equal(&list1, &list2).unwrap(), Some(false));
 }
 
 #[test]
@@ -297,8 +297,8 @@ fn test_cql_equal_codes() {
     let code3 = CqlValue::Code(CqlCode::new("123", "http://snomed.info/sct", Some("2.0"), Some("Test")));
 
     // Equal requires all fields to match including version
-    assert!(cql_equal(&code1, &code2).unwrap());
-    assert!(!cql_equal(&code1, &code3).unwrap());
+    assert_eq!(cql_equal(&code1, &code2).unwrap(), Some(true));
+    assert_eq!(cql_equal(&code1, &code3).unwrap(), Some(false));
 }
 
 // ============================================================================

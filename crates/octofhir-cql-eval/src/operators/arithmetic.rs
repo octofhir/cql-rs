@@ -9,7 +9,7 @@ use crate::engine::CqlEngine;
 use crate::error::{EvalError, EvalResult};
 use chrono::{Datelike, Timelike};
 use octofhir_cql_elm::{BinaryExpression, BoundaryExpression, MinMaxValueExpression, RoundExpression, UnaryExpression};
-use octofhir_cql_types::{CqlQuantity, CqlValue, DateTimePrecision};
+use octofhir_cql_types::{CqlInterval, CqlQuantity, CqlType, CqlValue, DateTimePrecision};
 use rust_decimal::prelude::*;
 use rust_decimal::Decimal;
 
@@ -98,6 +98,10 @@ impl CqlEngine {
             (CqlValue::String(a), CqlValue::String(b)) => {
                 Ok(CqlValue::String(format!("{}{}", a, b)))
             }
+            // Interval + Interval -> Interval (uncertainty propagation)
+            (CqlValue::Interval(a), CqlValue::Interval(b)) => {
+                interval_add(a, b)
+            }
             _ => Err(EvalError::unsupported_operator(
                 "Add",
                 format!("{}, {}", left.get_type().name(), right.get_type().name()),
@@ -174,6 +178,10 @@ impl CqlEngine {
             (CqlValue::Time(t), CqlValue::Quantity(q)) => {
                 subtract_duration_from_time(t, q)
             }
+            // Interval - Interval -> Interval (uncertainty propagation)
+            (CqlValue::Interval(a), CqlValue::Interval(b)) => {
+                interval_subtract(a, b)
+            }
             _ => Err(EvalError::unsupported_operator(
                 "Subtract",
                 format!("{}, {}", left.get_type().name(), right.get_type().name()),
@@ -249,6 +257,10 @@ impl CqlEngine {
                     value: n * q.value,
                     unit: q.unit.clone(),
                 }))
+            }
+            // Interval * Interval -> Interval (uncertainty propagation)
+            (CqlValue::Interval(a), CqlValue::Interval(b)) => {
+                interval_multiply(a, b)
             }
             _ => Err(EvalError::unsupported_operator(
                 "Multiply",
@@ -731,9 +743,34 @@ impl CqlEngine {
         };
 
         match &operand {
-            CqlValue::Integer(i) => Ok(CqlValue::Integer(*i)),
-            CqlValue::Long(l) => Ok(CqlValue::Long(*l)),
-            CqlValue::Decimal(d) => Ok(CqlValue::Decimal(d.round_dp(precision))),
+            CqlValue::Integer(i) => {
+                // Round returns Decimal even for integer input
+                Ok(CqlValue::Decimal(Decimal::from(*i)))
+            }
+            CqlValue::Long(l) => {
+                Ok(CqlValue::Decimal(Decimal::from(*l)))
+            }
+            CqlValue::Decimal(d) => {
+                // CQL uses "round half up" meaning round toward positive infinity at midpoint
+                // For positive numbers: 0.5 -> 1, 1.5 -> 2
+                // For negative numbers: -0.5 -> 0, -1.5 -> -1
+                // This is essentially ceiling at the midpoint
+                let scale_factor = Decimal::from_i32(10i32.pow(precision)).unwrap_or(Decimal::ONE);
+                let scaled = *d * scale_factor;
+                let floor = scaled.floor();
+                let frac = scaled - floor;
+
+                // If exactly at midpoint (0.5), round up (toward positive infinity)
+                let rounded_scaled = if frac == Decimal::new(5, 1) {
+                    floor + Decimal::ONE
+                } else if frac > Decimal::new(5, 1) {
+                    floor + Decimal::ONE
+                } else {
+                    floor
+                };
+
+                Ok(CqlValue::Decimal(rounded_scaled / scale_factor))
+            }
             _ => Err(EvalError::unsupported_operator("Round", operand.get_type().name())),
         }
     }
@@ -753,7 +790,11 @@ impl CqlEngine {
             _ => return Err(EvalError::unsupported_operator("Ln", operand.get_type().name())),
         };
 
-        if value <= 0.0 {
+        // ln(0) is undefined and should error, ln(negative) is null
+        if value == 0.0 {
+            return Err(EvalError::overflow("Ln: log of zero is undefined"));
+        }
+        if value < 0.0 {
             return Ok(CqlValue::Null);
         }
 
@@ -778,10 +819,9 @@ impl CqlEngine {
 
         let result = value.exp();
         if result.is_infinite() || result.is_nan() {
-            Ok(CqlValue::Null)
-        } else {
-            Ok(CqlValue::Decimal(Decimal::from_f64(result).unwrap_or(Decimal::ZERO)))
+            return Err(EvalError::overflow(format!("Exp: result overflow for argument {}", value)));
         }
+        Ok(CqlValue::Decimal(Decimal::from_f64(result).unwrap_or(Decimal::ZERO)))
     }
 
     /// Evaluate Log (log base) operator
@@ -846,6 +886,10 @@ impl CqlEngine {
                 // Add one day
                 if let Some(naive) = date.to_naive_date() {
                     let next = naive + chrono::Duration::days(1);
+                    // CQL spec: valid years are 1-9999
+                    if next.year() > 9999 {
+                        return Err(EvalError::overflow("Successor: Date year exceeds maximum (9999)"));
+                    }
                     Ok(CqlValue::Date(octofhir_cql_types::CqlDate::new(
                         next.year(),
                         next.month() as u8,
@@ -859,7 +903,7 @@ impl CqlEngine {
                 // Add one millisecond
                 let ms = time.to_milliseconds().unwrap_or(0);
                 if ms >= 86_400_000 - 1 {
-                    Ok(CqlValue::Null)
+                    return Err(EvalError::overflow("Successor: Time exceeds maximum (23:59:59.999)"));
                 } else {
                     let next_ms = ms + 1;
                     let h = (next_ms / 3_600_000) as u8;
@@ -947,6 +991,10 @@ impl CqlEngine {
                                     naive + chrono::Duration::milliseconds(1),
                                 _ => naive,
                             };
+                            // CQL spec: valid years are 1-9999
+                            if next.year() > 9999 {
+                                return Err(EvalError::overflow("Successor: DateTime year exceeds maximum (9999)"));
+                            }
                             // Preserve original precision
                             Ok(CqlValue::DateTime(octofhir_cql_types::CqlDateTime {
                                 year: next.year(),
@@ -1005,6 +1053,10 @@ impl CqlEngine {
             CqlValue::Date(date) => {
                 if let Some(naive) = date.to_naive_date() {
                     let prev = naive - chrono::Duration::days(1);
+                    // CQL spec: valid years are 1-9999
+                    if prev.year() < 1 {
+                        return Err(EvalError::overflow("Predecessor: Date year below minimum (1)"));
+                    }
                     Ok(CqlValue::Date(octofhir_cql_types::CqlDate::new(
                         prev.year(),
                         prev.month() as u8,
@@ -1017,7 +1069,7 @@ impl CqlEngine {
             CqlValue::Time(time) => {
                 let ms = time.to_milliseconds().unwrap_or(0);
                 if ms == 0 {
-                    Ok(CqlValue::Null)
+                    return Err(EvalError::overflow("Predecessor: Time below minimum (00:00:00.000)"));
                 } else {
                     let prev_ms = ms - 1;
                     let h = (prev_ms / 3_600_000) as u8;
@@ -1105,6 +1157,10 @@ impl CqlEngine {
                                     naive - chrono::Duration::milliseconds(1),
                                 _ => naive,
                             };
+                            // CQL spec: valid years are 1-9999
+                            if prev.year() < 1 {
+                                return Err(EvalError::overflow("Predecessor: DateTime year below minimum (1)"));
+                            }
                             // Preserve original precision
                             Ok(CqlValue::DateTime(octofhir_cql_types::CqlDateTime {
                                 year: prev.year(),
@@ -1140,7 +1196,13 @@ impl CqlEngine {
         match type_name {
             "Integer" => Ok(CqlValue::Integer(i32::MIN)),
             "Long" => Ok(CqlValue::Long(i64::MIN)),
-            "Decimal" => Ok(CqlValue::Decimal(Decimal::MIN)),
+            // CQL spec defines Decimal min as -99999999999999999999.99999999
+            "Decimal" => {
+                // Use from_str with FromStr trait
+                let min_decimal = "-99999999999999999999.99999999".parse::<Decimal>()
+                    .unwrap_or(Decimal::MIN);
+                Ok(CqlValue::Decimal(min_decimal))
+            }
             "Date" => Ok(CqlValue::Date(octofhir_cql_types::CqlDate::new(1, 1, 1))),
             "DateTime" => Ok(CqlValue::DateTime(octofhir_cql_types::CqlDateTime::new(
                 1, 1, 1, 0, 0, 0, 0, Some(0),
@@ -1157,7 +1219,13 @@ impl CqlEngine {
         match type_name {
             "Integer" => Ok(CqlValue::Integer(i32::MAX)),
             "Long" => Ok(CqlValue::Long(i64::MAX)),
-            "Decimal" => Ok(CqlValue::Decimal(Decimal::MAX)),
+            // CQL spec defines Decimal max as 99999999999999999999.99999999
+            "Decimal" => {
+                // Use from_str with FromStr trait
+                let max_decimal = "99999999999999999999.99999999".parse::<Decimal>()
+                    .unwrap_or(Decimal::MAX);
+                Ok(CqlValue::Decimal(max_decimal))
+            }
             "Date" => Ok(CqlValue::Date(octofhir_cql_types::CqlDate::new(9999, 12, 31))),
             "DateTime" => Ok(CqlValue::DateTime(octofhir_cql_types::CqlDateTime::new(
                 9999, 12, 31, 23, 59, 59, 999, Some(0),
@@ -1191,7 +1259,7 @@ impl CqlEngine {
             }
             CqlValue::Time(t) => {
                 let precision = t.precision();
-                Ok(CqlValue::Integer(precision_to_int(&precision)))
+                Ok(CqlValue::Integer(time_precision_to_int(&precision)))
             }
             _ => Err(EvalError::unsupported_operator("Precision", operand.get_type().name())),
         }
@@ -1217,16 +1285,33 @@ impl CqlEngine {
 
         match &operand {
             CqlValue::Decimal(d) => {
-                let scale = precision.unwrap_or(8);
-                Ok(CqlValue::Decimal(d.round_dp_with_strategy(scale, RoundingStrategy::RoundDown)))
+                // LowBoundary: extend precision by filling with 0s
+                // e.g., 1.587 with precision 8 -> 1.58700000
+                let target_scale = precision.unwrap_or(8);
+                // Rescale to target precision (this adds trailing zeros if needed)
+                let mut result = *d;
+                result.rescale(target_scale);
+                Ok(CqlValue::Decimal(result))
             }
             CqlValue::Date(date) => {
-                // Fill in missing components with minimum values
-                Ok(CqlValue::Date(octofhir_cql_types::CqlDate::new(
-                    date.year,
-                    date.month.unwrap_or(1),
-                    date.day.unwrap_or(1),
-                )))
+                // Fill in missing components with minimum values, respecting precision
+                // Precision: 4=year, 6=month, 8=day
+                let target_precision = precision.unwrap_or(8);
+                let month = if target_precision >= 6 {
+                    Some(date.month.unwrap_or(1))
+                } else {
+                    date.month
+                };
+                let day = if target_precision >= 8 {
+                    Some(date.day.or(month.map(|_| 1)).unwrap_or(1))
+                } else {
+                    date.day
+                };
+                Ok(CqlValue::Date(octofhir_cql_types::CqlDate {
+                    year: date.year,
+                    month,
+                    day,
+                }))
             }
             CqlValue::DateTime(dt) => {
                 Ok(CqlValue::DateTime(octofhir_cql_types::CqlDateTime::new(
@@ -1272,15 +1357,49 @@ impl CqlEngine {
 
         match &operand {
             CqlValue::Decimal(d) => {
-                let scale = precision.unwrap_or(8);
-                Ok(CqlValue::Decimal(d.round_dp_with_strategy(scale, RoundingStrategy::RoundUp)))
+                // HighBoundary: extend precision by filling with 9s
+                // e.g., 1.587 with precision 8 -> 1.58799999
+                let target_scale = precision.unwrap_or(8);
+                let current_scale = d.scale();
+
+                if current_scale >= target_scale {
+                    // Already at or beyond target precision
+                    let mut result = *d;
+                    result.rescale(target_scale);
+                    Ok(CqlValue::Decimal(result))
+                } else {
+                    // Add offset to fill with 9s
+                    // offset = (10^extra_digits - 1) / 10^target_scale
+                    let extra_digits = target_scale - current_scale;
+                    let offset_numerator = Decimal::from(10u64.pow(extra_digits)) - Decimal::ONE;
+                    let offset_divisor = Decimal::from(10u64.pow(target_scale));
+                    let offset = offset_numerator / offset_divisor;
+                    let result = *d + offset;
+                    let mut final_result = result;
+                    final_result.rescale(target_scale);
+                    Ok(CqlValue::Decimal(final_result))
+                }
             }
             CqlValue::Date(date) => {
-                // Fill in missing components with maximum values
-                let year = date.year;
-                let month = date.month.unwrap_or(12);
-                let day = date.day.unwrap_or_else(|| days_in_month(year, month));
-                Ok(CqlValue::Date(octofhir_cql_types::CqlDate::new(year, month, day)))
+                // Fill in missing components with maximum values, respecting precision
+                // Precision: 4=year, 6=month, 8=day
+                let target_precision = precision.unwrap_or(8);
+                let month = if target_precision >= 6 {
+                    Some(date.month.unwrap_or(12))
+                } else {
+                    date.month
+                };
+                let day = if target_precision >= 8 {
+                    let m = month.unwrap_or(12);
+                    Some(date.day.unwrap_or_else(|| days_in_month(date.year, m)))
+                } else {
+                    date.day
+                };
+                Ok(CqlValue::Date(octofhir_cql_types::CqlDate {
+                    year: date.year,
+                    month,
+                    day,
+                }))
             }
             CqlValue::DateTime(dt) => {
                 let year = dt.year;
@@ -1328,7 +1447,7 @@ impl CqlEngine {
     }
 }
 
-/// Convert DateTimePrecision to integer for Precision operator
+/// Convert DateTimePrecision to integer for Precision operator (DateTime/Date)
 fn precision_to_int(precision: &DateTimePrecision) -> i32 {
     match precision {
         DateTimePrecision::Year => 4,
@@ -1338,6 +1457,19 @@ fn precision_to_int(precision: &DateTimePrecision) -> i32 {
         DateTimePrecision::Minute => 12,
         DateTimePrecision::Second => 14,
         DateTimePrecision::Millisecond => 17,
+    }
+}
+
+/// Convert DateTimePrecision to integer for Precision operator (Time only)
+/// Time precision counts significant digits: HH=2, MM=4, SS=6, mmm=9
+fn time_precision_to_int(precision: &DateTimePrecision) -> i32 {
+    match precision {
+        DateTimePrecision::Hour => 2,
+        DateTimePrecision::Minute => 4,
+        DateTimePrecision::Second => 6,
+        DateTimePrecision::Millisecond => 9,
+        // These shouldn't occur for Time, but provide reasonable defaults
+        _ => 0,
     }
 }
 
@@ -1392,6 +1524,15 @@ impl CalendarUnit {
     }
 }
 
+/// Validate that a year is within CQL's valid range (1-9999)
+fn validate_year(year: i32, operation: &str) -> EvalResult<()> {
+    if year < 1 || year > 9999 {
+        Err(EvalError::overflow(format!("{}: year {} out of range (1-9999)", operation, year)))
+    } else {
+        Ok(())
+    }
+}
+
 /// Subtract a duration quantity from a date
 /// Handles partial precision dates (year-only, year-month, or full date)
 fn subtract_duration_from_date(
@@ -1413,6 +1554,7 @@ fn subtract_duration_from_date(
         CalendarUnit::Year => {
             // Year operations only need year precision
             let new_year = date.year - amount as i32;
+            validate_year(new_year, "Date - years")?;
             Ok(CqlValue::Date(octofhir_cql_types::CqlDate {
                 year: new_year,
                 month: date.month,
@@ -1425,6 +1567,7 @@ fn subtract_duration_from_date(
                 let total_months = date.year as i64 * 12 + month as i64 - 1 - amount;
                 let new_year = (total_months / 12) as i32;
                 let new_month = (total_months.rem_euclid(12) + 1) as u8;
+                validate_year(new_year, "Date - months")?;
 
                 // Handle day overflow if day is present
                 let new_day = if let Some(day) = date.day {
@@ -1444,6 +1587,7 @@ fn subtract_duration_from_date(
                 // e.g., 24 months = 2 years, 25 months = 2 years (truncated)
                 let years_from_months = amount / 12;
                 let new_year = date.year - years_from_months as i32;
+                validate_year(new_year, "Date - months")?;
                 Ok(CqlValue::Date(octofhir_cql_types::CqlDate {
                     year: new_year,
                     month: None,
@@ -1463,6 +1607,7 @@ fn subtract_duration_from_date(
                         .checked_sub_signed(chrono::Duration::days(amount))
                         .ok_or_else(|| EvalError::overflow("Date - days"))?
                 };
+                validate_year(result_date.year(), "Date - days")?;
 
                 Ok(CqlValue::Date(octofhir_cql_types::CqlDate::new(
                     result_date.year(),
@@ -1478,6 +1623,7 @@ fn subtract_duration_from_date(
                 let total_months = date.year as i64 * 12 + date.month.unwrap() as i64 - 1 - months_from_days;
                 let new_year = (total_months / 12) as i32;
                 let new_month = (total_months.rem_euclid(12) + 1) as u8;
+                validate_year(new_year, "Date - days")?;
 
                 Ok(CqlValue::Date(octofhir_cql_types::CqlDate {
                     year: new_year,
@@ -1489,6 +1635,7 @@ fn subtract_duration_from_date(
                 let days = if calendar_unit == CalendarUnit::Week { amount * 7 } else { amount };
                 let years_from_days = days / 365;
                 let new_year = date.year - years_from_days as i32;
+                validate_year(new_year, "Date - days")?;
 
                 Ok(CqlValue::Date(octofhir_cql_types::CqlDate {
                     year: new_year,
@@ -1504,6 +1651,7 @@ fn subtract_duration_from_date(
                 let result_date = naive_date
                     .checked_sub_signed(chrono::Duration::days(days))
                     .ok_or_else(|| EvalError::overflow("Date - hours"))?;
+                validate_year(result_date.year(), "Date - hours")?;
                 Ok(CqlValue::Date(octofhir_cql_types::CqlDate::new(
                     result_date.year(),
                     result_date.month() as u8,
@@ -1611,6 +1759,9 @@ fn subtract_duration_from_datetime(
             .ok_or_else(|| EvalError::overflow("DateTime - milliseconds"))?,
     };
 
+    // CQL spec: valid years are 1-9999
+    validate_year(result_datetime.year(), "DateTime arithmetic")?;
+
     // Preserve the original precision
     Ok(CqlValue::DateTime(octofhir_cql_types::CqlDateTime {
         year: result_datetime.year(),
@@ -1717,6 +1868,140 @@ fn add_duration_to_time(
         unit: quantity.unit.clone(),
     };
     subtract_duration_from_time(time, &negated)
+}
+
+/// Add two intervals for uncertainty propagation
+/// result.low = left.low + right.low
+/// result.high = left.high + right.high
+fn interval_add(a: &CqlInterval, b: &CqlInterval) -> EvalResult<CqlValue> {
+    let (al, ah) = match (a.low(), a.high()) {
+        (Some(l), Some(h)) => (l, h),
+        _ => return Ok(CqlValue::Null),
+    };
+    let (bl, bh) = match (b.low(), b.high()) {
+        (Some(l), Some(h)) => (l, h),
+        _ => return Ok(CqlValue::Null),
+    };
+
+    // Add lows
+    let new_low = match (al, bl) {
+        (CqlValue::Integer(x), CqlValue::Integer(y)) => {
+            x.checked_add(*y).map(CqlValue::Integer)
+        }
+        _ => None,
+    };
+
+    // Add highs
+    let new_high = match (ah, bh) {
+        (CqlValue::Integer(x), CqlValue::Integer(y)) => {
+            x.checked_add(*y).map(CqlValue::Integer)
+        }
+        _ => None,
+    };
+
+    match (new_low, new_high) {
+        (Some(low), Some(high)) => Ok(CqlValue::Interval(CqlInterval::new(
+            CqlType::Integer,
+            Some(low),
+            true,
+            Some(high),
+            true,
+        ))),
+        _ => Ok(CqlValue::Null),
+    }
+}
+
+/// Subtract two intervals for uncertainty propagation
+/// result.low = left.low - right.high
+/// result.high = left.high - right.low
+fn interval_subtract(a: &CqlInterval, b: &CqlInterval) -> EvalResult<CqlValue> {
+    let (al, ah) = match (a.low(), a.high()) {
+        (Some(l), Some(h)) => (l, h),
+        _ => return Ok(CqlValue::Null),
+    };
+    let (bl, bh) = match (b.low(), b.high()) {
+        (Some(l), Some(h)) => (l, h),
+        _ => return Ok(CqlValue::Null),
+    };
+
+    // result_low = a.low - b.high (smallest result)
+    let new_low = match (al, bh) {
+        (CqlValue::Integer(x), CqlValue::Integer(y)) => {
+            x.checked_sub(*y).map(CqlValue::Integer)
+        }
+        _ => None,
+    };
+
+    // result_high = a.high - b.low (largest result)
+    let new_high = match (ah, bl) {
+        (CqlValue::Integer(x), CqlValue::Integer(y)) => {
+            x.checked_sub(*y).map(CqlValue::Integer)
+        }
+        _ => None,
+    };
+
+    match (new_low, new_high) {
+        (Some(low), Some(high)) => Ok(CqlValue::Interval(CqlInterval::new(
+            CqlType::Integer,
+            Some(low),
+            true,
+            Some(high),
+            true,
+        ))),
+        _ => Ok(CqlValue::Null),
+    }
+}
+
+/// Multiply two intervals for uncertainty propagation
+/// result.low = min of all products
+/// result.high = max of all products
+fn interval_multiply(a: &CqlInterval, b: &CqlInterval) -> EvalResult<CqlValue> {
+    let (al, ah) = match (a.low(), a.high()) {
+        (Some(l), Some(h)) => (l, h),
+        _ => return Ok(CqlValue::Null),
+    };
+    let (bl, bh) = match (b.low(), b.high()) {
+        (Some(l), Some(h)) => (l, h),
+        _ => return Ok(CqlValue::Null),
+    };
+
+    // Get all integer values
+    let vals = match (al, ah, bl, bh) {
+        (CqlValue::Integer(al), CqlValue::Integer(ah), CqlValue::Integer(bl), CqlValue::Integer(bh)) => {
+            // Calculate all products
+            let products = [
+                al.checked_mul(*bl),
+                al.checked_mul(*bh),
+                ah.checked_mul(*bl),
+                ah.checked_mul(*bh),
+            ];
+
+            // Find min and max
+            let mut min: Option<i32> = None;
+            let mut max: Option<i32> = None;
+            for p in products.iter().flatten() {
+                min = Some(min.map_or(*p, |m| m.min(*p)));
+                max = Some(max.map_or(*p, |m| m.max(*p)));
+            }
+
+            match (min, max) {
+                (Some(l), Some(h)) => Some((l, h)),
+                _ => None,
+            }
+        }
+        _ => None,
+    };
+
+    match vals {
+        Some((low, high)) => Ok(CqlValue::Interval(CqlInterval::new(
+            CqlType::Integer,
+            Some(CqlValue::Integer(low)),
+            true,
+            Some(CqlValue::Integer(high)),
+            true,
+        ))),
+        None => Ok(CqlValue::Null),
+    }
 }
 
 #[cfg(test)]

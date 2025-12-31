@@ -13,7 +13,7 @@ use octofhir_cql_elm::{
     IndexOfExpression, ListExpression, NaryExpression, RepeatExpression, SliceExpression,
     SortExpression, UnaryExpression,
 };
-use octofhir_cql_types::{CqlList, CqlQuantity, CqlType, CqlValue};
+use octofhir_cql_types::{CqlDate, CqlDateTime, CqlList, CqlQuantity, CqlType, CqlValue};
 use rust_decimal::prelude::*;
 use rust_decimal::Decimal;
 use std::cmp::Ordering;
@@ -43,13 +43,17 @@ impl CqlEngine {
         }))
     }
 
-    /// Evaluate Exists - returns true if list is non-empty
+    /// Evaluate Exists - returns true if list contains at least one non-null element
     pub fn eval_exists(&self, expr: &UnaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
         let operand = self.evaluate(&expr.operand, ctx)?;
 
         match &operand {
             CqlValue::Null => Ok(CqlValue::Boolean(false)),
-            CqlValue::List(list) => Ok(CqlValue::Boolean(!list.is_empty())),
+            CqlValue::List(list) => {
+                // Exists returns true if there is at least one non-null element
+                let has_non_null = list.iter().any(|elem| !elem.is_null());
+                Ok(CqlValue::Boolean(has_non_null))
+            }
             // Single value is like a list with one element
             _ => Ok(CqlValue::Boolean(true)),
         }
@@ -163,10 +167,11 @@ impl CqlEngine {
 
         let start_index = self.evaluate(&expr.start_index, ctx)?;
 
-        let end_index = if let Some(end_expr) = &expr.end_index {
-            self.evaluate(end_expr, ctx)?
+        // Track if end_index was explicitly provided (vs not specified)
+        let (end_index, end_was_specified) = if let Some(end_expr) = &expr.end_index {
+            (self.evaluate(end_expr, ctx)?, true)
         } else {
-            CqlValue::Null // If no end index, use list length
+            (CqlValue::Null, false) // If no end index, use list length
         };
 
         let start = match &start_index {
@@ -176,7 +181,15 @@ impl CqlEngine {
         };
 
         let end = match &end_index {
-            CqlValue::Null => list.len(),
+            CqlValue::Null => {
+                if end_was_specified {
+                    // Explicitly null end_index (e.g., Take with null count) -> empty list
+                    return Ok(CqlValue::List(CqlList::new(list.element_type.clone())));
+                } else {
+                    // Not specified -> go to end of list
+                    list.len()
+                }
+            }
             CqlValue::Integer(i) => ((*i).max(0) as usize).min(list.len()),
             _ => return Err(EvalError::type_mismatch("Integer", end_index.get_type().name())),
         };
@@ -199,6 +212,11 @@ impl CqlEngine {
         let element = self.evaluate(&expr.element_to_find, ctx)?;
 
         if source.is_null() {
+            return Ok(CqlValue::Null);
+        }
+
+        // If searching for null, return null
+        if element.is_null() {
             return Ok(CqlValue::Null);
         }
 
@@ -258,12 +276,32 @@ impl CqlEngine {
 
         let mut elements = list.elements.clone();
 
-        // Sort using CQL comparison
+        // Sort using CQL comparison with special handling for DateTimes
         elements.sort_by(|a, b| {
-            match cql_compare(a, b) {
-                Ok(Some(ord)) => ord,
-                _ => Ordering::Equal,
-            }
+            let cmp_result = cql_compare(a, b);
+            let result = match &cmp_result {
+                Ok(Some(ord)) => *ord,
+                Ok(None) => {
+                    // When comparison is indeterminate (e.g., different precision),
+                    // use secondary sort: less precise values come first
+                    match (a, b) {
+                        (CqlValue::DateTime(da), CqlValue::DateTime(db)) => {
+                            // Compare precision: less precise comes first (ascending)
+                            let precision_a = datetime_precision(da);
+                            let precision_b = datetime_precision(db);
+                            precision_a.cmp(&precision_b)
+                        }
+                        (CqlValue::Date(da), CqlValue::Date(db)) => {
+                            let precision_a = date_precision(da);
+                            let precision_b = date_precision(db);
+                            precision_a.cmp(&precision_b)
+                        }
+                        _ => Ordering::Equal,
+                    }
+                }
+                Err(_) => Ordering::Equal,
+            };
+            result
         });
 
         // Handle sort direction
@@ -634,6 +672,14 @@ impl CqlEngine {
                         return Err(EvalError::type_mismatch("numeric", item.get_type().name()));
                     }
                 }
+                Some(CqlValue::Long(a)) => {
+                    match item {
+                        CqlValue::Long(b) => CqlValue::Long(a * b),
+                        CqlValue::Integer(b) => CqlValue::Long(a * (*b as i64)),
+                        CqlValue::Decimal(b) => CqlValue::Decimal(Decimal::from(a) * b),
+                        _ => return Err(EvalError::type_mismatch("numeric", item.get_type().name())),
+                    }
+                }
                 Some(CqlValue::Decimal(a)) => {
                     if let Some(b) = item.as_decimal() {
                         CqlValue::Decimal(a * b)
@@ -907,7 +953,9 @@ impl CqlEngine {
         match variance {
             CqlValue::Decimal(v) => {
                 let stddev = v.to_f64().map(|f| f.sqrt()).unwrap_or(0.0);
-                Ok(CqlValue::Decimal(Decimal::from_f64(stddev).unwrap_or(Decimal::ZERO)))
+                let result = Decimal::from_f64(stddev).unwrap_or(Decimal::ZERO);
+                // Round to 8 decimal places (CQL Decimal precision)
+                Ok(CqlValue::Decimal(result.round_dp(8)))
             }
             CqlValue::Null => Ok(CqlValue::Null),
             _ => Err(EvalError::type_mismatch("Decimal", variance.get_type().name())),
@@ -920,7 +968,9 @@ impl CqlEngine {
         match variance {
             CqlValue::Decimal(v) => {
                 let stddev = v.to_f64().map(|f| f.sqrt()).unwrap_or(0.0);
-                Ok(CqlValue::Decimal(Decimal::from_f64(stddev).unwrap_or(Decimal::ZERO)))
+                let result = Decimal::from_f64(stddev).unwrap_or(Decimal::ZERO);
+                // Round to 8 decimal places (CQL Decimal precision)
+                Ok(CqlValue::Decimal(result.round_dp(8)))
             }
             CqlValue::Null => Ok(CqlValue::Null),
             _ => Err(EvalError::type_mismatch("Decimal", variance.get_type().name())),
@@ -973,6 +1023,36 @@ impl CqlEngine {
         }
 
         Ok(CqlValue::Boolean(false))
+    }
+}
+
+/// Calculate DateTime precision level (higher = more precise)
+fn datetime_precision(dt: &CqlDateTime) -> u8 {
+    if dt.millisecond.is_some() {
+        7
+    } else if dt.second.is_some() {
+        6
+    } else if dt.minute.is_some() {
+        5
+    } else if dt.hour.is_some() {
+        4
+    } else if dt.day.is_some() {
+        3
+    } else if dt.month.is_some() {
+        2
+    } else {
+        1
+    }
+}
+
+/// Calculate Date precision level (higher = more precise)
+fn date_precision(d: &CqlDate) -> u8 {
+    if d.day.is_some() {
+        3
+    } else if d.month.is_some() {
+        2
+    } else {
+        1
     }
 }
 
@@ -1040,5 +1120,98 @@ mod tests {
         }
 
         assert_eq!(result.len(), 4);
+    }
+
+    #[test]
+    fn test_datetime_precision_comparison() {
+        // Test that cql_compare returns None for DateTimes with different precisions
+        // and that our precision fallback works correctly
+        let dt_day = CqlValue::DateTime(CqlDateTime {
+            year: 2012,
+            month: Some(10),
+            day: Some(5),
+            hour: None,
+            minute: None,
+            second: None,
+            millisecond: None,
+            timezone_offset: None,
+        });
+        let dt_hour = CqlValue::DateTime(CqlDateTime {
+            year: 2012,
+            month: Some(10),
+            day: Some(5),
+            hour: Some(10),
+            minute: None,
+            second: None,
+            millisecond: None,
+            timezone_offset: None,
+        });
+
+        // cql_compare should return None for different precisions
+        let cmp_result = cql_compare(&dt_day, &dt_hour);
+        assert_eq!(cmp_result.unwrap(), None, "Expected None for different precisions");
+
+        // datetime_precision should return 3 for day precision, 4 for hour precision
+        if let CqlValue::DateTime(dt) = &dt_day {
+            assert_eq!(datetime_precision(dt), 3, "Day precision should be 3");
+        }
+        if let CqlValue::DateTime(dt) = &dt_hour {
+            assert_eq!(datetime_precision(dt), 4, "Hour precision should be 4");
+        }
+    }
+
+    #[test]
+    fn test_datetime_sort_with_precision() {
+        // Test sorting DateTimes with different precisions
+        // Input: [Oct 5 hour 10, Jan 1 no hour, Jan 1 hour 12, Oct 5 no hour]
+        // Expected ascending: [Jan 1 no hour, Jan 1 hour 12, Oct 5 no hour, Oct 5 hour 10]
+        let oct5_hour10 = CqlValue::DateTime(CqlDateTime {
+            year: 2012, month: Some(10), day: Some(5), hour: Some(10),
+            minute: None, second: None, millisecond: None, timezone_offset: None,
+        });
+        let jan1_nohour = CqlValue::DateTime(CqlDateTime {
+            year: 2012, month: Some(1), day: Some(1), hour: None,
+            minute: None, second: None, millisecond: None, timezone_offset: None,
+        });
+        let jan1_hour12 = CqlValue::DateTime(CqlDateTime {
+            year: 2012, month: Some(1), day: Some(1), hour: Some(12),
+            minute: None, second: None, millisecond: None, timezone_offset: None,
+        });
+        let oct5_nohour = CqlValue::DateTime(CqlDateTime {
+            year: 2012, month: Some(10), day: Some(5), hour: None,
+            minute: None, second: None, millisecond: None, timezone_offset: None,
+        });
+
+        let mut elements = vec![
+            oct5_hour10.clone(),
+            jan1_nohour.clone(),
+            jan1_hour12.clone(),
+            oct5_nohour.clone(),
+        ];
+
+        // Sort using the same logic as eval_sort
+        elements.sort_by(|a, b| {
+            let cmp_result = cql_compare(a, b);
+            match &cmp_result {
+                Ok(Some(ord)) => *ord,
+                Ok(None) => {
+                    match (a, b) {
+                        (CqlValue::DateTime(da), CqlValue::DateTime(db)) => {
+                            let precision_a = datetime_precision(da);
+                            let precision_b = datetime_precision(db);
+                            precision_a.cmp(&precision_b)
+                        }
+                        _ => Ordering::Equal,
+                    }
+                }
+                Err(_) => Ordering::Equal,
+            }
+        });
+
+        // Expected order: [Jan 1 no hour, Jan 1 hour 12, Oct 5 no hour, Oct 5 hour 10]
+        assert_eq!(elements[0], jan1_nohour, "First should be Jan 1 no hour");
+        assert_eq!(elements[1], jan1_hour12, "Second should be Jan 1 hour 12");
+        assert_eq!(elements[2], oct5_nohour, "Third should be Oct 5 no hour");
+        assert_eq!(elements[3], oct5_hour10, "Fourth should be Oct 5 hour 10");
     }
 }

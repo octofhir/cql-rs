@@ -7,7 +7,7 @@
 use crate::context::EvaluationContext;
 use crate::engine::CqlEngine;
 use crate::error::{EvalError, EvalResult};
-use octofhir_cql_elm::{AsExpression, CanConvertExpression, ConvertExpression, IsExpression, UnaryExpression};
+use octofhir_cql_elm::{AsExpression, CanConvertExpression, ConvertExpression, IsExpression, TypeSpecifier, UnaryExpression};
 use octofhir_cql_types::{
     CqlCode, CqlConcept, CqlDate, CqlDateTime, CqlList, CqlQuantity, CqlRatio, CqlTime, CqlType,
     CqlValue,
@@ -22,6 +22,11 @@ impl CqlEngine {
         let operand = self.evaluate(&expr.operand, ctx)?;
 
         if operand.is_null() {
+            // For List type, return an empty list instead of null
+            // This makes Length(null as List<T>) return 0 as per CQL spec
+            if let Some(TypeSpecifier::List(_)) = &expr.as_type_specifier {
+                return Ok(CqlValue::List(CqlList::new(CqlType::Any)));
+            }
             return Ok(CqlValue::Null);
         }
 
@@ -44,8 +49,53 @@ impl CqlEngine {
             return Ok(CqlValue::Boolean(false));
         }
 
-        // Simplified - would need type specifier to fully implement
-        Ok(CqlValue::Boolean(true))
+        // Get the target type from is_type or is_type_specifier
+        let target_type = if let Some(is_type) = &expr.is_type {
+            is_type.clone()
+        } else if let Some(is_type_specifier) = &expr.is_type_specifier {
+            match is_type_specifier {
+                TypeSpecifier::Named(n) => {
+                    // Just use the name - we'll normalize later
+                    n.name.clone()
+                }
+                _ => return Ok(CqlValue::Boolean(false)), // Complex types not fully supported
+            }
+        } else {
+            return Ok(CqlValue::Boolean(true)); // No type specified
+        };
+
+        // Check if operand matches the target type
+        let operand_type = operand.get_type();
+        let mut operand_type_name = operand_type.name().to_string();
+
+        // For tuples with __type field, use the __type value as the type name
+        if let CqlValue::Tuple(t) = &operand {
+            if let Some(type_val) = t.get("__type") {
+                if let CqlValue::String(type_str) = type_val {
+                    // Extract just the type name from qualified name
+                    operand_type_name = type_str
+                        .rsplit('}')
+                        .next()
+                        .unwrap_or(type_str)
+                        .rsplit('.')
+                        .next()
+                        .unwrap_or(type_str)
+                        .to_string();
+                }
+            }
+        }
+
+        // Normalize type names (remove various prefixes)
+        let target_normalized = target_type
+            .strip_prefix("System.")
+            .or_else(|| target_type.strip_prefix("{urn:hl7-org:elm-types:r1}"))
+            .or_else(|| target_type.strip_prefix("http://hl7.org/fhirpath/System."))
+            .unwrap_or(&target_type);
+
+        // Check direct type match
+        let matches = operand_type_name.eq_ignore_ascii_case(target_normalized)
+            || is_subtype_of(&operand_type_name, target_normalized);
+        Ok(CqlValue::Boolean(matches))
     }
 
     /// Evaluate Convert operator
@@ -56,9 +106,41 @@ impl CqlEngine {
             return Ok(CqlValue::Null);
         }
 
-        // Simplified - return operand as-is for now
-        // Full conversion would require type specifier parsing
-        Ok(operand)
+        // Get the target type from to_type or to_type_specifier
+        let target_type = if let Some(to_type) = &expr.to_type {
+            to_type.clone()
+        } else if let Some(to_type_specifier) = &expr.to_type_specifier {
+            match to_type_specifier {
+                TypeSpecifier::Named(n) => {
+                    // Just use the name - we'll normalize later
+                    n.name.clone()
+                }
+                _ => return Ok(operand), // Complex types not fully supported
+            }
+        } else {
+            return Ok(operand); // No type specified, return as-is
+        };
+
+        // Normalize type name (remove various prefixes)
+        let target_normalized = target_type
+            .strip_prefix("System.")
+            .or_else(|| target_type.strip_prefix("{urn:hl7-org:elm-types:r1}"))
+            .or_else(|| target_type.strip_prefix("http://hl7.org/fhirpath/System."))
+            .unwrap_or(&target_type);
+
+        // Perform conversion based on target type
+        match target_normalized {
+            "Boolean" => to_boolean(&operand),
+            "Integer" => to_integer(&operand),
+            "Long" => to_long(&operand),
+            "Decimal" => to_decimal(&operand),
+            "String" => to_string(&operand),
+            "Date" => to_date(&operand),
+            "DateTime" => to_datetime(&operand),
+            "Time" => to_time(&operand),
+            "Quantity" => to_quantity(&operand),
+            _ => Ok(operand), // Unknown type, return as-is
+        }
     }
 
     /// Evaluate CanConvert operator
@@ -433,7 +515,42 @@ fn to_string(value: &CqlValue) -> EvalResult<CqlValue> {
         CqlValue::Decimal(d) => Ok(CqlValue::String(d.to_string())),
         CqlValue::String(s) => Ok(CqlValue::String(s.clone())),
         CqlValue::Date(d) => Ok(CqlValue::String(d.to_string())),
-        CqlValue::DateTime(dt) => Ok(CqlValue::String(dt.to_string())),
+        CqlValue::DateTime(dt) => {
+            // ToString for DateTime should NOT include trailing T for date-only DateTimes
+            // Format: YYYY-MM-DDTHH:MM:SS.mmm[+/-HH:MM]
+            let mut s = format!("{:04}", dt.year);
+            if let Some(month) = dt.month {
+                s.push_str(&format!("-{:02}", month));
+                if let Some(day) = dt.day {
+                    s.push_str(&format!("-{:02}", day));
+                    if let Some(hour) = dt.hour {
+                        s.push_str(&format!("T{:02}", hour));
+                        if let Some(minute) = dt.minute {
+                            s.push_str(&format!(":{:02}", minute));
+                            if let Some(second) = dt.second {
+                                s.push_str(&format!(":{:02}", second));
+                                if let Some(ms) = dt.millisecond {
+                                    s.push_str(&format!(".{:03}", ms));
+                                }
+                            }
+                        }
+                        // Timezone
+                        if let Some(offset) = dt.timezone_offset {
+                            if offset == 0 {
+                                s.push('Z');
+                            } else {
+                                let hours = offset.abs() / 60;
+                                let mins = offset.abs() % 60;
+                                let sign = if offset >= 0 { '+' } else { '-' };
+                                s.push_str(&format!("{}{:02}:{:02}", sign, hours, mins));
+                            }
+                        }
+                    }
+                    // No trailing T when no time component
+                }
+            }
+            Ok(CqlValue::String(s))
+        }
         CqlValue::Time(t) => Ok(CqlValue::String(t.to_string())),
         CqlValue::Quantity(q) => Ok(CqlValue::String(q.to_string())),
         CqlValue::Ratio(r) => Ok(CqlValue::String(r.to_string())),
@@ -466,9 +583,81 @@ fn to_datetime(value: &CqlValue) -> EvalResult<CqlValue> {
         CqlValue::Date(d) => Ok(CqlValue::DateTime(CqlDateTime::from_date(d.clone()))),
         CqlValue::DateTime(dt) => Ok(CqlValue::DateTime(dt.clone())),
         CqlValue::String(s) => {
-            // Try to parse ISO 8601 datetime
+            // Try to parse ISO 8601 datetime: YYYY-MM-DDTHH:MM:SS.mmm[+/-HH:MM]
             let trimmed = s.trim();
-            // Simplified parsing - just try date first
+
+            // Check for datetime with 'T' separator
+            if let Some(t_pos) = trimmed.find('T') {
+                let date_part = &trimmed[..t_pos];
+                let time_and_tz = &trimmed[t_pos + 1..];
+
+                // Parse date part
+                let date = match CqlDate::parse(date_part) {
+                    Some(d) => d,
+                    None => return Ok(CqlValue::Null),
+                };
+
+                // Split timezone from time
+                let (time_part, tz_offset) = parse_time_with_timezone(time_and_tz);
+
+                // Parse time part: HH:MM:SS.mmm
+                let time_parts: Vec<&str> = time_part.split(':').collect();
+                if time_parts.is_empty() {
+                    return Ok(CqlValue::Null);
+                }
+
+                let hour: u8 = match time_parts[0].parse() {
+                    Ok(h) if h < 24 => h,
+                    _ => return Ok(CqlValue::Null),
+                };
+
+                let minute: Option<u8> = if time_parts.len() > 1 {
+                    match time_parts[1].parse::<u8>() {
+                        Ok(m) if m < 60 => Some(m),
+                        _ => return Ok(CqlValue::Null),
+                    }
+                } else {
+                    None
+                };
+
+                let (second, millisecond): (Option<u8>, Option<u16>) = if time_parts.len() > 2 {
+                    let sec_parts: Vec<&str> = time_parts[2].split('.').collect();
+                    let sec: u8 = match sec_parts[0].parse() {
+                        Ok(s) if s < 60 => s,
+                        _ => return Ok(CqlValue::Null),
+                    };
+                    let ms: Option<u16> = if sec_parts.len() > 1 {
+                        // Handle milliseconds - normalize to 3 digits
+                        let ms_str = sec_parts[1];
+                        let ms_val: u16 = match ms_str.len() {
+                            1 => ms_str.parse::<u16>().ok().map(|v| v * 100),
+                            2 => ms_str.parse::<u16>().ok().map(|v| v * 10),
+                            3 => ms_str.parse::<u16>().ok(),
+                            _ => ms_str[..3].parse::<u16>().ok(),
+                        }.unwrap_or(0);
+                        Some(ms_val)
+                    } else {
+                        None
+                    };
+                    (Some(sec), ms)
+                } else {
+                    (None, None)
+                };
+
+                let dt = CqlDateTime {
+                    year: date.year,
+                    month: date.month,
+                    day: date.day,
+                    hour: Some(hour),
+                    minute,
+                    second,
+                    millisecond,
+                    timezone_offset: tz_offset,
+                };
+                return Ok(CqlValue::DateTime(dt));
+            }
+
+            // Try date only
             if let Some(d) = CqlDate::parse(trimmed) {
                 return Ok(CqlValue::DateTime(CqlDateTime::from_date(d)));
             }
@@ -476,6 +665,47 @@ fn to_datetime(value: &CqlValue) -> EvalResult<CqlValue> {
         }
         _ => Err(EvalError::conversion_error(value.get_type().name(), "DateTime")),
     }
+}
+
+/// Parse time string and extract timezone offset
+fn parse_time_with_timezone(s: &str) -> (&str, Option<i16>) {
+    // Look for + or - indicating timezone (but not at position 0)
+    if let Some(pos) = s[1..].find('+').map(|p| p + 1) {
+        let tz_str = &s[pos + 1..];
+        if let Some(offset) = parse_timezone_offset(tz_str, false) {
+            return (&s[..pos], Some(offset));
+        }
+    }
+    if let Some(pos) = s[1..].find('-').map(|p| p + 1) {
+        let tz_str = &s[pos + 1..];
+        if let Some(offset) = parse_timezone_offset(tz_str, true) {
+            return (&s[..pos], Some(offset));
+        }
+    }
+    // Check for Z (UTC)
+    if s.ends_with('Z') || s.ends_with('z') {
+        return (&s[..s.len() - 1], Some(0));
+    }
+    (s, None)
+}
+
+/// Parse timezone offset string like "01:30" or "0130" and return minutes offset
+fn parse_timezone_offset(s: &str, negative: bool) -> Option<i16> {
+    let (hours, minutes) = if s.contains(':') {
+        let parts: Vec<&str> = s.split(':').collect();
+        if parts.len() >= 2 {
+            (parts[0].parse::<i16>().ok()?, parts[1].parse::<i16>().ok()?)
+        } else {
+            return None;
+        }
+    } else if s.len() >= 4 {
+        (s[..2].parse::<i16>().ok()?, s[2..4].parse::<i16>().ok()?)
+    } else {
+        return None;
+    };
+
+    let offset = hours * 60 + minutes;
+    Some(if negative { -offset } else { offset })
 }
 
 /// Convert to Time
@@ -490,8 +720,37 @@ fn to_time(value: &CqlValue) -> EvalResult<CqlValue> {
             }
         }
         CqlValue::String(s) => {
-            // Try to parse time string HH:MM:SS.mmm
-            let parts: Vec<&str> = s.trim().split(':').collect();
+            // Try to parse time string HH:MM:SS.mmm or THH:MM:SS.mmm with optional timezone
+            let trimmed = s.trim();
+            // Strip optional leading 'T'
+            let time_str = if trimmed.starts_with('T') || trimmed.starts_with('t') {
+                &trimmed[1..]
+            } else {
+                trimmed
+            };
+
+            // Strip timezone suffix if present (Z, +HH:MM, -HH:MM)
+            let time_only = if time_str.ends_with('Z') || time_str.ends_with('z') {
+                &time_str[..time_str.len() - 1]
+            } else if let Some(plus_pos) = time_str.rfind('+') {
+                // Only strip if it looks like timezone (not a number)
+                if plus_pos > 0 && time_str[plus_pos + 1..].contains(':') {
+                    &time_str[..plus_pos]
+                } else {
+                    time_str
+                }
+            } else if let Some(minus_pos) = time_str.rfind('-') {
+                // Only strip if it looks like timezone (not part of a number)
+                if minus_pos > 0 && time_str[minus_pos + 1..].contains(':') {
+                    &time_str[..minus_pos]
+                } else {
+                    time_str
+                }
+            } else {
+                time_str
+            };
+
+            let parts: Vec<&str> = time_only.split(':').collect();
             if parts.is_empty() {
                 return Ok(CqlValue::Null);
             }
@@ -517,7 +776,14 @@ fn to_time(value: &CqlValue) -> EvalResult<CqlValue> {
                     _ => return Ok(CqlValue::Null),
                 };
                 let ms: Option<u16> = if sec_parts.len() > 1 {
-                    sec_parts[1].parse().ok()
+                    // Normalize milliseconds to 3 digits
+                    let ms_str = sec_parts[1];
+                    match ms_str.len() {
+                        1 => ms_str.parse::<u16>().ok().map(|v| v * 100),
+                        2 => ms_str.parse::<u16>().ok().map(|v| v * 10),
+                        3 => ms_str.parse::<u16>().ok(),
+                        _ => ms_str[..3].parse::<u16>().ok(),
+                    }
                 } else {
                     None
                 };
@@ -624,6 +890,22 @@ fn parse_ratio_string(s: &str) -> EvalResult<CqlValue> {
     };
 
     Ok(CqlValue::Ratio(CqlRatio::new(numerator, denominator)))
+}
+
+/// Check if a type is a subtype of another type in CQL's type hierarchy
+fn is_subtype_of(subtype: &str, supertype: &str) -> bool {
+    match (subtype.to_lowercase().as_str(), supertype.to_lowercase().as_str()) {
+        // Vocabulary hierarchy
+        ("valueset", "vocabulary") => true,
+        ("codesystem", "vocabulary") => true,
+        // Numeric hierarchy
+        ("integer", "decimal") => true,
+        ("integer", "long") => true,
+        // Any type accepts all
+        (_, "any") => true,
+        // Default: not a subtype
+        _ => false,
+    }
 }
 
 #[cfg(test)]

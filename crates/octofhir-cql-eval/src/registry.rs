@@ -4,7 +4,7 @@
 
 use crate::error::{EvalError, EvalResult};
 use crate::EvaluationContext;
-use octofhir_cql_types::{CqlType, CqlValue};
+use octofhir_cql_types::{CqlList, CqlType, CqlValue};
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -374,8 +374,70 @@ impl OperatorRegistry {
 
     /// Register all standard CQL operators
     pub fn register_standard_operators(&mut self) {
-        // Operators will be registered in the operator modules
-        // This is a placeholder that will be called by the engine
+        // Register built-in functions
+
+        // descendents function - returns all descendant elements of a value
+        // For null input, returns null (null propagation)
+        let descendents_fn: NaryOpFn = Arc::new(|args, _ctx| {
+            if args.is_empty() {
+                return Ok(CqlValue::Null);
+            }
+            let source = &args[0];
+            match source {
+                CqlValue::Null => Ok(CqlValue::Null),
+                CqlValue::List(list) => {
+                    // For a list, collect all elements and their descendants
+                    let mut result = Vec::new();
+                    collect_descendants_list(&list.elements, &mut result);
+                    Ok(CqlValue::List(CqlList::from_elements(result)))
+                }
+                CqlValue::Tuple(tuple) => {
+                    // For a tuple, collect all values and their descendants
+                    let mut result = Vec::new();
+                    for (_, value) in tuple.iter() {
+                        result.push(value.clone());
+                        collect_descendants(value, &mut result);
+                    }
+                    Ok(CqlValue::List(CqlList::from_elements(result)))
+                }
+                // For scalar values, return empty list
+                _ => Ok(CqlValue::List(CqlList::from_elements(vec![]))),
+            }
+        });
+
+        self.functions.register(
+            FunctionDefinition::new(
+                "descendents",
+                vec![FunctionParameter::required("source", CqlType::Any)],
+                CqlType::List(Box::new(CqlType::Any)),
+            )
+            .fluent()
+            .with_implementation(descendents_fn),
+        );
+    }
+}
+
+/// Helper to collect all descendants from a value
+fn collect_descendants(value: &CqlValue, result: &mut Vec<CqlValue>) {
+    match value {
+        CqlValue::List(list) => {
+            collect_descendants_list(&list.elements, result);
+        }
+        CqlValue::Tuple(tuple) => {
+            for (_, v) in tuple.iter() {
+                result.push(v.clone());
+                collect_descendants(v, result);
+            }
+        }
+        _ => {}
+    }
+}
+
+/// Helper to collect descendants from a list
+fn collect_descendants_list(elements: &[CqlValue], result: &mut Vec<CqlValue>) {
+    for elem in elements {
+        result.push(elem.clone());
+        collect_descendants(elem, result);
     }
 }
 
