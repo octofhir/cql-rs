@@ -23,14 +23,14 @@ homepage = "https://github.com/octofhir/cql-rs"
 
 [workspace.dependencies]
 # Internal crates
-octofhir-cql = { path = "crates/octofhir-cql" }
-octofhir-cql-ast = { path = "crates/octofhir-cql-ast" }
-octofhir-cql-parser = { path = "crates/octofhir-cql-parser" }
-octofhir-cql-elm = { path = "crates/octofhir-cql-elm" }
-octofhir-cql-types = { path = "crates/octofhir-cql-types" }
-octofhir-cql-eval = { path = "crates/octofhir-cql-eval" }
-octofhir-cql-model = { path = "crates/octofhir-cql-model" }
-octofhir-cql-diagnostics = { path = "crates/octofhir-cql-diagnostics" }
+octofhir-cql = { path = "crates/octofhir-cql", version = "0.1.0" }
+octofhir-cql-ast = { path = "crates/octofhir-cql-ast", version = "0.1.0" }
+octofhir-cql-parser = { path = "crates/octofhir-cql-parser", version = "0.1.0" }
+octofhir-cql-elm = { path = "crates/octofhir-cql-elm", version = "0.1.0" }
+octofhir-cql-types = { path = "crates/octofhir-cql-types", version = "0.1.0" }
+octofhir-cql-eval = { path = "crates/octofhir-cql-eval", version = "0.1.0" }
+octofhir-cql-model = { path = "crates/octofhir-cql-model", version = "0.1.0" }
+octofhir-cql-diagnostics = { path = "crates/octofhir-cql-diagnostics", version = "0.1.0" }
 
 # External octofhir crates
 octofhir-fhir-model = { version = "0.1.7", features = ["serde", "http-client"] }
