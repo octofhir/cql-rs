@@ -195,21 +195,13 @@ impl TypeCoercer {
         }
 
         match (from, to) {
-            (CqlType::Integer, CqlType::Long) => {
-                Some(vec![CqlType::Integer, CqlType::Long])
-            }
+            (CqlType::Integer, CqlType::Long) => Some(vec![CqlType::Integer, CqlType::Long]),
             (CqlType::Integer, CqlType::Decimal) => {
                 Some(vec![CqlType::Integer, CqlType::Long, CqlType::Decimal])
             }
-            (CqlType::Long, CqlType::Decimal) => {
-                Some(vec![CqlType::Long, CqlType::Decimal])
-            }
-            (CqlType::Code, CqlType::Concept) => {
-                Some(vec![CqlType::Code, CqlType::Concept])
-            }
-            (CqlType::Date, CqlType::DateTime) => {
-                Some(vec![CqlType::Date, CqlType::DateTime])
-            }
+            (CqlType::Long, CqlType::Decimal) => Some(vec![CqlType::Long, CqlType::Decimal]),
+            (CqlType::Code, CqlType::Concept) => Some(vec![CqlType::Code, CqlType::Concept]),
+            (CqlType::Date, CqlType::DateTime) => Some(vec![CqlType::Date, CqlType::DateTime]),
             _ => None,
         }
     }
@@ -300,9 +292,9 @@ impl TypeCoercer {
             }
 
             // Interval common type
-            (CqlType::Interval(point_a), CqlType::Interval(point_b)) => {
-                self.find_common_pair(point_a, point_b).map(CqlType::interval)
-            }
+            (CqlType::Interval(point_a), CqlType::Interval(point_b)) => self
+                .find_common_pair(point_a, point_b)
+                .map(CqlType::interval),
 
             // Date and DateTime -> DateTime
             (CqlType::Date, CqlType::DateTime) | (CqlType::DateTime, CqlType::Date) => {
@@ -396,8 +388,7 @@ impl TypeCoercer {
 
             (CqlType::Date, CqlType::DateTime) => ConversionCategory::TemporalPromotion,
 
-            (CqlType::List(_), CqlType::List(_))
-            | (CqlType::Interval(_), CqlType::Interval(_)) => {
+            (CqlType::List(_), CqlType::List(_)) | (CqlType::Interval(_), CqlType::Interval(_)) => {
                 ConversionCategory::CollectionCovariance
             }
 
@@ -502,8 +493,7 @@ mod tests {
         assert_eq!(common, Some(CqlType::Long));
 
         // Integer, Long, Decimal -> Decimal
-        let common =
-            coercer.find_common_type(&[CqlType::Integer, CqlType::Long, CqlType::Decimal]);
+        let common = coercer.find_common_type(&[CqlType::Integer, CqlType::Long, CqlType::Decimal]);
         assert_eq!(common, Some(CqlType::Decimal));
 
         // Empty -> Any

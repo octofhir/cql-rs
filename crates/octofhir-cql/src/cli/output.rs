@@ -1,17 +1,14 @@
 //! Output formatting utilities
 
 use anyhow::{Context, Result};
-use colored::*;
+use colored::Colorize;
 use serde_json::Value;
 use std::fs::File;
-use std::io::{self, Write};
+use std::io::Write;
 use std::path::Path;
 
 #[cfg(feature = "cli")]
-use tabled::{
-    settings::Style,
-    Table, Tabled,
-};
+use tabled::{Table, Tabled, settings::Style};
 
 /// Output format options
 #[derive(Debug, Clone, PartialEq)]
@@ -22,12 +19,12 @@ pub enum OutputFormat {
 }
 
 impl OutputFormat {
-    pub fn from_str(s: &str) -> Self {
+    pub fn parse(s: &str) -> Self {
         match s.to_lowercase().as_str() {
             "json" => Self::Json,
             "pretty" | "json-pretty" => Self::JsonPretty,
             "table" => Self::Table,
-            _ => Self::JsonPretty, // default
+            _ => Self::Table, // default
         }
     }
 }
@@ -37,7 +34,7 @@ pub fn setup_colors(mode: &str) {
     match mode.to_lowercase().as_str() {
         "always" => colored::control::set_override(true),
         "never" => colored::control::set_override(false),
-        "auto" | _ => {
+        _ => {
             // Auto-detect based on terminal
             if atty::is(atty::Stream::Stdout) {
                 colored::control::set_override(true);
@@ -88,11 +85,9 @@ pub fn write_output(content: &str, output_file: Option<&Path>) -> Result<()> {
 /// Format JSON value for output
 pub fn format_json(value: &Value, pretty: bool) -> Result<String> {
     if pretty {
-        serde_json::to_string_pretty(value)
-            .context("Failed to serialize JSON")
+        serde_json::to_string_pretty(value).context("Failed to serialize JSON")
     } else {
-        serde_json::to_string(value)
-            .context("Failed to serialize JSON")
+        serde_json::to_string(value).context("Failed to serialize JSON")
     }
 }
 
@@ -112,8 +107,7 @@ pub fn format_as_table(value: &Value) -> Option<String> {
                 // Check if all objects have the same keys
                 let all_same = items.iter().all(|item| {
                     if let Value::Object(obj) = item {
-                        obj.keys().len() == keys.len() &&
-                        obj.keys().all(|k| keys.contains(k))
+                        obj.keys().len() == keys.len() && obj.keys().all(|k| keys.contains(k))
                     } else {
                         false
                     }
@@ -132,10 +126,12 @@ pub fn format_as_table(value: &Value) -> Option<String> {
                         .iter()
                         .flat_map(|item| {
                             if let Value::Object(obj) = item {
-                                keys.iter().map(|k| Row {
-                                    field: k.clone(),
-                                    value: format_value(obj.get(k).unwrap()),
-                                }).collect()
+                                keys.iter()
+                                    .map(|k| Row {
+                                        field: k.clone(),
+                                        value: format_value(obj.get(k).unwrap()),
+                                    })
+                                    .collect()
                             } else {
                                 vec![]
                             }
@@ -192,11 +188,7 @@ fn format_value(value: &Value) -> String {
 }
 
 /// Print output in the specified format
-pub fn print_output(
-    value: &Value,
-    format: OutputFormat,
-    output_file: Option<&Path>,
-) -> Result<()> {
+pub fn print_output(value: &Value, format: OutputFormat, output_file: Option<&Path>) -> Result<()> {
     let content = match format {
         OutputFormat::Json => format_json(value, false)?,
         OutputFormat::JsonPretty => format_json(value, true)?,

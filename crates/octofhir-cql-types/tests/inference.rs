@@ -189,8 +189,14 @@ fn test_ratio_type() {
 #[test]
 fn test_nested_list_type() {
     let nested = CqlValue::List(CqlList::from_elements(vec![
-        CqlValue::List(CqlList::from_elements(vec![CqlValue::integer(1), CqlValue::integer(2)])),
-        CqlValue::List(CqlList::from_elements(vec![CqlValue::integer(3), CqlValue::integer(4)])),
+        CqlValue::List(CqlList::from_elements(vec![
+            CqlValue::integer(1),
+            CqlValue::integer(2),
+        ])),
+        CqlValue::List(CqlList::from_elements(vec![
+            CqlValue::integer(3),
+            CqlValue::integer(4),
+        ])),
     ]));
 
     match nested {
@@ -208,9 +214,10 @@ fn test_nested_list_type() {
 fn test_nested_tuple_type() {
     let nested = CqlValue::Tuple(CqlTuple::from_elements([
         ("outer", CqlValue::string("value")),
-        ("inner", CqlValue::Tuple(CqlTuple::from_elements([
-            ("nested", CqlValue::integer(42)),
-        ]))),
+        (
+            "inner",
+            CqlValue::Tuple(CqlTuple::from_elements([("nested", CqlValue::integer(42))])),
+        ),
     ]));
 
     match nested {

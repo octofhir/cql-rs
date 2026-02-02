@@ -9,7 +9,10 @@ use once_cell::sync::Lazy;
 
 /// FHIR R5 ModelInfo XML (embedded at compile time)
 /// This will be populated once we download the actual ModelInfo file
-pub const FHIR_R5_MODEL_INFO_XML: &str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/resources/FHIR-modelinfo-5.0.0.xml"));
+pub const FHIR_R5_MODEL_INFO_XML: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/resources/FHIR-modelinfo-5.0.0.xml"
+));
 
 /// Lazily initialized FHIR R5 model registry
 pub static FHIR_R5_REGISTRY: Lazy<Result<ModelRegistry, ModelProviderError>> =

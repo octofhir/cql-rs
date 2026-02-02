@@ -1,10 +1,10 @@
 //! Common parser combinators for CQL using winnow
 
+use bigdecimal::BigDecimal;
 use octofhir_cql_ast::{
     DateLiteral, DateTimeLiteral, Identifier, Literal, QualifiedIdentifier, QuantityLiteral,
     RatioLiteral, TimeLiteral, VersionSpecifier,
 };
-use rust_decimal::Decimal;
 use std::str::FromStr;
 use winnow::ascii::{digit1, multispace0};
 use winnow::combinator::{alt, delimited, opt, preceded, repeat};
@@ -64,14 +64,20 @@ pub fn keyword<'a>(kw: &'static str) -> impl Parser<Input<'a>, (), PError> {
             return Err(ContextError::new());
         }
         // Advance past the keyword - calculate actual byte length consumed
-        let byte_len: usize = input.char_indices().take(kw.len()).last().map_or(0, |(i, c)| i + c.len_utf8());
+        let byte_len: usize = input
+            .char_indices()
+            .take(kw.len())
+            .last()
+            .map_or(0, |(i, c)| i + c.len_utf8());
         *input = &input[byte_len..];
         // Peek at next char - if alphanumeric or _, it's not a keyword
-        if let Some(c) = input.chars().next() {
-            if c.is_alphanum() || c == '_' {
-                *input = checkpoint;
-                return Err(ContextError::new());
-            }
+        if input
+            .chars()
+            .next()
+            .is_some_and(|c| c.is_alphanum() || c == '_')
+        {
+            *input = checkpoint;
+            return Err(ContextError::new());
         }
         Ok(())
     }
@@ -172,21 +178,19 @@ pub fn string_parser<'a>(input: &mut Input<'a>) -> PResult<String> {
                         't'.map(|_| StringChar::Single('\t')),
                         'f'.map(|_| StringChar::Single('\x0C')),
                         // Unicode escape \uXXXX
-                        preceded(
-                            'u',
-                            take_while(4, |c: char| c.is_ascii_hexdigit()),
-                        )
-                        .map(|hex: &str| {
-                            if hex.len() == 4 {
-                                if let Ok(code) = u32::from_str_radix(hex, 16) {
-                                    if let Some(c) = char::from_u32(code) {
-                                        return StringChar::Single(c);
-                                    }
+                        preceded('u', take_while(4, |c: char| c.is_ascii_hexdigit())).map(
+                            |hex: &str| {
+                                if let Some(c) = (hex.len() == 4)
+                                    .then(|| u32::from_str_radix(hex, 16).ok())
+                                    .flatten()
+                                    .and_then(char::from_u32)
+                                {
+                                    return StringChar::Single(c);
                                 }
-                            }
-                            // Fallback: keep as literal
-                            StringChar::Single('u')
-                        }),
+                                // Fallback: keep as literal
+                                StringChar::Single('u')
+                            },
+                        ),
                         // Keep unknown escape sequences as-is (e.g., \d, \s for regex)
                         any.map(|c| StringChar::Escape('\\', c)),
                     )),
@@ -220,10 +224,10 @@ pub fn integer_parser<'a>(input: &mut Input<'a>) -> PResult<i32> {
 
 /// Parse a decimal literal
 #[allow(dead_code)]
-pub fn decimal_parser<'a>(input: &mut Input<'a>) -> PResult<Decimal> {
+pub fn decimal_parser<'a>(input: &mut Input<'a>) -> PResult<BigDecimal> {
     (digit1, '.', digit1)
         .take()
-        .map(|s: &str| Decimal::from_str(s).unwrap_or_default())
+        .map(|s: &str| BigDecimal::from_str(s).unwrap_or_else(|_| BigDecimal::from(0)))
         .parse_next(input)
 }
 
@@ -232,32 +236,40 @@ pub fn number_parser<'a>(input: &mut Input<'a>) -> PResult<Literal> {
     alt((
         // Decimal: digits.digits
         // CQL spec: max 28 integer digits, max 8 decimal places
-        (digit1, '.', digit1)
-            .take()
-            .verify_map(|s: &str| {
-                let parts: Vec<&str> = s.split('.').collect();
-                if parts.len() != 2 {
-                    return None;
-                }
-                let integer_part = parts[0];
-                let decimal_part = parts[1];
-                // Check constraints: max 28 integer digits, max 8 decimal places
-                if integer_part.len() > 28 || decimal_part.len() > 8 {
-                    return None;
-                }
-                Decimal::from_str(s).ok().map(Literal::Decimal)
-            }),
-        // Long: digitsL or digitsl
-        (digit1, one_of(['L', 'l']))
-            .take()
-            .verify_map(|s: &str| {
-                let num_str = s.trim_end_matches(['L', 'l']);
-                num_str.parse::<i64>().ok().map(Literal::Long)
-            }),
-        // Integer: digits
-        digit1.verify_map(|s: &str| {
-            s.parse::<i32>().ok().map(Literal::Integer)
+        (digit1, '.', digit1).take().verify_map(|s: &str| {
+            let parts: Vec<&str> = s.split('.').collect();
+            if parts.len() != 2 {
+                return None;
+            }
+
+            let integer_part = parts[0].trim_start_matches('0');
+            let fractional_part = parts[1];
+
+            // Decimal(28, 8):
+            // - Fractional digits: max 8
+            // - Total digits (approx precision): max 28
+            // Note: CQL defines Decimal as having a precision of at least 28 and scale of at least 8.
+            // Tests like DecimalTenthStep (0.000000001) expect error for > 8 fractional digits.
+            // Tests like Decimal10Pow28 (10^28) expect error for > 28 total digits.
+
+            if fractional_part.len() > 8 {
+                return None;
+            }
+
+            // Limit integer digits to 28
+            if integer_part.len() > 28 {
+                return None;
+            }
+
+            BigDecimal::from_str(s).ok().map(Literal::Decimal)
         }),
+        // Long: digitsL or digitsl
+        (digit1, one_of(['L', 'l'])).take().verify_map(|s: &str| {
+            let num_str = s.trim_end_matches(['L', 'l']);
+            num_str.parse::<i64>().ok().map(Literal::Long)
+        }),
+        // Integer: digits
+        digit1.verify_map(|s: &str| s.parse::<i32>().ok().map(Literal::Integer)),
     ))
     .parse_next(input)
 }
@@ -303,11 +315,7 @@ fn timezone_offset<'a>(input: &mut Input<'a>) -> PResult<i16> {
         'Z'.value(0i16),
         (one_of(['+', '-']), two_digits, ':', two_digits).map(|(sign, hours, _, minutes)| {
             let total = (hours as i16) * 60 + (minutes as i16);
-            if sign == '-' {
-                -total
-            } else {
-                total
-            }
+            if sign == '-' { -total } else { total }
         }),
     ))
     .parse_next(input)
@@ -379,35 +387,33 @@ pub fn datetime_literal_parser<'a>(input: &mut Input<'a>) -> PResult<DateTimeLit
             opt(timezone_offset),
         ),
     )
-    .map(
-        |(year, month, day, hour, minute, second, ms, tz)| {
-            let mut date = DateLiteral::new(year);
-            if let Some(m) = month {
-                date = date.with_month(m);
-            }
-            if let Some(d) = day {
-                date = date.with_day(d);
-            }
+    .map(|(year, month, day, hour, minute, second, ms, tz)| {
+        let mut date = DateLiteral::new(year);
+        if let Some(m) = month {
+            date = date.with_month(m);
+        }
+        if let Some(d) = day {
+            date = date.with_day(d);
+        }
 
-            let mut dt = DateTimeLiteral::new(date);
-            if let Some(h) = hour {
-                dt.hour = Some(h);
-            }
-            if let Some(m) = minute {
-                dt.minute = Some(m);
-            }
-            if let Some(s) = second {
-                dt.second = Some(s);
-            }
-            if let Some(ms) = ms {
-                dt.millisecond = Some(ms);
-            }
-            if let Some(tz) = tz {
-                dt.timezone_offset = Some(tz);
-            }
-            dt
-        },
-    )
+        let mut dt = DateTimeLiteral::new(date);
+        if let Some(h) = hour {
+            dt.hour = Some(h);
+        }
+        if let Some(m) = minute {
+            dt.minute = Some(m);
+        }
+        if let Some(s) = second {
+            dt.second = Some(s);
+        }
+        if let Some(ms) = ms {
+            dt.millisecond = Some(ms);
+        }
+        if let Some(tz) = tz {
+            dt.timezone_offset = Some(tz);
+        }
+        dt
+    })
     .parse_next(input)
 }
 
@@ -430,33 +436,31 @@ pub fn temporal_literal_parser<'a>(input: &mut Input<'a>) -> PResult<Literal> {
                 opt(timezone_offset),
             ),
         )
-        .map(
-            |(year, month, day, hour, minute, second, ms, tz)| {
-                let mut date = DateLiteral::new(year);
-                if let Some(m) = month {
-                    date = date.with_month(m);
-                }
-                if let Some(d) = day {
-                    date = date.with_day(d);
-                }
+        .map(|(year, month, day, hour, minute, second, ms, tz)| {
+            let mut date = DateLiteral::new(year);
+            if let Some(m) = month {
+                date = date.with_month(m);
+            }
+            if let Some(d) = day {
+                date = date.with_day(d);
+            }
 
-                let mut dt = DateTimeLiteral::new(date);
-                dt.hour = Some(hour);
-                if let Some(m) = minute {
-                    dt.minute = Some(m);
-                }
-                if let Some(s) = second {
-                    dt.second = Some(s);
-                }
-                if let Some(ms) = ms {
-                    dt.millisecond = Some(ms);
-                }
-                if let Some(tz) = tz {
-                    dt.timezone_offset = Some(tz);
-                }
-                Literal::DateTime(dt)
-            },
-        ),
+            let mut dt = DateTimeLiteral::new(date);
+            dt.hour = Some(hour);
+            if let Some(m) = minute {
+                dt.minute = Some(m);
+            }
+            if let Some(s) = second {
+                dt.second = Some(s);
+            }
+            if let Some(ms) = ms {
+                dt.millisecond = Some(ms);
+            }
+            if let Some(tz) = tz {
+                dt.timezone_offset = Some(tz);
+            }
+            Literal::DateTime(dt)
+        }),
         // DateTime with trailing T but no time components (e.g., @2015-02-10T)
         preceded(
             '@',
@@ -485,12 +489,10 @@ pub fn temporal_literal_parser<'a>(input: &mut Input<'a>) -> PResult<Literal> {
 }
 
 /// Parse a decimal number for quantities (can include negative)
-fn quantity_value<'a>(input: &mut Input<'a>) -> PResult<Decimal> {
+fn quantity_value<'a>(input: &mut Input<'a>) -> PResult<BigDecimal> {
     let neg = opt('-').map(|s| s.is_some()).parse_next(input)?;
-    let num_str = (digit1, opt(('.', digit1)))
-        .take()
-        .parse_next(input)?;
-    let val = Decimal::from_str(num_str).unwrap_or_default();
+    let num_str = (digit1, opt(('.', digit1))).take().parse_next(input)?;
+    let val = BigDecimal::from_str(num_str).unwrap_or_else(|_| BigDecimal::from(0));
     Ok(if neg { -val } else { val })
 }
 

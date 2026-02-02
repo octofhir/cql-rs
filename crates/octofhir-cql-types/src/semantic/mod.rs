@@ -7,10 +7,10 @@
 //! - Function overload resolution
 //! - Type validation
 
-mod symbols;
-mod scope;
 mod resolver;
+mod scope;
+mod symbols;
 
-pub use symbols::*;
-pub use scope::*;
 pub use resolver::*;
+pub use scope::*;
+pub use symbols::*;

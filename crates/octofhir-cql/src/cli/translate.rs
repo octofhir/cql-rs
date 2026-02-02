@@ -1,8 +1,8 @@
 //! Translate command implementation
 
 use super::{output, resolver};
-use anyhow::{Context, Result};
 use crate::elm::serialize::ElmSerializer;
+use anyhow::{Context, Result};
 use std::fs;
 use std::path::PathBuf;
 
@@ -38,13 +38,15 @@ pub async fn translate(config: TranslateConfig) -> Result<()> {
         "json" => {
             let mut serializer = crate::elm::serialize::JsonSerializer::new();
             serializer.pretty = config.pretty;
-            serializer.serialize(&elm_library)
+            serializer
+                .serialize(&elm_library)
                 .map_err(|e| anyhow::anyhow!("JSON serialization failed: {}", e))?
         }
         "xml" => {
             let mut serializer = crate::elm::serialize::XmlSerializer::new();
             serializer.pretty = config.pretty;
-            serializer.serialize(&elm_library)
+            serializer
+                .serialize(&elm_library)
                 .map_err(|e| anyhow::anyhow!("XML serialization failed: {}", e))?
         }
         other => {

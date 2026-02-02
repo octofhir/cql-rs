@@ -73,10 +73,7 @@ impl ElmSerializer for JsonSerializer {
 
         // Wrap in the standard ELM JSON envelope if needed
         if !result.contains("\"library\"") {
-            let wrapped = format!(
-                r#"{{"library": {}}}"#,
-                result
-            );
+            let wrapped = format!(r#"{{"library": {}}}"#, result);
             result = wrapped;
         }
 
@@ -143,11 +140,8 @@ impl XmlSerializer {
         let mut xml = String::new();
 
         // XML declaration
-        writeln!(
-            xml,
-            r#"<?xml version="1.0" encoding="UTF-8"?>"#
-        )
-        .map_err(|e| SerializeError::Xml(e.to_string()))?;
+        writeln!(xml, r#"<?xml version="1.0" encoding="UTF-8"?>"#)
+            .map_err(|e| SerializeError::Xml(e.to_string()))?;
 
         // Library element with namespaces
         write!(
@@ -157,18 +151,13 @@ impl XmlSerializer {
         .map_err(|e| SerializeError::Xml(e.to_string()))?;
 
         // Local identifier
-        write!(xml, r#" localId="1""#)
-            .map_err(|e| SerializeError::Xml(e.to_string()))?;
+        write!(xml, r#" localId="1""#).map_err(|e| SerializeError::Xml(e.to_string()))?;
 
         writeln!(xml, ">").map_err(|e| SerializeError::Xml(e.to_string()))?;
 
         // Identifier
         self.write_element(&mut xml, 1, "identifier", |xml| {
-            write!(
-                xml,
-                r#" id="{}""#,
-                self.escape_xml(&library.identifier.id)
-            )?;
+            write!(xml, r#" id="{}""#, self.escape_xml(&library.identifier.id))?;
             if let Some(system) = &library.identifier.system {
                 write!(xml, r#" system="{}""#, self.escape_xml(system))?;
             }
@@ -299,10 +288,13 @@ impl XmlSerializer {
             writeln!(xml, "<codes>").map_err(|e| SerializeError::Xml(e.to_string()))?;
             for code in &codes.defs {
                 self.write_indent(&mut xml, 2)?;
-                write!(xml, r#"<def name="{}" id="{}""#,
+                write!(
+                    xml,
+                    r#"<def name="{}" id="{}""#,
                     self.escape_xml(&code.name),
                     self.escape_xml(&code.id)
-                ).map_err(|e| SerializeError::Xml(e.to_string()))?;
+                )
+                .map_err(|e| SerializeError::Xml(e.to_string()))?;
                 if let Some(display) = &code.display {
                     write!(xml, r#" display="{}""#, self.escape_xml(display))
                         .map_err(|e| SerializeError::Xml(e.to_string()))?;
@@ -407,7 +399,13 @@ impl XmlSerializer {
         Ok(())
     }
 
-    fn write_element<F>(&self, xml: &mut String, level: usize, name: &str, attrs: F) -> Result<(), SerializeError>
+    fn write_element<F>(
+        &self,
+        xml: &mut String,
+        level: usize,
+        name: &str,
+        attrs: F,
+    ) -> Result<(), SerializeError>
     where
         F: FnOnce(&mut String) -> std::fmt::Result,
     {

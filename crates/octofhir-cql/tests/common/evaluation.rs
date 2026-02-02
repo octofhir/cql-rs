@@ -4,9 +4,9 @@
 //! assertion helpers, and integration with mock providers.
 
 use chrono::{DateTime, FixedOffset, TimeZone, Utc};
+use octofhir_cql_elm::{Expression as ElmExpression, Library};
 use octofhir_cql_eval::context::{EvaluationContext, EvaluationContextBuilder};
 use octofhir_cql_eval::engine::EvaluationEngine;
-use octofhir_cql_elm::{Expression as ElmExpression, Library};
 use octofhir_cql_types::CqlValue;
 use std::sync::Arc;
 
@@ -24,7 +24,8 @@ pub fn test_context_with_timestamp(timestamp: DateTime<FixedOffset>) -> Evaluati
 
 /// Create a context with timestamp set to a known value (2024-01-01 12:00:00 UTC)
 pub fn test_context_fixed_time() -> EvaluationContext {
-    let timestamp = Utc.with_ymd_and_hms(2024, 1, 1, 12, 0, 0)
+    let timestamp = Utc
+        .with_ymd_and_hms(2024, 1, 1, 12, 0, 0)
         .unwrap()
         .fixed_offset();
     EvaluationContext::with_timestamp(timestamp)
@@ -85,9 +86,10 @@ pub fn assert_integer(value: &CqlValue, expected: i64) {
 pub fn assert_decimal(value: &CqlValue, expected: &str) {
     match value {
         CqlValue::Decimal(val) => {
-            let expected_dec = expected.parse::<rust_decimal::Decimal>()
+            let expected_dec = expected
+                .parse::<bigdecimal::BigDecimal>()
                 .expect("Invalid expected decimal");
-            assert_eq!(*val, expected_dec, "Decimal value mismatch");
+            assert_eq!(val, &expected_dec, "Decimal value mismatch");
         }
         _ => panic!("Expected Decimal, got: {:?}", value),
     }
@@ -125,11 +127,7 @@ pub fn assert_null(value: &CqlValue) {
 pub fn assert_list_len(value: &CqlValue, expected_len: usize) -> &[CqlValue] {
     match value {
         CqlValue::List(list) => {
-            assert_eq!(
-                list.elements.len(),
-                expected_len,
-                "List length mismatch"
-            );
+            assert_eq!(list.elements.len(), expected_len, "List length mismatch");
             &list.elements
         }
         _ => panic!("Expected List, got: {:?}", value),

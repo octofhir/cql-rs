@@ -1,10 +1,10 @@
 //! Validate command implementation
 
 use super::{output, resolver};
-use anyhow::{Context, Result};
-use colored::*;
+use anyhow::Result;
+use colored::Colorize;
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 /// Configuration for validate command
 pub struct ValidateConfig {
@@ -38,7 +38,7 @@ impl DiagnosticMessage {
         }
     }
 
-    fn with_location(message: String, line: usize, column: usize) -> Self {
+    fn _with_location(message: String, line: usize, column: usize) -> Self {
         Self {
             message,
             line: Some(line),
@@ -78,10 +78,13 @@ pub async fn validate(config: ValidateConfig) -> Result<()> {
     // Print summary
     println!();
     if total_errors == 0 && total_warnings == 0 {
-        println!("{}", output::format_success(&format!(
-            "All {} file(s) validated successfully",
-            config.files.len()
-        )));
+        println!(
+            "{}",
+            output::format_success(&format!(
+                "All {} file(s) validated successfully",
+                config.files.len()
+            ))
+        );
         Ok(())
     } else {
         let mut summary = Vec::new();
@@ -91,7 +94,11 @@ pub async fn validate(config: ValidateConfig) -> Result<()> {
         }
 
         if total_warnings > 0 {
-            summary.push(format!("{} warning(s)", total_warnings).yellow().to_string());
+            summary.push(
+                format!("{} warning(s)", total_warnings)
+                    .yellow()
+                    .to_string(),
+            );
         }
 
         eprintln!(
@@ -131,9 +138,10 @@ async fn validate_file(file: &PathBuf, verbose: bool) -> Result<ValidationResult
         Ok(content) => content,
         Err(e) => {
             result.success = false;
-            result.errors.push(DiagnosticMessage::new(
-                format!("Failed to read file: {}", e)
-            ));
+            result.errors.push(DiagnosticMessage::new(format!(
+                "Failed to read file: {}",
+                e
+            )));
             return Ok(result);
         }
     };
@@ -141,14 +149,15 @@ async fn validate_file(file: &PathBuf, verbose: bool) -> Result<ValidationResult
     // Parse the CQL
     match crate::parser::parse(&cql_content) {
         Ok(library) => {
-            if verbose {
-                if let Some(def) = &library.definition {
-                    eprintln!(
-                        "  Parsed library: {} version {}",
-                        def.name.name.name,
-                        def.version.as_ref().map(|v| v.version.as_str()).unwrap_or("(no version)")
-                    );
-                }
+            if verbose && let Some(def) = &library.definition {
+                eprintln!(
+                    "  Parsed library: {} version {}",
+                    def.name.name.name,
+                    def.version
+                        .as_ref()
+                        .map(|v| v.version.as_str())
+                        .unwrap_or("(no version)")
+                );
             }
 
             // TODO: Add semantic validation when type checker is ready
@@ -157,7 +166,7 @@ async fn validate_file(file: &PathBuf, verbose: bool) -> Result<ValidationResult
             // Check for empty library
             if library.statements.is_empty() {
                 result.warnings.push(DiagnosticMessage::new(
-                    "Library contains no statements".to_string()
+                    "Library contains no statements".to_string(),
                 ));
             }
 
@@ -170,9 +179,10 @@ async fn validate_file(file: &PathBuf, verbose: bool) -> Result<ValidationResult
                     Statement::FunctionDef(def) => &def.name.name,
                 };
                 if !seen_names.insert(name.clone()) {
-                    result.warnings.push(DiagnosticMessage::new(
-                        format!("Duplicate definition name: {}", name)
-                    ));
+                    result.warnings.push(DiagnosticMessage::new(format!(
+                        "Duplicate definition name: {}",
+                        name
+                    )));
                 }
             }
         }
@@ -212,7 +222,7 @@ fn print_validation_result(result: &ValidationResult) {
 }
 
 /// Print a diagnostic message
-fn print_diagnostic(level: &str, diag: &DiagnosticMessage, file: &PathBuf) {
+fn print_diagnostic(level: &str, diag: &DiagnosticMessage, file: &Path) {
     let level_str = match level {
         "error" => "error".red().bold(),
         "warning" => "warning".yellow().bold(),

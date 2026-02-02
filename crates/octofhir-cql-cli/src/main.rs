@@ -60,7 +60,11 @@ fn main() {
             // TODO: Implement parsing
             println!("Parser not yet implemented");
         }
-        Commands::Translate { file, output, format } => {
+        Commands::Translate {
+            file,
+            output,
+            format,
+        } => {
             println!("Translating {:?} to {:?} format {}", file, output, format);
             // TODO: Implement translation
             println!("Translation not yet implemented");

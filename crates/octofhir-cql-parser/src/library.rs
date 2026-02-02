@@ -1,15 +1,15 @@
 //! Library structure parser using winnow
 
 use crate::combinators::{
-    identifier_parser, keyword, lit, padded_keyword, preprocess, qualified_identifier_parser,
-    version_specifier_parser, ws, Input, PResult,
+    Input, PResult, identifier_parser, keyword, lit, padded_keyword, preprocess,
+    qualified_identifier_parser, version_specifier_parser, ws,
 };
 use crate::expression::expression_parser;
 use octofhir_cql_ast::{
     AccessModifier, ContextDefinition, ExpressionDefinition, Library, LibraryDefinition,
     ParameterDefinition, Spanned, Statement, UsingDefinition,
 };
-use octofhir_cql_diagnostics::{CqlError, Result, Span, CQL0001};
+use octofhir_cql_diagnostics::{CQL0001, CqlError, Result, Span};
 use winnow::combinator::{alt, eof, opt, repeat};
 use winnow::error::ContextError;
 use winnow::prelude::*;
@@ -36,7 +36,8 @@ pub fn parse_expression(source: &str) -> Result<Spanned<octofhir_cql_ast::Expres
     let expr = expression_parser(&mut input)
         .map_err(|e| CqlError::parse(CQL0001, format!("Parse error: {:?}", e), source))?;
     ws(&mut input).ok();
-    eof::<_, ContextError>.parse_next(&mut input)
+    eof::<_, ContextError>
+        .parse_next(&mut input)
         .map_err(|e| CqlError::parse(CQL0001, format!("Parse error: {:?}", e), source))?;
     Ok(expr)
 }
@@ -80,9 +81,12 @@ fn library_parser<'a>(input: &mut Input<'a>) -> PResult<Library> {
     ws.parse_next(input)?;
     let lib_def = opt(library_definition).parse_next(input)?;
     let usings: Vec<Spanned<UsingDefinition>> = repeat(0.., using_definition).parse_next(input)?;
-    let contexts: Vec<Spanned<ContextDefinition>> = repeat(0.., context_definition).parse_next(input)?;
-    let params: Vec<Spanned<ParameterDefinition>> = repeat(0.., parameter_definition).parse_next(input)?;
-    let exprs: Vec<Spanned<ExpressionDefinition>> = repeat(0.., expression_definition).parse_next(input)?;
+    let contexts: Vec<Spanned<ContextDefinition>> =
+        repeat(0.., context_definition).parse_next(input)?;
+    let params: Vec<Spanned<ParameterDefinition>> =
+        repeat(0.., parameter_definition).parse_next(input)?;
+    let exprs: Vec<Spanned<ExpressionDefinition>> =
+        repeat(0.., expression_definition).parse_next(input)?;
     ws.parse_next(input)?;
     eof.parse_next(input)?;
 

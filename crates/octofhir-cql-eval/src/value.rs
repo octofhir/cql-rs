@@ -1,6 +1,6 @@
 //! CQL runtime values
 
-use rust_decimal::Decimal;
+use bigdecimal::BigDecimal;
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 use std::collections::HashMap;
@@ -17,7 +17,7 @@ pub enum CqlValue {
     /// Long value
     Long(i64),
     /// Decimal value
-    Decimal(Decimal),
+    Decimal(BigDecimal),
     /// String value
     String(String),
     /// Date value
@@ -111,7 +111,7 @@ pub struct CqlTime {
 /// CQL Quantity value
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CqlQuantity {
-    pub value: Decimal,
+    pub value: BigDecimal,
     pub unit: Option<String>,
 }
 

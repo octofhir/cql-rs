@@ -9,10 +9,10 @@
 
 use thiserror::Error;
 
-use crate::coercion::TypeCoercer;
-use crate::CqlType;
 use super::scope::ScopeManager;
 use super::symbols::{FunctionParameter, FunctionSignature, Symbol, SymbolKind, SymbolTable};
+use crate::CqlType;
+use crate::coercion::TypeCoercer;
 
 /// Resolution errors
 #[derive(Debug, Clone, Error)]
@@ -187,11 +187,7 @@ impl<'a> Resolver<'a> {
     }
 
     /// Resolve a qualified identifier (Library.Name)
-    pub fn resolve_qualified(
-        &self,
-        library: &str,
-        name: &str,
-    ) -> ResolutionResult<ResolvedRef> {
+    pub fn resolve_qualified(&self, library: &str, name: &str) -> ResolutionResult<ResolvedRef> {
         // Check if library is a known alias
         if self.symbol_table.get_library(library).is_none() {
             return Err(ResolutionError::LibraryNotFound {
@@ -286,11 +282,7 @@ impl<'a> Resolver<'a> {
     /// Compute the cost of using an overload with given argument types
     ///
     /// Returns None if the overload doesn't match.
-    fn compute_overload_cost(
-        &self,
-        sig: &FunctionSignature,
-        arg_types: &[CqlType],
-    ) -> Option<u32> {
+    fn compute_overload_cost(&self, sig: &FunctionSignature, arg_types: &[CqlType]) -> Option<u32> {
         if sig.parameters.len() != arg_types.len() {
             return None;
         }
@@ -533,7 +525,14 @@ impl OverloadResolver {
         );
 
         // Comparison
-        for op in ["Equal", "NotEqual", "Less", "LessOrEqual", "Greater", "GreaterOrEqual"] {
+        for op in [
+            "Equal",
+            "NotEqual",
+            "Less",
+            "LessOrEqual",
+            "Greater",
+            "GreaterOrEqual",
+        ] {
             for ty in [
                 CqlType::Integer,
                 CqlType::Long,
@@ -581,11 +580,12 @@ impl OverloadResolver {
 
     /// Resolve an overload
     pub fn resolve(&self, name: &str, arg_types: &[CqlType]) -> ResolutionResult<ResolvedOverload> {
-        let overloads = self.overloads.get(name).ok_or_else(|| {
-            ResolutionError::SymbolNotFound {
-                name: name.to_string(),
-            }
-        })?;
+        let overloads =
+            self.overloads
+                .get(name)
+                .ok_or_else(|| ResolutionError::SymbolNotFound {
+                    name: name.to_string(),
+                })?;
 
         let mut candidates: Vec<(&FunctionSignature, u32)> = Vec::new();
 
@@ -677,8 +677,16 @@ mod tests {
             CqlType::Decimal,
         );
 
-        table.define(Symbol::new("Abs", SymbolKind::FunctionDef(sig_int), CqlType::Integer));
-        table.define(Symbol::new("Abs", SymbolKind::FunctionDef(sig_dec), CqlType::Decimal));
+        table.define(Symbol::new(
+            "Abs",
+            SymbolKind::FunctionDef(sig_int),
+            CqlType::Integer,
+        ));
+        table.define(Symbol::new(
+            "Abs",
+            SymbolKind::FunctionDef(sig_dec),
+            CqlType::Decimal,
+        ));
 
         table
     }

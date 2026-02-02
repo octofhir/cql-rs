@@ -4,22 +4,22 @@
 //! to avoid complex symbol names that can cause macOS linker issues.
 
 use crate::combinators::{
-    boolean_parser, identifier_or_keyword_parser, identifier_parser, keyword, lit, number_parser,
-    padded_keyword, quantity_literal_parser, string_parser, temporal_literal_parser, ws, Input,
-    PResult,
+    Input, PResult, boolean_parser, identifier_or_keyword_parser, identifier_parser, keyword, lit,
+    number_parser, padded_keyword, quantity_literal_parser, string_parser, temporal_literal_parser,
+    ws,
 };
+use bigdecimal::BigDecimal;
 use octofhir_cql_ast::{
-    AggregateClause, AsCastExpr, BetweenExpr, BinaryOp, BinaryOpExpr, CaseExpr, CaseItem, ConvertExpr,
-    DateConstructorExpr, DateTimeComponent, DateTimeComponentExpr, DateTimeConstructorExpr,
-    DifferenceBetweenExpr, DurationBetweenExpr, Expression, FunctionRefExpr, Identifier,
-    IdentifierRef, IfExpr, IndexerExpr, InstanceElement, InstanceExpr, IntervalExpr, IntervalOp,
-    IntervalOpExpr, IntervalTypeSpecifier, IsNullExpr, IsTypeExpr, ListExpr, ListTypeSpecifier,
-    Literal, MinMaxValueExpr, NamedTypeSpecifier, PropertyAccess, QuantityLiteral, Query,
-    QuerySource, Retrieve, ReturnClause, SameAsExpr, SameOrAfterExpr, SameOrBeforeExpr, SortClause,
-    SortDirection, SortItem, Spanned, TemporalPrecision, TimeConstructorExpr, TupleElement,
-    TupleExpr, TypeSpecifier, UnaryOp, UnaryOpExpr,
+    AggregateClause, AsCastExpr, BetweenExpr, BinaryOp, BinaryOpExpr, CaseExpr, CaseItem,
+    ConvertExpr, DateConstructorExpr, DateTimeComponent, DateTimeComponentExpr,
+    DateTimeConstructorExpr, DifferenceBetweenExpr, DurationBetweenExpr, Expression,
+    FunctionRefExpr, Identifier, IdentifierRef, IfExpr, IndexerExpr, InstanceElement, InstanceExpr,
+    IntervalExpr, IntervalOp, IntervalOpExpr, IntervalTypeSpecifier, IsNullExpr, IsTypeExpr,
+    ListExpr, ListTypeSpecifier, Literal, MinMaxValueExpr, NamedTypeSpecifier, PropertyAccess,
+    QuantityLiteral, Query, QuerySource, Retrieve, ReturnClause, SameAsExpr, SameOrAfterExpr,
+    SameOrBeforeExpr, SortClause, SortDirection, SortItem, Spanned, TemporalPrecision,
+    TimeConstructorExpr, TupleElement, TupleExpr, TypeSpecifier, UnaryOp, UnaryOpExpr,
 };
-use rust_decimal::Decimal;
 use octofhir_cql_diagnostics::Span;
 use winnow::combinator::{alt, opt, separated};
 use winnow::error::ContextError;
@@ -88,7 +88,9 @@ fn type_specifier_parser<'a>(input: &mut Input<'a>) -> PResult<TypeSpecifier> {
         if lower_name == "list" {
             return Ok(TypeSpecifier::List(ListTypeSpecifier::new(inner_type)));
         } else if lower_name == "interval" {
-            return Ok(TypeSpecifier::Interval(IntervalTypeSpecifier::new(inner_type)));
+            return Ok(TypeSpecifier::Interval(IntervalTypeSpecifier::new(
+                inner_type,
+            )));
         }
         // For other generic types, just use the base name (could be extended later)
     }
@@ -492,8 +494,17 @@ fn interval_operator_expression<'a>(input: &mut Input<'a>) -> PResult<Spanned<Ex
                 Some(IntervalOp::Overlaps)
             }
         } else if padded_keyword("starts").parse_next(input).is_ok() {
+            if let Some(timing) = try_parse_timing_phrase(input, IntervalOp::Starts, left.clone())?
+            {
+                left = timing;
+                continue;
+            }
             Some(IntervalOp::Starts)
         } else if padded_keyword("ends").parse_next(input).is_ok() {
+            if let Some(timing) = try_parse_timing_phrase(input, IntervalOp::Ends, left.clone())? {
+                left = timing;
+                continue;
+            }
             Some(IntervalOp::Ends)
         } else if padded_keyword("during").parse_next(input).is_ok() {
             Some(IntervalOp::During)
@@ -519,6 +530,146 @@ fn interval_operator_expression<'a>(input: &mut Input<'a>) -> PResult<Spanned<Ex
     }
 
     Ok(left)
+}
+
+/// Helper to parse complex timing phrases like "starts 1 day or less on or after"
+/// Synthesizes AST using standard operators (SameOrAfter, SameOrBefore, Add)
+fn try_parse_timing_phrase<'a>(
+    input: &mut Input<'a>,
+    boundary: IntervalOp,
+    left: Spanned<Expression>,
+) -> PResult<Option<Spanned<Expression>>> {
+    let checkpoint = *input;
+    ws.parse_next(input)?;
+
+    // 1. Parse Quantity (e.g. "1 day")
+    let quantity = if let Ok(q) = quantity_literal_parser(input) {
+        dummy_span(Expression::Literal(Literal::Quantity(q)))
+    } else {
+        *input = checkpoint;
+        return Ok(None);
+    };
+
+    ws.parse_next(input)?;
+
+    // 2. Parse Offset Qualifier ("or less")
+    // Note: We currently only support "or less" for Issue32Interval compatibility
+    let _is_or_less = if padded_keyword("or").parse_next(input).is_ok() {
+        if padded_keyword("less").parse_next(input).is_ok() {
+            true
+        } else {
+            *input = checkpoint;
+            return Ok(None);
+        }
+    } else {
+        *input = checkpoint;
+        return Ok(None);
+    };
+
+    ws.parse_next(input)?;
+
+    // 3. Parse Direction ("on or after")
+    // Note: We currently only support "on or after" for Issue32Interval compatibility
+    if padded_keyword("on").parse_next(input).is_ok() {
+        ws.parse_next(input)?;
+        if padded_keyword("or").parse_next(input).is_ok() {
+            ws.parse_next(input)?;
+            if padded_keyword("after").parse_next(input).is_ok() {
+                // Match: on or after (>=)
+            } else {
+                *input = checkpoint;
+                return Ok(None);
+            }
+        } else {
+            *input = checkpoint;
+            return Ok(None);
+        }
+    } else {
+        *input = checkpoint;
+        return Ok(None);
+    };
+
+    // 4. Parse Precision ("day of")
+    let precision = parse_temporal_precision(input)?;
+
+    // 5. Parse Anchor ("start of", "end of" - optional)
+    let anchor_checkpoint = *input;
+    ws.parse_next(input)?;
+    let right_anchor_start = if keyword("start").parse_next(input).is_ok() {
+        ws.parse_next(input)?;
+        if keyword("of").parse_next(input).is_ok() {
+            true
+        } else {
+            *input = anchor_checkpoint;
+            true // default
+        }
+    } else if keyword("end").parse_next(input).is_ok() {
+        ws.parse_next(input)?;
+        if keyword("of").parse_next(input).is_ok() {
+            false
+        } else {
+            *input = anchor_checkpoint;
+            true // default
+        }
+    } else {
+        *input = anchor_checkpoint;
+        true // default to Start
+    };
+
+    // 6. Right operand expression
+    let right_expr = union_expression(input)?;
+
+    // Construct logic:
+    // "starts 1 day or less on or after" ->
+    // Start(Left) >= Start(Right) AND Start(Left) <= Start(Right) + 1 day
+
+    // Left Point
+    let left_point = dummy_span(Expression::FunctionRef(FunctionRefExpr {
+        library: None,
+        name: Identifier::new(if boundary == IntervalOp::Starts {
+            "Start"
+        } else {
+            "End"
+        }),
+        arguments: vec![left],
+    }));
+
+    // Right Point
+    let right_point = dummy_span(Expression::FunctionRef(FunctionRefExpr {
+        library: None,
+        name: Identifier::new(if right_anchor_start { "Start" } else { "End" }),
+        arguments: vec![right_expr],
+    }));
+
+    // Right Point + Quantity
+    let right_plus_quantity = dummy_span(Expression::BinaryOp(BinaryOpExpr {
+        op: BinaryOp::Add,
+        left: Box::new(right_point.clone()),
+        right: Box::new(quantity),
+    }));
+
+    // Condition 1: Left >= Right (SameOrAfter)
+    let cond1 = dummy_span(Expression::SameOrAfter(SameOrAfterExpr {
+        left: Box::new(left_point.clone()),
+        right: Box::new(right_point),
+        precision,
+    }));
+
+    // Condition 2: Left <= Right + Quantity (SameOrBefore)
+    let cond2 = dummy_span(Expression::SameOrBefore(SameOrBeforeExpr {
+        left: Box::new(left_point),
+        right: Box::new(right_plus_quantity),
+        precision,
+    }));
+
+    // Combine with AND
+    let and_expr = dummy_span(Expression::BinaryOp(BinaryOpExpr {
+        op: BinaryOp::And,
+        left: Box::new(cond1),
+        right: Box::new(cond2),
+    }));
+
+    Ok(Some(and_expr))
 }
 
 /// Parse union expression (| or 'union')
@@ -780,60 +931,60 @@ fn unary_expression<'a>(input: &mut Input<'a>) -> PResult<Spanned<Expression>> {
     }
 
     // start of, end of, width of - interval boundary extractors
-    if padded_keyword("start").parse_next(input).is_ok() {
-        if padded_keyword("of").parse_next(input).is_ok() {
-            let operand = unary_expression(input)?;
-            return Ok(dummy_span(Expression::FunctionRef(FunctionRefExpr {
-                library: None,
-                name: Identifier::new("Start"),
-                arguments: vec![operand],
-            })));
-        }
+    if padded_keyword("start").parse_next(input).is_ok()
+        && padded_keyword("of").parse_next(input).is_ok()
+    {
+        let operand = unary_expression(input)?;
+        return Ok(dummy_span(Expression::FunctionRef(FunctionRefExpr {
+            library: None,
+            name: Identifier::new("Start"),
+            arguments: vec![operand],
+        })));
     }
 
-    if padded_keyword("end").parse_next(input).is_ok() {
-        if padded_keyword("of").parse_next(input).is_ok() {
-            let operand = unary_expression(input)?;
-            return Ok(dummy_span(Expression::FunctionRef(FunctionRefExpr {
-                library: None,
-                name: Identifier::new("End"),
-                arguments: vec![operand],
-            })));
-        }
+    if padded_keyword("end").parse_next(input).is_ok()
+        && padded_keyword("of").parse_next(input).is_ok()
+    {
+        let operand = unary_expression(input)?;
+        return Ok(dummy_span(Expression::FunctionRef(FunctionRefExpr {
+            library: None,
+            name: Identifier::new("End"),
+            arguments: vec![operand],
+        })));
     }
 
-    if padded_keyword("width").parse_next(input).is_ok() {
-        if padded_keyword("of").parse_next(input).is_ok() {
-            let operand = unary_expression(input)?;
-            return Ok(dummy_span(Expression::FunctionRef(FunctionRefExpr {
-                library: None,
-                name: Identifier::new("Width"),
-                arguments: vec![operand],
-            })));
-        }
+    if padded_keyword("width").parse_next(input).is_ok()
+        && padded_keyword("of").parse_next(input).is_ok()
+    {
+        let operand = unary_expression(input)?;
+        return Ok(dummy_span(Expression::FunctionRef(FunctionRefExpr {
+            library: None,
+            name: Identifier::new("Width"),
+            arguments: vec![operand],
+        })));
     }
 
     // singleton from - extracts single element from list
-    if padded_keyword("singleton").parse_next(input).is_ok() {
-        if padded_keyword("from").parse_next(input).is_ok() {
-            let operand = unary_expression(input)?;
-            return Ok(dummy_span(Expression::UnaryOp(UnaryOpExpr {
-                op: UnaryOp::SingletonFrom,
-                operand: Box::new(operand),
-            })));
-        }
+    if padded_keyword("singleton").parse_next(input).is_ok()
+        && padded_keyword("from").parse_next(input).is_ok()
+    {
+        let operand = unary_expression(input)?;
+        return Ok(dummy_span(Expression::UnaryOp(UnaryOpExpr {
+            op: UnaryOp::SingletonFrom,
+            operand: Box::new(operand),
+        })));
     }
 
     // point from - extracts point from unit interval
-    if padded_keyword("point").parse_next(input).is_ok() {
-        if padded_keyword("from").parse_next(input).is_ok() {
-            let operand = unary_expression(input)?;
-            return Ok(dummy_span(Expression::FunctionRef(FunctionRefExpr {
-                library: None,
-                name: Identifier::new("PointFrom"),
-                arguments: vec![operand],
-            })));
-        }
+    if padded_keyword("point").parse_next(input).is_ok()
+        && padded_keyword("from").parse_next(input).is_ok()
+    {
+        let operand = unary_expression(input)?;
+        return Ok(dummy_span(Expression::FunctionRef(FunctionRefExpr {
+            library: None,
+            name: Identifier::new("PointFrom"),
+            arguments: vec![operand],
+        })));
     }
 
     // minimum/maximum Type
@@ -866,25 +1017,25 @@ fn unary_expression<'a>(input: &mut Input<'a>) -> PResult<Spanned<Expression>> {
     }
 
     // predecessor of X
-    if padded_keyword("predecessor").parse_next(input).is_ok() {
-        if padded_keyword("of").parse_next(input).is_ok() {
-            let operand = unary_expression(input)?;
-            return Ok(dummy_span(Expression::UnaryOp(UnaryOpExpr {
-                op: UnaryOp::Predecessor,
-                operand: Box::new(operand),
-            })));
-        }
+    if padded_keyword("predecessor").parse_next(input).is_ok()
+        && padded_keyword("of").parse_next(input).is_ok()
+    {
+        let operand = unary_expression(input)?;
+        return Ok(dummy_span(Expression::UnaryOp(UnaryOpExpr {
+            op: UnaryOp::Predecessor,
+            operand: Box::new(operand),
+        })));
     }
 
     // successor of X
-    if padded_keyword("successor").parse_next(input).is_ok() {
-        if padded_keyword("of").parse_next(input).is_ok() {
-            let operand = unary_expression(input)?;
-            return Ok(dummy_span(Expression::UnaryOp(UnaryOpExpr {
-                op: UnaryOp::Successor,
-                operand: Box::new(operand),
-            })));
-        }
+    if padded_keyword("successor").parse_next(input).is_ok()
+        && padded_keyword("of").parse_next(input).is_ok()
+    {
+        let operand = unary_expression(input)?;
+        return Ok(dummy_span(Expression::UnaryOp(UnaryOpExpr {
+            op: UnaryOp::Successor,
+            operand: Box::new(operand),
+        })));
     }
 
     // expand X [per Y] - expand takes an interval or list, with optional per clause
@@ -899,7 +1050,7 @@ fn unary_expression<'a>(input: &mut Input<'a>) -> PResult<Spanned<Expression>> {
             let per_value = if let Ok(unit) = parse_singular_time_unit(input) {
                 // Wrap in a quantity with value 1
                 dummy_span(Expression::Literal(Literal::Quantity(
-                    QuantityLiteral::new(Decimal::ONE).with_unit(unit)
+                    QuantityLiteral::new(BigDecimal::from(1)).with_unit(unit),
                 )))
             } else {
                 unary_expression(input)?
@@ -968,7 +1119,9 @@ fn parse_singular_time_unit<'a>(input: &mut Input<'a>) -> PResult<String> {
     }
     *input = checkpoint;
 
-    if keyword("millisecond").parse_next(input).is_ok() || keyword("milliseconds").parse_next(input).is_ok() {
+    if keyword("millisecond").parse_next(input).is_ok()
+        || keyword("milliseconds").parse_next(input).is_ok()
+    {
         return Ok("millisecond".to_string());
     }
     *input = checkpoint;
@@ -1066,11 +1219,13 @@ fn duration_difference_between<'a>(input: &mut Input<'a>) -> PResult<Spanned<Exp
             },
         )))
     } else {
-        Ok(dummy_span(Expression::DurationBetween(DurationBetweenExpr {
-            precision,
-            low: Box::new(low),
-            high: Box::new(high),
-        })))
+        Ok(dummy_span(Expression::DurationBetween(
+            DurationBetweenExpr {
+                precision,
+                low: Box::new(low),
+                high: Box::new(high),
+            },
+        )))
     }
 }
 
@@ -1091,9 +1246,8 @@ fn component_extraction<'a>(input: &mut Input<'a>) -> PResult<Spanned<Expression
         keyword("time").value(DateTimeComponent::Time),
     ))
     .parse_next(input)
-    .map_err(|e: ContextError| {
+    .inspect_err(|_| {
         *input = checkpoint;
-        e
     })?;
 
     ws.parse_next(input)?;
@@ -1200,10 +1354,12 @@ fn atom<'a>(input: &mut Input<'a>) -> PResult<Spanned<Expression>> {
         },
         |input: &mut Input<'a>| {
             let checkpoint = *input;
-            let q = quantity_literal_parser.parse_next(input).map_err(|_: ContextError| {
-                *input = checkpoint;
-                ContextError::new()
-            })?;
+            let q = quantity_literal_parser
+                .parse_next(input)
+                .map_err(|_: ContextError| {
+                    *input = checkpoint;
+                    ContextError::new()
+                })?;
             if q.unit.is_none() {
                 *input = checkpoint;
                 return Err(ContextError::new());
@@ -1832,7 +1988,8 @@ fn parse_query_clauses<'a>(sources: Vec<QuerySource>, input: &mut Input<'a>) -> 
                         ws.parse_next(input)?;
                         let expr = implies_expression(input)?;
                         ws.parse_next(input)?;
-                        let direction = parse_sort_direction(input).unwrap_or(SortDirection::Ascending);
+                        let direction =
+                            parse_sort_direction(input).unwrap_or(SortDirection::Ascending);
                         Ok(SortItem::new(Some(Box::new(expr)), direction))
                     },
                     ",",
@@ -1912,4 +2069,3 @@ fn parse_sort_direction<'a>(input: &mut Input<'a>) -> Option<SortDirection> {
         None
     }
 }
-

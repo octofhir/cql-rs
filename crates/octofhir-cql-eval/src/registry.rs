@@ -2,23 +2,28 @@
 //!
 //! This module provides registries that map operator/function names to their implementations.
 
-use crate::error::{EvalError, EvalResult};
 use crate::EvaluationContext;
+use crate::error::EvalResult;
 use octofhir_cql_types::{CqlList, CqlType, CqlValue};
 use std::collections::HashMap;
 use std::sync::Arc;
 
 /// Type alias for unary operator implementations
-pub type UnaryOpFn = Arc<dyn Fn(&CqlValue, &mut EvaluationContext) -> EvalResult<CqlValue> + Send + Sync>;
+pub type UnaryOpFn =
+    Arc<dyn Fn(&CqlValue, &mut EvaluationContext) -> EvalResult<CqlValue> + Send + Sync>;
 
 /// Type alias for binary operator implementations
-pub type BinaryOpFn = Arc<dyn Fn(&CqlValue, &CqlValue, &mut EvaluationContext) -> EvalResult<CqlValue> + Send + Sync>;
+pub type BinaryOpFn =
+    Arc<dyn Fn(&CqlValue, &CqlValue, &mut EvaluationContext) -> EvalResult<CqlValue> + Send + Sync>;
 
 /// Type alias for n-ary operator implementations
-pub type NaryOpFn = Arc<dyn Fn(&[CqlValue], &mut EvaluationContext) -> EvalResult<CqlValue> + Send + Sync>;
+pub type NaryOpFn =
+    Arc<dyn Fn(&[CqlValue], &mut EvaluationContext) -> EvalResult<CqlValue> + Send + Sync>;
 
 /// Type alias for aggregate function implementations
-pub type AggregateFn = Arc<dyn Fn(&[CqlValue], Option<&str>, &mut EvaluationContext) -> EvalResult<CqlValue> + Send + Sync>;
+pub type AggregateFn = Arc<
+    dyn Fn(&[CqlValue], Option<&str>, &mut EvaluationContext) -> EvalResult<CqlValue> + Send + Sync,
+>;
 
 /// Operator signature for type checking
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -64,9 +69,7 @@ impl OperatorSignature {
         self.operand_types
             .iter()
             .zip(operand_types.iter())
-            .all(|(sig_type, actual_type)| {
-                sig_type.is_any() || actual_type.is_subtype_of(sig_type)
-            })
+            .all(|(sig_type, actual_type)| sig_type.is_any() || actual_type.is_subtype_of(sig_type))
     }
 }
 
@@ -103,7 +106,7 @@ impl UnaryOperatorRegistry {
         self.operators.get(name).and_then(|overloads| {
             overloads
                 .iter()
-                .find(|(sig, _)| sig.matches(&[operand_type.clone()]))
+                .find(|(sig, _)| sig.matches(std::slice::from_ref(operand_type)))
                 .map(|(_, f)| f)
         })
     }
@@ -144,7 +147,12 @@ impl BinaryOperatorRegistry {
     }
 
     /// Get an operator implementation for given operand types
-    pub fn get(&self, name: &str, left_type: &CqlType, right_type: &CqlType) -> Option<&BinaryOpFn> {
+    pub fn get(
+        &self,
+        name: &str,
+        left_type: &CqlType,
+        right_type: &CqlType,
+    ) -> Option<&BinaryOpFn> {
         self.operators.get(name).and_then(|overloads| {
             overloads
                 .iter()
@@ -322,9 +330,9 @@ impl FunctionRegistry {
 
     /// Get a function definition matching the given name and argument types
     pub fn get(&self, name: &str, arg_types: &[CqlType]) -> Option<&FunctionDefinition> {
-        self.functions.get(name).and_then(|overloads| {
-            overloads.iter().find(|def| def.matches(arg_types))
-        })
+        self.functions
+            .get(name)
+            .and_then(|overloads| overloads.iter().find(|def| def.matches(arg_types)))
     }
 
     /// Get all overloads for a function
@@ -444,10 +452,12 @@ fn collect_descendants_list(elements: &[CqlValue], result: &mut Vec<CqlValue>) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::error::EvalError;
 
     #[test]
     fn test_operator_signature_matching() {
-        let sig = OperatorSignature::binary("Add", CqlType::Integer, CqlType::Integer, CqlType::Integer);
+        let sig =
+            OperatorSignature::binary("Add", CqlType::Integer, CqlType::Integer, CqlType::Integer);
 
         assert!(sig.matches(&[CqlType::Integer, CqlType::Integer]));
         assert!(!sig.matches(&[CqlType::String, CqlType::Integer]));
@@ -458,11 +468,9 @@ mod tests {
     fn test_unary_registry() {
         let mut registry = UnaryOperatorRegistry::new();
 
-        let negate: UnaryOpFn = Arc::new(|value, _ctx| {
-            match value {
-                CqlValue::Integer(i) => Ok(CqlValue::Integer(-i)),
-                _ => Err(EvalError::invalid_operand("Negate", "expected Integer")),
-            }
+        let negate: UnaryOpFn = Arc::new(|value, _ctx| match value {
+            CqlValue::Integer(i) => Ok(CqlValue::Integer(-i)),
+            _ => Err(EvalError::invalid_operand("Negate", "expected Integer")),
         });
 
         registry.register("Negate", CqlType::Integer, CqlType::Integer, negate);
@@ -475,19 +483,29 @@ mod tests {
     fn test_binary_registry() {
         let mut registry = BinaryOperatorRegistry::new();
 
-        let add: BinaryOpFn = Arc::new(|left, right, _ctx| {
-            match (left, right) {
-                (CqlValue::Integer(a), CqlValue::Integer(b)) => {
-                    Ok(CqlValue::Integer(a + b))
-                }
-                _ => Err(EvalError::invalid_operand("Add", "expected Integer")),
-            }
+        let add: BinaryOpFn = Arc::new(|left, right, _ctx| match (left, right) {
+            (CqlValue::Integer(a), CqlValue::Integer(b)) => Ok(CqlValue::Integer(a + b)),
+            _ => Err(EvalError::invalid_operand("Add", "expected Integer")),
         });
 
-        registry.register("Add", CqlType::Integer, CqlType::Integer, CqlType::Integer, add);
+        registry.register(
+            "Add",
+            CqlType::Integer,
+            CqlType::Integer,
+            CqlType::Integer,
+            add,
+        );
 
-        assert!(registry.get("Add", &CqlType::Integer, &CqlType::Integer).is_some());
-        assert!(registry.get("Add", &CqlType::String, &CqlType::Integer).is_none());
+        assert!(
+            registry
+                .get("Add", &CqlType::Integer, &CqlType::Integer)
+                .is_some()
+        );
+        assert!(
+            registry
+                .get("Add", &CqlType::String, &CqlType::Integer)
+                .is_none()
+        );
     }
 
     #[test]

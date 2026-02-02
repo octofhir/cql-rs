@@ -23,13 +23,19 @@ impl Span {
     /// Create a zero-width span at a position
     #[inline]
     pub const fn point(pos: usize) -> Self {
-        Self { start: pos, end: pos }
+        Self {
+            start: pos,
+            end: pos,
+        }
     }
 
     /// Create a span covering a single byte
     #[inline]
     pub const fn single(pos: usize) -> Self {
-        Self { start: pos, end: pos + 1 }
+        Self {
+            start: pos,
+            end: pos + 1,
+        }
     }
 
     /// Get the length of the span in bytes

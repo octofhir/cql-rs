@@ -2,13 +2,14 @@
 //!
 //! Runs tests extracted from google/cql repository.
 
+use bigdecimal::{BigDecimal, FromPrimitive};
 use octofhir_cql_elm::AstToElmConverter;
 use octofhir_cql_eval::{CqlEngine, EvaluationContext};
 use octofhir_cql_types::CqlValue;
-use rust_decimal::Decimal;
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::path::Path;
+use std::str::FromStr;
 
 /// Test case from Google CQL tests
 #[derive(Debug, Clone, Deserialize)]
@@ -67,7 +68,7 @@ pub struct TestResult {
     pub actual: String,
     pub error: Option<String>,
     pub skipped: bool,
-    pub skip_reason: Option<String>,
+    pub _skip_reason: Option<String>,
 }
 
 /// Summary of running a test file
@@ -152,7 +153,7 @@ impl GoogleTestRunner {
                 actual: String::new(),
                 error: None,
                 skipped: true,
-                skip_reason: Some(reason),
+                _skip_reason: Some(reason),
             };
         }
 
@@ -171,7 +172,7 @@ impl GoogleTestRunner {
                     actual: actual_str,
                     error: None,
                     skipped: false,
-                    skip_reason: None,
+                    _skip_reason: None,
                 }
             }
             Err(e) => TestResult {
@@ -182,7 +183,7 @@ impl GoogleTestRunner {
                 actual: String::new(),
                 error: Some(e),
                 skipped: false,
-                skip_reason: None,
+                _skip_reason: None,
             },
         }
     }
@@ -206,19 +207,18 @@ impl GoogleTestRunner {
         let cql = format!("library Test version '1.0'\ndefine Result: {}", expr);
 
         // Parse the CQL to AST
-        let ast = octofhir_cql_parser::parse(&cql)
-            .map_err(|e| format!("Parse error: {:?}", e))?;
+        let ast = octofhir_cql_parser::parse(&cql).map_err(|e| format!("Parse error: {:?}", e))?;
 
         // Convert AST to ELM
         let mut converter = AstToElmConverter::new();
         let elm_library = converter.convert_library(&ast);
 
         // Set up evaluation context with the library
-        let mut ctx = EvaluationContext::new()
-            .with_library(elm_library.clone());
+        let mut ctx = EvaluationContext::new().with_library(elm_library.clone());
 
         // Evaluate the "Result" expression
-        self.engine.evaluate_expression(&elm_library, "Result", &mut ctx)
+        self.engine
+            .evaluate_expression(&elm_library, "Result", &mut ctx)
             .map_err(|e| format!("Evaluation error: {:?}", e))
     }
 }
@@ -238,23 +238,21 @@ fn format_expected(expected: &Option<ExpectedValue>) -> String {
         }
         Some(ExpectedValue::String(s)) => format!("'{}'", s),
         Some(ExpectedValue::Raw(r)) => format!("(raw) {}", r.raw),
-        Some(ExpectedValue::Typed(t)) => {
-            match t.value_type.as_str() {
-                "Long" => {
-                    if let Some(v) = &t.value {
-                        format!("{}L", v)
-                    } else {
-                        "null".to_string()
-                    }
+        Some(ExpectedValue::Typed(t)) => match t.value_type.as_str() {
+            "Long" => {
+                if let Some(v) = &t.value {
+                    format!("{}L", v)
+                } else {
+                    "null".to_string()
                 }
-                "Quantity" => {
-                    let val = t.value.as_ref().map(|v| v.to_string()).unwrap_or_default();
-                    let unit = t.unit.as_ref().map(|u| u.as_str()).unwrap_or("");
-                    format!("{} '{}'", val, unit)
-                }
-                _ => t.raw.clone().unwrap_or_else(|| format!("{:?}", t)),
             }
-        }
+            "Quantity" => {
+                let val = t.value.as_ref().map(|v| v.to_string()).unwrap_or_default();
+                let unit = t.unit.as_deref().unwrap_or("");
+                format!("{} '{}'", val, unit)
+            }
+            _ => t.raw.clone().unwrap_or_else(|| format!("{:?}", t)),
+        },
     }
 }
 
@@ -265,8 +263,19 @@ fn format_value(value: &CqlValue) -> String {
         CqlValue::Integer(i) => i.to_string(),
         CqlValue::Long(l) => format!("{}L", l),
         CqlValue::Decimal(d) => {
-            let normalized = d.normalize();
-            let s = normalized.to_string();
+            let s = d.to_string();
+            // Basic normalization: remove trailing zeros after decimal point
+            let s = if s.contains('.') {
+                let trimmed = s.trim_end_matches('0').trim_end_matches('.');
+                if trimmed.is_empty() {
+                    "0".to_string()
+                } else {
+                    trimmed.to_string()
+                }
+            } else {
+                s
+            };
+
             if s.contains('.') {
                 s
             } else {
@@ -301,20 +310,18 @@ fn compare_result(result: &CqlValue, expected: &Option<ExpectedValue>) -> bool {
         Some(ExpectedValue::Bool(b)) => {
             matches!(result, CqlValue::Boolean(rb) if rb == b)
         }
-        Some(ExpectedValue::Int(i)) => {
-            match result {
-                CqlValue::Integer(ri) => *ri as i64 == *i,
-                CqlValue::Long(rl) => *rl == *i,
-                _ => false,
-            }
-        }
+        Some(ExpectedValue::Int(i)) => match result {
+            CqlValue::Integer(ri) => *ri as i64 == *i,
+            CqlValue::Long(rl) => *rl == *i,
+            _ => false,
+        },
         Some(ExpectedValue::Float(f)) => {
             match result {
                 CqlValue::Decimal(d) => {
                     // Compare with tolerance for floating point
-                    if let Ok(expected_dec) = Decimal::try_from(*f) {
-                        let diff = (*d - expected_dec).abs();
-                        diff < Decimal::new(1, 8) // 0.00000001 tolerance
+                    if let Some(expected_dec) = BigDecimal::from_f64(*f) {
+                        let diff = (d - &expected_dec).abs();
+                        diff < BigDecimal::from_str("0.00000001").unwrap() // 0.00000001 tolerance
                     } else {
                         false
                     }
@@ -348,11 +355,13 @@ fn compare_result(result: &CqlValue, expected: &Option<ExpectedValue>) -> bool {
                     // Basic quantity comparison
                     if let CqlValue::Quantity(q) = result {
                         if let Some(v) = &t.value {
-                            let val_matches = v.as_f64()
-                                .and_then(|expected| Decimal::try_from(expected).ok())
-                                .map(|expected| (q.value - expected).abs() < Decimal::new(1, 4))
-                                .unwrap_or(false);
-                            val_matches
+                            v.as_f64()
+                                .and_then(BigDecimal::from_f64)
+                                .map(|expected| {
+                                    (&q.value - &expected).abs()
+                                        < BigDecimal::from_str("0.0001").unwrap()
+                                })
+                                .unwrap_or(false)
                             // Unit comparison would go here
                         } else {
                             false
@@ -385,24 +394,34 @@ pub fn generate_report(results: &[FileResult]) -> String {
     report.push_str("| Metric | Count |\n");
     report.push_str("|--------|-------|\n");
     report.push_str(&format!("| Total Tests | {} |\n", total_tests));
-    report.push_str(&format!("| Passed | {} ({:.1}%) |\n",
+    report.push_str(&format!(
+        "| Passed | {} ({:.1}%) |\n",
         total_passed,
-        if total_tests > 0 { total_passed as f64 / total_tests as f64 * 100.0 } else { 0.0 }
+        if total_tests > 0 {
+            total_passed as f64 / total_tests as f64 * 100.0
+        } else {
+            0.0
+        }
     ));
     report.push_str(&format!("| Failed | {} |\n", total_failed));
     report.push_str(&format!("| Skipped | {} |\n", total_skipped));
-    report.push_str("\n");
+    report.push('\n');
 
     report.push_str("## Results by File\n\n");
 
     for file_result in results {
         report.push_str(&format!("### {}\n\n", file_result.file_name));
-        report.push_str(&format!("- Passed: {}/{}\n", file_result.passed, file_result.total));
+        report.push_str(&format!(
+            "- Passed: {}/{}\n",
+            file_result.passed, file_result.total
+        ));
         report.push_str(&format!("- Failed: {}\n", file_result.failed));
         report.push_str(&format!("- Skipped: {}\n\n", file_result.skipped));
 
         // List failed tests (limit to first 20)
-        let failed: Vec<_> = file_result.results.iter()
+        let failed: Vec<_> = file_result
+            .results
+            .iter()
             .filter(|r| !r.passed && !r.skipped)
             .take(20)
             .collect();
@@ -410,8 +429,10 @@ pub fn generate_report(results: &[FileResult]) -> String {
         if !failed.is_empty() {
             report.push_str("#### Failed Tests (first 20)\n\n");
             for result in failed {
-                report.push_str(&format!("- **{}::{} - {}**\n",
-                    result.function_name, result.test_name, result.function_name));
+                report.push_str(&format!(
+                    "- **{}::{} - {}**\n",
+                    result.function_name, result.test_name, result.function_name
+                ));
                 report.push_str(&format!("  - Expected: `{}`\n", result.expected));
                 report.push_str(&format!("  - Actual: `{}`\n", result.actual));
                 if let Some(err) = &result.error {
@@ -424,7 +445,7 @@ pub fn generate_report(results: &[FileResult]) -> String {
                     report.push_str(&format!("  - Error: {}\n", err_display));
                 }
             }
-            report.push_str("\n");
+            report.push('\n');
         }
     }
 

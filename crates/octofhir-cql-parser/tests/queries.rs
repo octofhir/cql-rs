@@ -22,14 +22,12 @@ fn parse_expr(input: &str) -> Expression {
 fn test_simple_retrieve() {
     let expr = parse_expr("[Patient]");
     match &expr {
-        Expression::Retrieve(r) => {
-            match &r.data_type.inner {
-                octofhir_cql_ast::TypeSpecifier::Named(named) => {
-                    assert_eq!(named.name, "Patient");
-                }
-                _ => panic!("Expected Named type specifier"),
+        Expression::Retrieve(r) => match &r.data_type.inner {
+            octofhir_cql_ast::TypeSpecifier::Named(named) => {
+                assert_eq!(named.name, "Patient");
             }
-        }
+            _ => panic!("Expected Named type specifier"),
+        },
         _ => panic!("Expected Retrieve, got: {:?}", expr),
     }
 }
@@ -38,14 +36,12 @@ fn test_simple_retrieve() {
 fn test_retrieve_observation() {
     let expr = parse_expr("[Observation]");
     match &expr {
-        Expression::Retrieve(r) => {
-            match &r.data_type.inner {
-                octofhir_cql_ast::TypeSpecifier::Named(named) => {
-                    assert_eq!(named.name, "Observation");
-                }
-                _ => panic!("Expected Named type specifier"),
+        Expression::Retrieve(r) => match &r.data_type.inner {
+            octofhir_cql_ast::TypeSpecifier::Named(named) => {
+                assert_eq!(named.name, "Observation");
             }
-        }
+            _ => panic!("Expected Named type specifier"),
+        },
         _ => panic!("Expected Retrieve"),
     }
 }
@@ -89,11 +85,20 @@ fn test_if_then_else() {
     match &expr {
         Expression::If(if_expr) => {
             // Condition should be true
-            assert!(matches!(&if_expr.condition.inner, Expression::Literal(octofhir_cql_ast::Literal::Boolean(true))));
+            assert!(matches!(
+                &if_expr.condition.inner,
+                Expression::Literal(octofhir_cql_ast::Literal::Boolean(true))
+            ));
             // Then should be 1
-            assert!(matches!(&if_expr.then_expr.inner, Expression::Literal(octofhir_cql_ast::Literal::Integer(1))));
+            assert!(matches!(
+                &if_expr.then_expr.inner,
+                Expression::Literal(octofhir_cql_ast::Literal::Integer(1))
+            ));
             // Else should be 2
-            assert!(matches!(&if_expr.else_expr.inner, Expression::Literal(octofhir_cql_ast::Literal::Integer(2))));
+            assert!(matches!(
+                &if_expr.else_expr.inner,
+                Expression::Literal(octofhir_cql_ast::Literal::Integer(2))
+            ));
         }
         _ => panic!("Expected If, got: {:?}", expr),
     }
@@ -288,7 +293,12 @@ fn test_interval_half_open() {
 #[case("Interval[1, 10]", true)]
 fn test_various_expressions(#[case] input: &str, #[case] should_parse: bool) {
     let result = parse_expression(input);
-    assert_eq!(result.is_ok(), should_parse, "Parse result for '{}' unexpected", input);
+    assert_eq!(
+        result.is_ok(),
+        should_parse,
+        "Parse result for '{}' unexpected",
+        input
+    );
 }
 
 // === Query Expressions ===

@@ -62,7 +62,7 @@ fn test_decimal_basic() {
     let lit = assert_literal(&expr);
     match lit {
         Literal::Decimal(d) => {
-            let expected = "3.14".parse::<rust_decimal::Decimal>().unwrap();
+            let expected = "3.14".parse::<bigdecimal::BigDecimal>().unwrap();
             assert_eq!(*d, expected);
         }
         _ => panic!("Expected Decimal literal, got: {:?}", lit),
@@ -75,7 +75,7 @@ fn test_decimal_leading_zero() {
     let lit = assert_literal(&expr);
     match lit {
         Literal::Decimal(d) => {
-            let expected = "0.5".parse::<rust_decimal::Decimal>().unwrap();
+            let expected = "0.5".parse::<bigdecimal::BigDecimal>().unwrap();
             assert_eq!(*d, expected);
         }
         _ => panic!("Expected Decimal literal, got: {:?}", lit),
@@ -217,7 +217,7 @@ fn test_quantity_with_unit() {
     let lit = assert_literal(&expr);
     match lit {
         Literal::Quantity(q) => {
-            let expected = "5".parse::<rust_decimal::Decimal>().unwrap();
+            let expected = "5".parse::<bigdecimal::BigDecimal>().unwrap();
             assert_eq!(q.value, expected);
             assert_eq!(q.unit.as_deref(), Some("mg"));
         }
@@ -231,7 +231,7 @@ fn test_quantity_decimal_with_unit() {
     let lit = assert_literal(&expr);
     match lit {
         Literal::Quantity(q) => {
-            let expected = "2.5".parse::<rust_decimal::Decimal>().unwrap();
+            let expected = "2.5".parse::<bigdecimal::BigDecimal>().unwrap();
             assert_eq!(q.value, expected);
             assert_eq!(q.unit.as_deref(), Some("kg"));
         }
@@ -246,7 +246,12 @@ fn test_quantity_decimal_with_unit() {
 #[case("999999", true)]
 fn test_integer_variations(#[case] input: &str, #[case] should_parse: bool) {
     let result = parse_expression(input);
-    assert_eq!(result.is_ok(), should_parse, "Parse result for '{}' unexpected", input);
+    assert_eq!(
+        result.is_ok(),
+        should_parse,
+        "Parse result for '{}' unexpected",
+        input
+    );
 }
 
 #[rstest]
@@ -254,7 +259,12 @@ fn test_integer_variations(#[case] input: &str, #[case] should_parse: bool) {
 #[case("0.5", true)]
 fn test_decimal_variations(#[case] input: &str, #[case] should_parse: bool) {
     let result = parse_expression(input);
-    assert_eq!(result.is_ok(), should_parse, "Parse result for '{}' unexpected", input);
+    assert_eq!(
+        result.is_ok(),
+        should_parse,
+        "Parse result for '{}' unexpected",
+        input
+    );
 }
 
 #[rstest]
@@ -277,8 +287,14 @@ fn test_literal_as_expression() {
     match &expr {
         Expression::BinaryOp(binop) => {
             assert!(matches!(binop.op, octofhir_cql_ast::BinaryOp::Add));
-            assert!(matches!(assert_literal(&binop.left.inner), Literal::Integer(1)));
-            assert!(matches!(assert_literal(&binop.right.inner), Literal::Integer(2)));
+            assert!(matches!(
+                assert_literal(&binop.left.inner),
+                Literal::Integer(1)
+            ));
+            assert!(matches!(
+                assert_literal(&binop.right.inner),
+                Literal::Integer(2)
+            ));
         }
         _ => panic!("Expected BinaryOp"),
     }
@@ -302,15 +318,14 @@ fn test_multiple_literals_in_list() {
 #[test]
 fn test_literals_with_whitespace() {
     // Should handle various whitespace
-    let inputs = vec![
-        "  42  ",
-        "\t42\t",
-        "\n42\n",
-        "  'hello'  ",
-    ];
+    let inputs = vec!["  42  ", "\t42\t", "\n42\n", "  'hello'  "];
 
     for input in inputs {
         let result = parse_expression(input);
-        assert!(result.is_ok(), "Failed to parse with whitespace: '{}'", input);
+        assert!(
+            result.is_ok(),
+            "Failed to parse with whitespace: '{}'",
+            input
+        );
     }
 }

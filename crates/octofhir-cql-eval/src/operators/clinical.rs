@@ -11,9 +11,9 @@ use crate::context::EvaluationContext;
 use crate::engine::CqlEngine;
 use crate::error::{EvalError, EvalResult};
 use octofhir_cql_elm::{
-    CalculateAgeAtExpression, CalculateAgeExpression, CodeLiteralExpression, ConceptLiteralExpression,
-    InCodeSystemExpression, InValueSetExpression, QuantityExpression, RatioExpression,
-    DateTimePrecision as ElmPrecision,
+    CalculateAgeAtExpression, CalculateAgeExpression, CodeLiteralExpression,
+    ConceptLiteralExpression, DateTimePrecision as ElmPrecision, InCodeSystemExpression,
+    InValueSetExpression, QuantityExpression, RatioExpression,
 };
 use octofhir_cql_types::{CqlCode, CqlConcept, CqlQuantity, CqlRatio, CqlValue};
 
@@ -92,9 +92,10 @@ impl CqlEngine {
 
     /// Evaluate a Quantity expression
     pub fn eval_quantity(&self, expr: &QuantityExpression) -> EvalResult<CqlValue> {
-        let value = expr.value.ok_or_else(|| {
-            EvalError::internal("Quantity expression missing value")
-        })?;
+        let value = expr
+            .value
+            .clone()
+            .ok_or_else(|| EvalError::internal("Quantity expression missing value"))?;
 
         Ok(CqlValue::Quantity(CqlQuantity {
             value,
@@ -109,16 +110,20 @@ impl CqlEngine {
         _ctx: &mut EvaluationContext,
     ) -> EvalResult<CqlValue> {
         let numerator = CqlQuantity {
-            value: expr.numerator.value.ok_or_else(|| {
-                EvalError::internal("Ratio numerator missing value")
-            })?,
+            value: expr
+                .numerator
+                .value
+                .clone()
+                .ok_or_else(|| EvalError::internal("Ratio numerator missing value"))?,
             unit: expr.numerator.unit.clone(),
         };
 
         let denominator = CqlQuantity {
-            value: expr.denominator.value.ok_or_else(|| {
-                EvalError::internal("Ratio denominator missing value")
-            })?,
+            value: expr
+                .denominator
+                .value
+                .clone()
+                .ok_or_else(|| EvalError::internal("Ratio denominator missing value"))?,
             unit: expr.denominator.unit.clone(),
         };
 
@@ -163,19 +168,20 @@ impl CqlEngine {
         } else {
             // Without terminology provider, we can only check if the code's system matches
             match &code_value {
-                CqlValue::Code(code) => {
-                    Ok(CqlValue::Boolean(&code.system == &code_system_id))
-                }
+                CqlValue::Code(code) => Ok(CqlValue::Boolean(code.system == code_system_id)),
                 CqlValue::Concept(concept) => {
                     // Check if any code in the concept is in the code system
-                    let any_match = concept.codes.iter().any(|c| &c.system == &code_system_id);
+                    let any_match = concept.codes.iter().any(|c| c.system == code_system_id);
                     Ok(CqlValue::Boolean(any_match))
                 }
                 CqlValue::String(_) => {
                     // String codes can't be verified without a terminology provider
                     Ok(CqlValue::Null)
                 }
-                _ => Err(EvalError::type_mismatch("Code, Concept, or String", code_value.get_type().name())),
+                _ => Err(EvalError::type_mismatch(
+                    "Code, Concept, or String",
+                    code_value.get_type().name(),
+                )),
             }
         }
     }
@@ -208,12 +214,19 @@ impl CqlEngine {
                         })
                         .ok_or_else(|| EvalError::internal("Invalid value set reference"))?
                 }
-                _ => return Err(EvalError::type_mismatch("String or ValueSet", vs.get_type().name())),
+                _ => {
+                    return Err(EvalError::type_mismatch(
+                        "String or ValueSet",
+                        vs.get_type().name(),
+                    ));
+                }
             }
         } else if let Some(vs_ref) = &expr.valueset {
             vs_ref.name.clone()
         } else {
-            return Err(EvalError::internal("InValueSet expression missing value set"));
+            return Err(EvalError::internal(
+                "InValueSet expression missing value set",
+            ));
         };
 
         // Use terminology provider
@@ -250,13 +263,18 @@ impl CqlEngine {
         let (birth_year, birth_month, birth_day) = match &birthdate {
             CqlValue::Date(d) => (d.year, d.month, d.day),
             CqlValue::DateTime(dt) => (dt.year, dt.month, dt.day),
-            _ => return Err(EvalError::type_mismatch("Date or DateTime", birthdate.get_type().name())),
+            _ => {
+                return Err(EvalError::type_mismatch(
+                    "Date or DateTime",
+                    birthdate.get_type().name(),
+                ));
+            }
         };
 
         // Calculate age based on precision
         let age_unit = elm_precision_to_age_unit(&expr.precision);
         let age = calculate_age_between(
-            birth_year as i32,
+            birth_year,
             birth_month,
             birth_day,
             now.year,
@@ -277,7 +295,9 @@ impl CqlEngine {
         ctx: &mut EvaluationContext,
     ) -> EvalResult<CqlValue> {
         if expr.operand.len() != 2 {
-            return Err(EvalError::internal("CalculateAgeAt requires exactly 2 operands"));
+            return Err(EvalError::internal(
+                "CalculateAgeAt requires exactly 2 operands",
+            ));
         }
 
         let birthdate = self.evaluate(&expr.operand[0], ctx)?;
@@ -291,20 +311,30 @@ impl CqlEngine {
         let (birth_year, birth_month, birth_day) = match &birthdate {
             CqlValue::Date(d) => (d.year, d.month, d.day),
             CqlValue::DateTime(dt) => (dt.year, dt.month, dt.day),
-            _ => return Err(EvalError::type_mismatch("Date or DateTime", birthdate.get_type().name())),
+            _ => {
+                return Err(EvalError::type_mismatch(
+                    "Date or DateTime",
+                    birthdate.get_type().name(),
+                ));
+            }
         };
 
         // Convert as_of to components
         let (as_of_year, as_of_month, as_of_day) = match &as_of {
-            CqlValue::Date(d) => (d.year as i32, d.month, d.day),
+            CqlValue::Date(d) => (d.year, d.month, d.day),
             CqlValue::DateTime(dt) => (dt.year, dt.month, dt.day),
-            _ => return Err(EvalError::type_mismatch("Date or DateTime", as_of.get_type().name())),
+            _ => {
+                return Err(EvalError::type_mismatch(
+                    "Date or DateTime",
+                    as_of.get_type().name(),
+                ));
+            }
         };
 
         // Calculate age based on precision
         let age_unit = elm_precision_to_age_unit(&expr.precision);
         let age = calculate_age_between(
-            birth_year as i32,
+            birth_year,
             birth_month,
             birth_day,
             as_of_year,
@@ -342,7 +372,8 @@ fn calculate_age_between(
             years
         }
         AgeUnit::Month => {
-            let mut months = (as_of_year - birth_year) * 12 + (as_of_month as i32 - birth_month as i32);
+            let mut months =
+                (as_of_year - birth_year) * 12 + (as_of_month as i32 - birth_month as i32);
             // Adjust if birthday hasn't occurred yet this month
             if as_of_day < birth_day {
                 months -= 1;
@@ -361,16 +392,14 @@ fn calculate_age_between(
             );
             total_days / 7
         }
-        AgeUnit::Day => {
-            days_between(
-                birth_year,
-                birth_month,
-                birth_day,
-                as_of_year,
-                as_of_month,
-                as_of_day,
-            )
-        }
+        AgeUnit::Day => days_between(
+            birth_year,
+            birth_month,
+            birth_day,
+            as_of_year,
+            as_of_month,
+            as_of_day,
+        ),
         AgeUnit::Hour => {
             // For date-only values, we use midnight
             days_between(
@@ -390,7 +419,8 @@ fn calculate_age_between(
                 as_of_year,
                 as_of_month,
                 as_of_day,
-            ) * 24 * 60
+            ) * 24
+                * 60
         }
         AgeUnit::Second => {
             days_between(
@@ -400,7 +430,9 @@ fn calculate_age_between(
                 as_of_year,
                 as_of_month,
                 as_of_day,
-            ) * 24 * 60 * 60
+            ) * 24
+                * 60
+                * 60
         }
         AgeUnit::Millisecond => {
             // This would overflow i32 for most realistic ages, but we follow the spec
@@ -411,20 +443,16 @@ fn calculate_age_between(
                 as_of_year,
                 as_of_month,
                 as_of_day,
-            ) * 24 * 60 * 60 * 1000
+            ) * 24
+                * 60
+                * 60
+                * 1000
         }
     }
 }
 
 /// Calculate the number of days between two dates
-fn days_between(
-    year1: i32,
-    month1: u8,
-    day1: u8,
-    year2: i32,
-    month2: u8,
-    day2: u8,
-) -> i32 {
+fn days_between(year1: i32, month1: u8, day1: u8, year2: i32, month2: u8, day2: u8) -> i32 {
     // Use Julian day numbers for accurate calculation
     let jd1 = julian_day_number(year1, month1, day1);
     let jd2 = julian_day_number(year2, month2, day2);
@@ -460,6 +488,7 @@ pub fn concept_in_codes(concept: &CqlConcept, codes: &[CqlCode]) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use bigdecimal::BigDecimal;
     use octofhir_cql_elm::{CodeSystemRef, Element};
 
     fn engine() -> CqlEngine {
@@ -548,14 +577,14 @@ mod tests {
 
         let expr = QuantityExpression {
             element: Element::default(),
-            value: Some(rust_decimal::Decimal::new(120, 0)),
+            value: Some(BigDecimal::from(120)),
             unit: Some("mmHg".to_string()),
         };
 
         let result = e.eval_quantity(&expr).unwrap();
         match result {
             CqlValue::Quantity(q) => {
-                assert_eq!(q.value, rust_decimal::Decimal::new(120, 0));
+                assert_eq!(q.value, BigDecimal::from(120));
                 assert_eq!(q.unit, Some("mmHg".to_string()));
             }
             _ => panic!("Expected Quantity"),
@@ -566,16 +595,24 @@ mod tests {
     fn test_calculate_age_years() {
         // Test the age calculation function directly
         let age = calculate_age_between(
-            1990, Some(6), Some(15),  // Birth: June 15, 1990
-            2024, Some(12), Some(27), // As of: December 27, 2024
+            1990,
+            Some(6),
+            Some(15), // Birth: June 15, 1990
+            2024,
+            Some(12),
+            Some(27), // As of: December 27, 2024
             AgeUnit::Year,
         );
         assert_eq!(age, 34);
 
         // Birthday not yet occurred this year
         let age = calculate_age_between(
-            1990, Some(6), Some(15),  // Birth: June 15, 1990
-            2024, Some(3), Some(1),   // As of: March 1, 2024
+            1990,
+            Some(6),
+            Some(15), // Birth: June 15, 1990
+            2024,
+            Some(3),
+            Some(1), // As of: March 1, 2024
             AgeUnit::Year,
         );
         assert_eq!(age, 33);
@@ -584,16 +621,24 @@ mod tests {
     #[test]
     fn test_calculate_age_months() {
         let age = calculate_age_between(
-            1990, Some(6), Some(15),
-            1991, Some(8), Some(20),
+            1990,
+            Some(6),
+            Some(15),
+            1991,
+            Some(8),
+            Some(20),
             AgeUnit::Month,
         );
         assert_eq!(age, 14); // 14 months
 
         // Day of month not reached
         let age = calculate_age_between(
-            1990, Some(6), Some(15),
-            1991, Some(8), Some(10),
+            1990,
+            Some(6),
+            Some(15),
+            1991,
+            Some(8),
+            Some(10),
             AgeUnit::Month,
         );
         assert_eq!(age, 13); // 13 months (birthday not reached in August)
@@ -602,8 +647,12 @@ mod tests {
     #[test]
     fn test_calculate_age_days() {
         let age = calculate_age_between(
-            2024, Some(1), Some(1),
-            2024, Some(1), Some(31),
+            2024,
+            Some(1),
+            Some(1),
+            2024,
+            Some(1),
+            Some(31),
             AgeUnit::Day,
         );
         assert_eq!(age, 30); // 30 days

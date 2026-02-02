@@ -7,8 +7,8 @@
 //! - Using TerminologyProvider
 
 use octofhir_cql_model::{
-    fhir::{fhir_r4_registry, fhir_r5_registry},
     DataRetriever, ModelProvider, NoOpDataRetriever,
+    fhir::{fhir_r4_registry, fhir_r5_registry},
 };
 use octofhir_fhir_model::NoOpTerminologyProvider;
 use std::sync::Arc;
@@ -44,12 +44,12 @@ async fn main() -> anyhow::Result<()> {
 
     // 4. Load FHIR R5 ModelInfo
     println!("\n4. Loading FHIR R5 ModelInfo...");
-    let r5_registry = fhir_r5_registry()?;
+    let _r5_registry = fhir_r5_registry()?;
     println!("   ✓ FHIR R5 ModelInfo loaded successfully");
 
     // 5. Create a DataRetriever
     println!("\n5. Creating DataRetriever...");
-    let retriever = Arc::new(NoOpDataRetriever::new()) as Arc<dyn DataRetriever>;
+    let _retriever = Arc::new(NoOpDataRetriever::new()) as Arc<dyn DataRetriever>;
     println!("   ✓ DataRetriever created");
 
     // 6. Create a TerminologyProvider

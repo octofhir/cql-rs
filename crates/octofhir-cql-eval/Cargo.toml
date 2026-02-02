@@ -17,7 +17,7 @@ octofhir-fhir-model = { workspace = true }
 octofhir-ucum = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
-rust_decimal = { workspace = true }
+bigdecimal = { workspace = true }
 chrono = { workspace = true }
 indexmap = { workspace = true }
 parking_lot = { workspace = true }
@@ -26,6 +26,7 @@ regex = { workspace = true }
 async-trait = { workspace = true }
 tokio = { workspace = true }
 smallvec = { workspace = true }
+num-traits = "0.2"
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["rt", "macros"] }

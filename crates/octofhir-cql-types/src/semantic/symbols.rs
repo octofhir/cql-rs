@@ -418,10 +418,18 @@ mod tests {
         let mut table = SymbolTable::new();
 
         // Define a parameter
-        table.define(Symbol::new("MeasurementPeriod", SymbolKind::Parameter, CqlType::Interval(Box::new(CqlType::DateTime))));
+        table.define(Symbol::new(
+            "MeasurementPeriod",
+            SymbolKind::Parameter,
+            CqlType::Interval(Box::new(CqlType::DateTime)),
+        ));
 
         // Define an expression
-        table.define(Symbol::new("InitialPopulation", SymbolKind::ExpressionDef, CqlType::list(CqlType::Any)));
+        table.define(Symbol::new(
+            "InitialPopulation",
+            SymbolKind::ExpressionDef,
+            CqlType::list(CqlType::Any),
+        ));
 
         // Lookup
         assert!(table.is_defined("MeasurementPeriod"));
@@ -446,8 +454,16 @@ mod tests {
             CqlType::Decimal,
         );
 
-        table.define(Symbol::new("Abs", SymbolKind::FunctionDef(sig1), CqlType::Integer));
-        table.define(Symbol::new("Abs", SymbolKind::FunctionDef(sig2), CqlType::Decimal));
+        table.define(Symbol::new(
+            "Abs",
+            SymbolKind::FunctionDef(sig1),
+            CqlType::Integer,
+        ));
+        table.define(Symbol::new(
+            "Abs",
+            SymbolKind::FunctionDef(sig2),
+            CqlType::Decimal,
+        ));
 
         // Get overloads
         let overloads = table.function_overloads("Abs");

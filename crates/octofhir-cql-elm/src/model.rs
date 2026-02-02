@@ -3,7 +3,7 @@
 //! This module defines all ELM types for representing compiled CQL as a
 //! portable, executable representation. The types match the HL7 ELM schema.
 
-use rust_decimal::Decimal;
+use bigdecimal::BigDecimal;
 use serde::{Deserialize, Serialize};
 
 // ============================================================================
@@ -1558,7 +1558,7 @@ pub struct QuantityExpression {
     #[serde(flatten)]
     pub element: Element,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub value: Option<Decimal>,
+    pub value: Option<BigDecimal>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub unit: Option<String>,
 }

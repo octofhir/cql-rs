@@ -19,7 +19,11 @@ impl CqlEngine {
     /// Evaluate Concatenate operator
     ///
     /// Concatenates all string operands. Returns null if any operand is null.
-    pub fn eval_concatenate(&self, expr: &NaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_concatenate(
+        &self,
+        expr: &NaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let mut result = String::new();
 
         for operand in &expr.operand {
@@ -38,7 +42,11 @@ impl CqlEngine {
     ///
     /// Combines a list of strings with an optional separator.
     /// Null values in the list are ignored.
-    pub fn eval_combine(&self, expr: &CombineExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_combine(
+        &self,
+        expr: &CombineExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let source = self.evaluate(&expr.source, ctx)?;
 
         if source.is_null() {
@@ -47,7 +55,12 @@ impl CqlEngine {
 
         let list = match source {
             CqlValue::List(l) => l,
-            _ => return Err(EvalError::type_mismatch("List<String>", source.get_type().name())),
+            _ => {
+                return Err(EvalError::type_mismatch(
+                    "List<String>",
+                    source.get_type().name(),
+                ));
+            }
         };
 
         // Get separator (default to empty string)
@@ -82,7 +95,11 @@ impl CqlEngine {
     ///
     /// Splits a string by a separator into a list of strings.
     /// If separator is null, returns a list with the original string.
-    pub fn eval_split(&self, expr: &SplitExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_split(
+        &self,
+        expr: &SplitExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let string_to_split = self.evaluate(&expr.string_to_split, ctx)?;
 
         if string_to_split.is_null() {
@@ -91,7 +108,12 @@ impl CqlEngine {
 
         let s = match &string_to_split {
             CqlValue::String(s) => s.clone(),
-            _ => return Err(EvalError::type_mismatch("String", string_to_split.get_type().name())),
+            _ => {
+                return Err(EvalError::type_mismatch(
+                    "String",
+                    string_to_split.get_type().name(),
+                ));
+            }
         };
 
         let separator = if let Some(sep_expr) = &expr.separator {
@@ -110,7 +132,7 @@ impl CqlEngine {
             String::new() // Default to empty separator if not provided
         };
 
-        let parts: Vec<CqlValue> = s.split(separator.as_str()).map(|p| CqlValue::string(p)).collect();
+        let parts: Vec<CqlValue> = s.split(separator.as_str()).map(CqlValue::string).collect();
 
         Ok(CqlValue::List(CqlList {
             element_type: CqlType::String,
@@ -135,18 +157,29 @@ impl CqlEngine {
 
         let s = match &string_to_split {
             CqlValue::String(s) => s,
-            _ => return Err(EvalError::type_mismatch("String", string_to_split.get_type().name())),
+            _ => {
+                return Err(EvalError::type_mismatch(
+                    "String",
+                    string_to_split.get_type().name(),
+                ));
+            }
         };
 
         let pattern = match &separator_pattern {
             CqlValue::String(p) => p,
-            _ => return Err(EvalError::type_mismatch("String", separator_pattern.get_type().name())),
+            _ => {
+                return Err(EvalError::type_mismatch(
+                    "String",
+                    separator_pattern.get_type().name(),
+                ));
+            }
         };
 
-        let regex = Regex::new(pattern)
-            .map_err(|_| EvalError::InvalidRegex { pattern: pattern.clone() })?;
+        let regex = Regex::new(pattern).map_err(|_| EvalError::InvalidRegex {
+            pattern: pattern.clone(),
+        })?;
 
-        let parts: Vec<CqlValue> = regex.split(s).map(|p| CqlValue::string(p)).collect();
+        let parts: Vec<CqlValue> = regex.split(s).map(CqlValue::string).collect();
 
         Ok(CqlValue::List(CqlList {
             element_type: CqlType::String,
@@ -155,41 +188,66 @@ impl CqlEngine {
     }
 
     /// Evaluate Length operator for strings
-    pub fn eval_string_length(&self, expr: &UnaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_string_length(
+        &self,
+        expr: &UnaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let operand = self.evaluate(&expr.operand, ctx)?;
 
         match &operand {
             CqlValue::Null => Ok(CqlValue::Null),
             CqlValue::String(s) => Ok(CqlValue::Integer(s.chars().count() as i32)),
             CqlValue::List(l) => Ok(CqlValue::Integer(l.len() as i32)),
-            _ => Err(EvalError::unsupported_operator("Length", operand.get_type().name())),
+            _ => Err(EvalError::unsupported_operator(
+                "Length",
+                operand.get_type().name(),
+            )),
         }
     }
 
     /// Evaluate Upper operator
-    pub fn eval_upper(&self, expr: &UnaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_upper(
+        &self,
+        expr: &UnaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let operand = self.evaluate(&expr.operand, ctx)?;
 
         match &operand {
             CqlValue::Null => Ok(CqlValue::Null),
             CqlValue::String(s) => Ok(CqlValue::String(s.to_uppercase())),
-            _ => Err(EvalError::type_mismatch("String", operand.get_type().name())),
+            _ => Err(EvalError::type_mismatch(
+                "String",
+                operand.get_type().name(),
+            )),
         }
     }
 
     /// Evaluate Lower operator
-    pub fn eval_lower(&self, expr: &UnaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_lower(
+        &self,
+        expr: &UnaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let operand = self.evaluate(&expr.operand, ctx)?;
 
         match &operand {
             CqlValue::Null => Ok(CqlValue::Null),
             CqlValue::String(s) => Ok(CqlValue::String(s.to_lowercase())),
-            _ => Err(EvalError::type_mismatch("String", operand.get_type().name())),
+            _ => Err(EvalError::type_mismatch(
+                "String",
+                operand.get_type().name(),
+            )),
         }
     }
 
     /// Evaluate Indexer operator for strings (0-based indexing)
-    pub fn eval_indexer(&self, expr: &BinaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_indexer(
+        &self,
+        expr: &BinaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let (source, index) = self.eval_binary_operands(expr, ctx)?;
 
         if source.is_null() || index.is_null() {
@@ -225,7 +283,11 @@ impl CqlEngine {
     /// Evaluate PositionOf operator
     ///
     /// Returns 0-based position of pattern in string, or -1 if not found.
-    pub fn eval_position_of(&self, expr: &PositionOfExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_position_of(
+        &self,
+        expr: &PositionOfExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let pattern = self.evaluate(&expr.pattern, ctx)?;
         let string = self.evaluate(&expr.string, ctx)?;
 
@@ -235,7 +297,12 @@ impl CqlEngine {
 
         let p = match &pattern {
             CqlValue::String(s) => s,
-            _ => return Err(EvalError::type_mismatch("String", pattern.get_type().name())),
+            _ => {
+                return Err(EvalError::type_mismatch(
+                    "String",
+                    pattern.get_type().name(),
+                ));
+            }
         };
 
         let s = match &string {
@@ -264,7 +331,12 @@ impl CqlEngine {
 
         let p = match &pattern {
             CqlValue::String(s) => s,
-            _ => return Err(EvalError::type_mismatch("String", pattern.get_type().name())),
+            _ => {
+                return Err(EvalError::type_mismatch(
+                    "String",
+                    pattern.get_type().name(),
+                ));
+            }
         };
 
         let s = match &string {
@@ -281,7 +353,11 @@ impl CqlEngine {
     /// Evaluate Substring operator
     ///
     /// Extracts a substring starting at startIndex (0-based) with optional length.
-    pub fn eval_substring(&self, expr: &SubstringExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_substring(
+        &self,
+        expr: &SubstringExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let string_to_sub = self.evaluate(&expr.string_to_sub, ctx)?;
         let start_index = self.evaluate(&expr.start_index, ctx)?;
 
@@ -291,7 +367,12 @@ impl CqlEngine {
 
         let s = match &string_to_sub {
             CqlValue::String(s) => s,
-            _ => return Err(EvalError::type_mismatch("String", string_to_sub.get_type().name())),
+            _ => {
+                return Err(EvalError::type_mismatch(
+                    "String",
+                    string_to_sub.get_type().name(),
+                ));
+            }
         };
 
         let start = match &start_index {
@@ -301,7 +382,12 @@ impl CqlEngine {
                 }
                 *i as usize
             }
-            _ => return Err(EvalError::type_mismatch("Integer", start_index.get_type().name())),
+            _ => {
+                return Err(EvalError::type_mismatch(
+                    "Integer",
+                    start_index.get_type().name(),
+                ));
+            }
         };
 
         let chars: Vec<char> = s.chars().collect();
@@ -321,7 +407,12 @@ impl CqlEngine {
                     let end = (start + len as usize).min(chars.len());
                     chars[start..end].iter().collect::<String>()
                 }
-                _ => return Err(EvalError::type_mismatch("Integer", length.get_type().name())),
+                _ => {
+                    return Err(EvalError::type_mismatch(
+                        "Integer",
+                        length.get_type().name(),
+                    ));
+                }
             }
         } else {
             chars[start..].iter().collect::<String>()
@@ -331,7 +422,11 @@ impl CqlEngine {
     }
 
     /// Evaluate StartsWith operator
-    pub fn eval_starts_with(&self, expr: &BinaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_starts_with(
+        &self,
+        expr: &BinaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let (string, prefix) = self.eval_binary_operands(expr, ctx)?;
 
         if string.is_null() || prefix.is_null() {
@@ -352,7 +447,11 @@ impl CqlEngine {
     }
 
     /// Evaluate EndsWith operator
-    pub fn eval_ends_with(&self, expr: &BinaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_ends_with(
+        &self,
+        expr: &BinaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let (string, suffix) = self.eval_binary_operands(expr, ctx)?;
 
         if string.is_null() || suffix.is_null() {
@@ -375,7 +474,11 @@ impl CqlEngine {
     /// Evaluate Matches operator
     ///
     /// Returns true if the string matches the regex pattern.
-    pub fn eval_matches(&self, expr: &BinaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_matches(
+        &self,
+        expr: &BinaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let (string, pattern) = self.eval_binary_operands(expr, ctx)?;
 
         if string.is_null() || pattern.is_null() {
@@ -389,7 +492,12 @@ impl CqlEngine {
 
         let p = match &pattern {
             CqlValue::String(s) => s,
-            _ => return Err(EvalError::type_mismatch("String", pattern.get_type().name())),
+            _ => {
+                return Err(EvalError::type_mismatch(
+                    "String",
+                    pattern.get_type().name(),
+                ));
+            }
         };
 
         let regex = Regex::new(p).map_err(|_| EvalError::InvalidRegex { pattern: p.clone() })?;
@@ -400,7 +508,11 @@ impl CqlEngine {
     /// Evaluate ReplaceMatches operator
     ///
     /// Replaces all occurrences matching the pattern with the substitution.
-    pub fn eval_replace_matches(&self, expr: &TernaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_replace_matches(
+        &self,
+        expr: &TernaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         if expr.operand.len() != 3 {
             return Err(EvalError::internal("ReplaceMatches requires 3 operands"));
         }
@@ -420,12 +532,22 @@ impl CqlEngine {
 
         let p = match &pattern {
             CqlValue::String(s) => s,
-            _ => return Err(EvalError::type_mismatch("String", pattern.get_type().name())),
+            _ => {
+                return Err(EvalError::type_mismatch(
+                    "String",
+                    pattern.get_type().name(),
+                ));
+            }
         };
 
         let sub = match &substitution {
             CqlValue::String(s) => s,
-            _ => return Err(EvalError::type_mismatch("String", substitution.get_type().name())),
+            _ => {
+                return Err(EvalError::type_mismatch(
+                    "String",
+                    substitution.get_type().name(),
+                ));
+            }
         };
 
         let regex = Regex::new(p).map_err(|_| EvalError::InvalidRegex { pattern: p.clone() })?;
@@ -435,7 +557,9 @@ impl CqlEngine {
         // In Rust regex: $$ means literal $, $ with digit means backreference
         let rust_sub = convert_cql_replacement_to_rust(sub);
 
-        Ok(CqlValue::String(regex.replace_all(s, rust_sub.as_str()).to_string()))
+        Ok(CqlValue::String(
+            regex.replace_all(s, rust_sub.as_str()).to_string(),
+        ))
     }
 }
 
@@ -515,7 +639,9 @@ mod tests {
     }
 
     fn null_expr() -> Box<Expression> {
-        Box::new(Expression::Null(NullLiteral { element: Element::default() }))
+        Box::new(Expression::Null(NullLiteral {
+            element: Element::default(),
+        }))
     }
 
     #[test]
@@ -525,7 +651,11 @@ mod tests {
 
         let expr = NaryExpression {
             element: Element::default(),
-            operand: vec![string_expr("Hello"), string_expr(", "), string_expr("World!")],
+            operand: vec![
+                string_expr("Hello"),
+                string_expr(", "),
+                string_expr("World!"),
+            ],
         };
 
         let result = e.eval_concatenate(&expr, &mut c).unwrap();
@@ -654,7 +784,10 @@ mod tests {
 
         let expr = BinaryExpression {
             element: Element::default(),
-            operand: vec![string_expr("test@example.com"), string_expr(r"^\w+@\w+\.\w+$")],
+            operand: vec![
+                string_expr("test@example.com"),
+                string_expr(r"^\w+@\w+\.\w+$"),
+            ],
         };
 
         let result = e.eval_matches(&expr, &mut c).unwrap();

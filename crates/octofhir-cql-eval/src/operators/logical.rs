@@ -6,7 +6,9 @@
 use crate::context::EvaluationContext;
 use crate::engine::CqlEngine;
 use crate::error::{EvalError, EvalResult};
-use octofhir_cql_elm::{BinaryExpression, CaseExpression, IfExpression, NaryExpression, UnaryExpression};
+use octofhir_cql_elm::{
+    BinaryExpression, CaseExpression, IfExpression, NaryExpression, UnaryExpression,
+};
 use octofhir_cql_types::CqlValue;
 
 impl CqlEngine {
@@ -24,7 +26,11 @@ impl CqlEngine {
     /// | null  | true  | null    |
     /// | null  | false | false   |
     /// | null  | null  | null    |
-    pub fn eval_and(&self, expr: &BinaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_and(
+        &self,
+        expr: &BinaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let (left, right) = self.eval_binary_operands(expr, ctx)?;
 
         match (&left, &right) {
@@ -33,13 +39,9 @@ impl CqlEngine {
                 Ok(CqlValue::Boolean(false))
             }
             // Both true -> true
-            (CqlValue::Boolean(true), CqlValue::Boolean(true)) => {
-                Ok(CqlValue::Boolean(true))
-            }
+            (CqlValue::Boolean(true), CqlValue::Boolean(true)) => Ok(CqlValue::Boolean(true)),
             // Any null with non-false -> null
-            (CqlValue::Null, _) | (_, CqlValue::Null) => {
-                Ok(CqlValue::Null)
-            }
+            (CqlValue::Null, _) | (_, CqlValue::Null) => Ok(CqlValue::Null),
             // Type error if not boolean
             _ => Err(EvalError::type_mismatch("Boolean", left.get_type().name())),
         }
@@ -59,7 +61,11 @@ impl CqlEngine {
     /// | null  | true  | true    |
     /// | null  | false | null    |
     /// | null  | null  | null    |
-    pub fn eval_or(&self, expr: &BinaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_or(
+        &self,
+        expr: &BinaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let (left, right) = self.eval_binary_operands(expr, ctx)?;
 
         match (&left, &right) {
@@ -68,13 +74,9 @@ impl CqlEngine {
                 Ok(CqlValue::Boolean(true))
             }
             // Both false -> false
-            (CqlValue::Boolean(false), CqlValue::Boolean(false)) => {
-                Ok(CqlValue::Boolean(false))
-            }
+            (CqlValue::Boolean(false), CqlValue::Boolean(false)) => Ok(CqlValue::Boolean(false)),
             // Any null with non-true -> null
-            (CqlValue::Null, _) | (_, CqlValue::Null) => {
-                Ok(CqlValue::Null)
-            }
+            (CqlValue::Null, _) | (_, CqlValue::Null) => Ok(CqlValue::Null),
             // Type error if not boolean
             _ => Err(EvalError::type_mismatch("Boolean", left.get_type().name())),
         }
@@ -83,7 +85,11 @@ impl CqlEngine {
     /// Evaluate Xor (exclusive or) operator
     ///
     /// Returns true if exactly one operand is true
-    pub fn eval_xor(&self, expr: &BinaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_xor(
+        &self,
+        expr: &BinaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let (left, right) = self.eval_binary_operands(expr, ctx)?;
 
         if left.is_null() || right.is_null() {
@@ -91,9 +97,7 @@ impl CqlEngine {
         }
 
         match (&left, &right) {
-            (CqlValue::Boolean(a), CqlValue::Boolean(b)) => {
-                Ok(CqlValue::Boolean(*a != *b))
-            }
+            (CqlValue::Boolean(a), CqlValue::Boolean(b)) => Ok(CqlValue::Boolean(*a != *b)),
             _ => Err(EvalError::type_mismatch("Boolean", left.get_type().name())),
         }
     }
@@ -102,7 +106,11 @@ impl CqlEngine {
     ///
     /// A implies B is equivalent to (not A) or B
     /// Right-associative
-    pub fn eval_implies(&self, expr: &BinaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_implies(
+        &self,
+        expr: &BinaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let (left, right) = self.eval_binary_operands(expr, ctx)?;
 
         match (&left, &right) {
@@ -124,13 +132,20 @@ impl CqlEngine {
     /// not true -> false
     /// not false -> true
     /// not null -> null
-    pub fn eval_not(&self, expr: &UnaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_not(
+        &self,
+        expr: &UnaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let operand = self.evaluate(&expr.operand, ctx)?;
 
         match &operand {
             CqlValue::Boolean(b) => Ok(CqlValue::Boolean(!b)),
             CqlValue::Null => Ok(CqlValue::Null),
-            _ => Err(EvalError::type_mismatch("Boolean", operand.get_type().name())),
+            _ => Err(EvalError::type_mismatch(
+                "Boolean",
+                operand.get_type().name(),
+            )),
         }
     }
 
@@ -138,7 +153,11 @@ impl CqlEngine {
     ///
     /// Returns true if operand is null, false otherwise
     /// Never returns null
-    pub fn eval_is_null(&self, expr: &UnaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_is_null(
+        &self,
+        expr: &UnaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let operand = self.evaluate(&expr.operand, ctx)?;
         Ok(CqlValue::Boolean(operand.is_null()))
     }
@@ -147,7 +166,11 @@ impl CqlEngine {
     ///
     /// Returns true if operand is exactly true, false otherwise
     /// Never returns null
-    pub fn eval_is_true(&self, expr: &UnaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_is_true(
+        &self,
+        expr: &UnaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let operand = self.evaluate(&expr.operand, ctx)?;
         Ok(CqlValue::Boolean(operand.is_true()))
     }
@@ -156,7 +179,11 @@ impl CqlEngine {
     ///
     /// Returns true if operand is exactly false, false otherwise
     /// Never returns null
-    pub fn eval_is_false(&self, expr: &UnaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_is_false(
+        &self,
+        expr: &UnaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let operand = self.evaluate(&expr.operand, ctx)?;
         Ok(CqlValue::Boolean(operand.is_false()))
     }
@@ -166,7 +193,11 @@ impl CqlEngine {
     /// Returns the first non-null value in the list
     /// If all values are null, returns null
     /// If a single list argument is provided, iterates through the list elements
-    pub fn eval_coalesce(&self, expr: &NaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_coalesce(
+        &self,
+        expr: &NaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         // Special case: single list argument - iterate through list elements
         if expr.operand.len() == 1 {
             let value = self.evaluate(&expr.operand[0], ctx)?;
@@ -198,13 +229,20 @@ impl CqlEngine {
     /// Evaluate If expression
     ///
     /// if condition then thenExpr else elseExpr
-    pub fn eval_if(&self, expr: &IfExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_if(
+        &self,
+        expr: &IfExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let condition = self.evaluate(&expr.condition, ctx)?;
 
         match &condition {
             CqlValue::Boolean(true) => self.evaluate(&expr.then, ctx),
             CqlValue::Boolean(false) | CqlValue::Null => self.evaluate(&expr.else_clause, ctx),
-            _ => Err(EvalError::type_mismatch("Boolean", condition.get_type().name())),
+            _ => Err(EvalError::type_mismatch(
+                "Boolean",
+                condition.get_type().name(),
+            )),
         }
     }
 
@@ -213,7 +251,11 @@ impl CqlEngine {
     /// Supports both:
     /// - case when cond1 then expr1 when cond2 then expr2 else elseExpr end
     /// - case comparand when val1 then expr1 when val2 then expr2 else elseExpr end
-    pub fn eval_case(&self, expr: &CaseExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_case(
+        &self,
+        expr: &CaseExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         // If there's a comparand, compare each case item to it
         if let Some(comparand_expr) = &expr.comparand {
             let comparand = self.evaluate(comparand_expr, ctx)?;
@@ -224,7 +266,8 @@ impl CqlEngine {
                 // Use equality comparison
                 let equal = match (&comparand, &when_value) {
                     (CqlValue::Null, _) | (_, CqlValue::Null) => false,
-                    _ => crate::operators::comparison::cql_equal(&comparand, &when_value)?.unwrap_or(false),
+                    _ => crate::operators::comparison::cql_equal(&comparand, &when_value)?
+                        .unwrap_or(false),
                 };
 
                 if equal {
@@ -273,7 +316,9 @@ mod tests {
     }
 
     fn null_expr() -> Box<Expression> {
-        Box::new(Expression::Null(NullLiteral { element: Element::default() }))
+        Box::new(Expression::Null(NullLiteral {
+            element: Element::default(),
+        }))
     }
 
     fn make_binary(left: Box<Expression>, right: Box<Expression>) -> BinaryExpression {

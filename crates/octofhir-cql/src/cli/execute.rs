@@ -2,7 +2,7 @@
 
 use super::{output, resolver};
 use anyhow::{Context, Result};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
@@ -39,7 +39,11 @@ pub async fn execute(config: ExecuteConfig) -> Result<()> {
         .with_context(|| format!("Failed to read CQL file: {}", config.file.display()))?;
 
     if config.verbose {
-        eprintln!("Loaded {} bytes from {}", cql_content.len(), config.file.display());
+        eprintln!(
+            "Loaded {} bytes from {}",
+            cql_content.len(),
+            config.file.display()
+        );
     }
 
     // Parse parameters
@@ -73,13 +77,17 @@ pub async fn execute(config: ExecuteConfig) -> Result<()> {
     let library = crate::parser::parse(&cql_content)
         .with_context(|| format!("Failed to parse CQL file: {}", config.file.display()))?;
 
-    if config.verbose {
-        if let Some(def) = &library.definition {
-            eprintln!("Parsed library: {} version {}",
-                def.name.name.name,
-                def.version.as_ref().map(|v| v.version.as_str()).unwrap_or("(no version)")
-            );
-        }
+    if config.verbose
+        && let Some(def) = &library.definition
+    {
+        eprintln!(
+            "Parsed library: {} version {}",
+            def.name.name.name,
+            def.version
+                .as_ref()
+                .map(|v| v.version.as_str())
+                .unwrap_or("(no version)")
+        );
     }
 
     // For now, create a mock result since evaluation is not yet implemented
@@ -107,9 +115,7 @@ pub async fn execute(config: ExecuteConfig) -> Result<()> {
     });
 
     // Format and output results
-    let format = output::OutputFormat::from_str(
-        config.output_format.as_deref().unwrap_or("pretty")
-    );
+    let format = output::OutputFormat::parse(config.output_format.as_deref().unwrap_or("pretty"));
 
     output::print_output(&result, format, config.output_file.as_deref())?;
 
@@ -127,7 +133,10 @@ fn parse_parameters(params: &[String]) -> Result<HashMap<String, Value>> {
     for param in params {
         let parts: Vec<&str> = param.splitn(2, '=').collect();
         if parts.len() != 2 {
-            anyhow::bail!("Invalid parameter format: '{}'. Expected 'name=value'", param);
+            anyhow::bail!(
+                "Invalid parameter format: '{}'. Expected 'name=value'",
+                param
+            );
         }
 
         let name = parts[0].trim().to_string();
@@ -147,8 +156,7 @@ fn parse_parameters(params: &[String]) -> Result<HashMap<String, Value>> {
             Value::Null
         } else if value_str.starts_with('{') || value_str.starts_with('[') {
             // Try to parse as JSON
-            serde_json::from_str(value_str)
-                .unwrap_or_else(|_| json!(value_str))
+            serde_json::from_str(value_str).unwrap_or_else(|_| json!(value_str))
         } else {
             // Treat as string
             json!(value_str)

@@ -135,8 +135,11 @@ static ERROR_INFO: LazyLock<HashMap<u16, ErrorInfo>> = LazyLock::new(|| {
     map.insert(35, ErrorInfo::new("Reserved keyword"));
 
     // Semantic errors (0100-0199)
-    map.insert(100, ErrorInfo::new("Undefined identifier")
-        .with_help("Check that the identifier is defined in scope"));
+    map.insert(
+        100,
+        ErrorInfo::new("Undefined identifier")
+            .with_help("Check that the identifier is defined in scope"),
+    );
     map.insert(101, ErrorInfo::new("Undefined function"));
     map.insert(102, ErrorInfo::new("Undefined type"));
     map.insert(103, ErrorInfo::new("Undefined library"));

@@ -1,8 +1,7 @@
 //! CQL command-line interface
 
-use anyhow::Result;
 use clap::{Parser, Subcommand};
-use octofhir_cql::cli::{execute, output, repl, resolver, translate, validate};
+use octofhir_cql::cli::{execute, output, repl, translate, validate};
 use std::path::PathBuf;
 
 /// CQL command-line tool

@@ -8,8 +8,8 @@
 //! - Null propagation
 //! - Choice type handling
 
+use bigdecimal::BigDecimal;
 use octofhir_cql_types::*;
-use rust_decimal::Decimal;
 
 // === Numeric Coercions ===
 
@@ -17,14 +17,14 @@ use rust_decimal::Decimal;
 fn test_integer_to_decimal_coercion() {
     // In CQL, integers can be implicitly converted to decimals
     let int_val = 42i64;
-    let decimal = Decimal::from(int_val);
-    assert_eq!(decimal, Decimal::new(42, 0));
+    let decimal = BigDecimal::from(int_val);
+    assert_eq!(decimal, BigDecimal::from(42));
 }
 
 #[test]
 fn test_decimal_precision_preserved() {
-    let dec1 = "3.14".parse::<Decimal>().unwrap();
-    let dec2 = "3.140".parse::<Decimal>().unwrap();
+    let _dec1 = "3.14".parse::<BigDecimal>().unwrap();
+    let _dec2 = "3.140".parse::<BigDecimal>().unwrap();
 
     // Decimal precision should be maintained
     // Note: Rust Decimal may normalize these
@@ -35,11 +35,11 @@ fn test_integer_to_quantity() {
     // Integer can be converted to quantity with implicit unit
     let value = CqlValue::integer(5);
     let quantity = CqlQuantity {
-        value: Decimal::from(5),
+        value: BigDecimal::from(5),
         unit: Some("1".to_string()), // Unity
     };
 
-    assert_eq!(quantity.value, Decimal::from(5));
+    assert_eq!(quantity.value, BigDecimal::from(5));
     let _ = value; // suppress unused warning
 }
 
@@ -66,15 +66,15 @@ fn test_string_to_integer() {
 #[test]
 fn test_string_to_decimal() {
     let s = "3.14";
-    let result = s.parse::<Decimal>();
+    let result = s.parse::<BigDecimal>();
     assert!(result.is_ok());
     assert_eq!(result.unwrap().to_string(), "3.14");
 }
 
 #[test]
 fn test_string_to_boolean() {
-    assert_eq!("true".parse::<bool>().unwrap(), true);
-    assert_eq!("false".parse::<bool>().unwrap(), false);
+    assert!("true".parse::<bool>().unwrap());
+    assert!(!"false".parse::<bool>().unwrap());
 }
 
 #[test]
@@ -89,7 +89,16 @@ fn test_invalid_string_to_integer() {
 #[test]
 fn test_date_to_datetime() {
     let date = CqlDate::new(2024, 3, 15);
-    let datetime = CqlDateTime::new(date.year, date.month.unwrap(), date.day.unwrap(), 0, 0, 0, 0, None);
+    let datetime = CqlDateTime::new(
+        date.year,
+        date.month.unwrap(),
+        date.day.unwrap(),
+        0,
+        0,
+        0,
+        0,
+        None,
+    );
 
     assert_eq!(datetime.year, 2024);
     assert_eq!(datetime.month, Some(3));
@@ -99,7 +108,11 @@ fn test_date_to_datetime() {
 #[test]
 fn test_datetime_to_date() {
     let datetime = CqlDateTime::new(2024, 3, 15, 10, 30, 0, 0, None);
-    let date = CqlDate::new(datetime.year, datetime.month.unwrap(), datetime.day.unwrap());
+    let date = CqlDate::new(
+        datetime.year,
+        datetime.month.unwrap(),
+        datetime.day.unwrap(),
+    );
 
     assert_eq!(date.year, 2024);
     assert_eq!(date.month, Some(3));
@@ -149,8 +162,8 @@ fn test_null_to_any_type() {
 #[test]
 fn test_null_in_operations() {
     // Operations with null should propagate null (three-valued logic)
-    let null_val = CqlValue::Null;
-    let int_val = CqlValue::integer(42);
+    let _null_val = CqlValue::Null;
+    let _int_val = CqlValue::integer(42);
 
     // In actual evaluation, null + int would result in null
     // This test just verifies the type representation
@@ -175,7 +188,7 @@ fn test_singleton_to_list() {
 #[test]
 fn test_list_element_type_promotion() {
     // If a list contains integers and decimals, integers should promote to decimals
-    let list = vec![
+    let list = [
         CqlValue::integer(1),
         CqlValue::decimal("2.5".parse().unwrap()),
         CqlValue::integer(3),
@@ -219,8 +232,8 @@ fn test_quantity_unit_compatibility() {
 
     // These should be equivalent (1kg = 1000g)
     // Actual conversion would require UCUM library
-    assert_eq!(qty1.value, Decimal::new(1000, 0));
-    assert_eq!(qty2.value, Decimal::new(1, 0));
+    assert_eq!(qty1.value, BigDecimal::from(1000));
+    assert_eq!(qty2.value, BigDecimal::from(1));
 }
 
 #[test]
@@ -347,8 +360,8 @@ fn test_integer_is_subtype_of_decimal() {
     // In type checking, Integer <: Decimal
     match int_val {
         CqlValue::Integer(i) => {
-            let as_decimal = Decimal::from(i);
-            assert_eq!(as_decimal, Decimal::from(42));
+            let as_decimal = BigDecimal::from(i);
+            assert_eq!(as_decimal, BigDecimal::from(42));
         }
         _ => panic!("Expected integer"),
     }
@@ -387,7 +400,7 @@ fn test_integer_list_to_decimal_list() {
     let decimal_list: Vec<CqlValue> = int_list
         .into_iter()
         .map(|v| match v {
-            CqlValue::Integer(i) => CqlValue::decimal(Decimal::from(i)),
+            CqlValue::Integer(i) => CqlValue::decimal(BigDecimal::from(i)),
             other => other,
         })
         .collect();

@@ -3,8 +3,8 @@
 //! This module defines the CqlValue enum and all supporting types for
 //! representing CQL values at runtime per the CQL 1.5 specification.
 
+use bigdecimal::BigDecimal;
 use indexmap::IndexMap;
-use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use smallvec::SmallVec;
 use std::cmp::Ordering;
@@ -30,7 +30,7 @@ pub enum CqlValue {
     /// 64-bit signed integer (Long)
     Long(i64),
     /// Arbitrary precision decimal
-    Decimal(Decimal),
+    Decimal(BigDecimal),
     /// String value (using String for serde compatibility)
     String(String),
 
@@ -135,11 +135,11 @@ impl CqlValue {
     }
 
     /// Try to get as Decimal
-    pub fn as_decimal(&self) -> Option<Decimal> {
+    pub fn as_decimal(&self) -> Option<BigDecimal> {
         match self {
-            Self::Decimal(d) => Some(*d),
-            Self::Integer(i) => Some(Decimal::from(*i)),
-            Self::Long(l) => Some(Decimal::from(*l)),
+            Self::Decimal(d) => Some(d.clone()),
+            Self::Integer(i) => Some(BigDecimal::from(*i)),
+            Self::Long(l) => Some(BigDecimal::from(*l)),
             _ => None,
         }
     }
@@ -197,7 +197,7 @@ impl CqlValue {
     }
 
     /// Create a decimal value
-    pub fn decimal(value: Decimal) -> Self {
+    pub fn decimal(value: BigDecimal) -> Self {
         Self::Decimal(value)
     }
 
@@ -271,10 +271,10 @@ impl PartialEq for CqlValue {
             // Cross-type numeric comparisons
             (Self::Integer(a), Self::Long(b)) => (*a as i64) == *b,
             (Self::Long(a), Self::Integer(b)) => *a == (*b as i64),
-            (Self::Integer(a), Self::Decimal(b)) => Decimal::from(*a) == *b,
-            (Self::Decimal(a), Self::Integer(b)) => *a == Decimal::from(*b),
-            (Self::Long(a), Self::Decimal(b)) => Decimal::from(*a) == *b,
-            (Self::Decimal(a), Self::Long(b)) => *a == Decimal::from(*b),
+            (Self::Integer(a), Self::Decimal(b)) => &BigDecimal::from(*a) == b,
+            (Self::Decimal(a), Self::Integer(b)) => a == &BigDecimal::from(*b),
+            (Self::Long(a), Self::Decimal(b)) => &BigDecimal::from(*a) == b,
+            (Self::Decimal(a), Self::Long(b)) => a == &BigDecimal::from(*b),
             _ => false,
         }
     }
@@ -665,8 +665,8 @@ impl CqlDateTime {
         let s = s.strip_prefix('@').unwrap_or(s);
 
         // Handle timezone suffix
-        let (datetime_str, tz_offset) = if s.ends_with('Z') {
-            (&s[..s.len() - 1], Some(0i16))
+        let (datetime_str, tz_offset) = if let Some(stripped) = s.strip_suffix('Z') {
+            (stripped, Some(0i16))
         } else if let Some(plus_idx) = s.rfind('+') {
             if plus_idx > 10 {
                 // Make sure it's a timezone offset, not part of date
@@ -740,12 +740,12 @@ impl CqlDateTime {
     pub fn has_uncertainty(&self) -> bool {
         // If any component between year and the precision level is None, there's uncertainty
         // Year is always required, so we check month onwards
-        self.month.is_none() ||
-            (self.month.is_some() && self.day.is_none()) ||
-            (self.day.is_some() && self.hour.is_none()) ||
-            (self.hour.is_some() && self.minute.is_none()) ||
-            (self.minute.is_some() && self.second.is_none()) ||
-            (self.second.is_some() && self.millisecond.is_none())
+        self.month.is_none()
+            || (self.month.is_some() && self.day.is_none())
+            || (self.day.is_some() && self.hour.is_none())
+            || (self.hour.is_some() && self.minute.is_none())
+            || (self.minute.is_some() && self.second.is_none())
+            || (self.second.is_some() && self.millisecond.is_none())
     }
 
     /// Get the low (earliest) boundary of this DateTime
@@ -919,7 +919,10 @@ impl CqlTime {
     /// Returns a new CqlTime with only components up to the given precision
     pub fn truncate_to_precision(&self, precision: DateTimePrecision) -> Self {
         match precision {
-            DateTimePrecision::Year | DateTimePrecision::Month | DateTimePrecision::Day | DateTimePrecision::Hour => Self {
+            DateTimePrecision::Year
+            | DateTimePrecision::Month
+            | DateTimePrecision::Day
+            | DateTimePrecision::Hour => Self {
                 hour: self.hour,
                 minute: None,
                 second: None,
@@ -997,7 +1000,7 @@ impl CqlTime {
                     millisecond: ms,
                 })
             }
-            3 | _ => {
+            _ => {
                 let hour: u8 = parts.first()?.parse().ok()?;
                 let minute: u8 = parts.get(1)?.parse().ok()?;
                 let second: u8 = parts.get(2)?.parse().ok()?;
@@ -1079,14 +1082,14 @@ impl PartialOrd for CqlTime {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CqlQuantity {
     /// Numeric value
-    pub value: Decimal,
+    pub value: BigDecimal,
     /// UCUM unit string (e.g., "mg", "kg", "m/s")
     pub unit: Option<String>,
 }
 
 impl CqlQuantity {
     /// Create a new quantity
-    pub fn new(value: Decimal, unit: impl Into<String>) -> Self {
+    pub fn new(value: BigDecimal, unit: impl Into<String>) -> Self {
         Self {
             value,
             unit: Some(unit.into()),
@@ -1094,12 +1097,12 @@ impl CqlQuantity {
     }
 
     /// Create a unitless quantity
-    pub fn unitless(value: Decimal) -> Self {
+    pub fn unitless(value: BigDecimal) -> Self {
         Self { value, unit: None }
     }
 
     /// Create a quantity with unit "1" (dimensionless)
-    pub fn dimensionless(value: Decimal) -> Self {
+    pub fn dimensionless(value: BigDecimal) -> Self {
         Self {
             value,
             unit: Some("1".into()),
@@ -1235,7 +1238,10 @@ pub struct CqlConcept {
 
 impl CqlConcept {
     /// Create a new concept
-    pub fn new(codes: impl IntoIterator<Item = CqlCode>, display: Option<impl Into<String>>) -> Self {
+    pub fn new(
+        codes: impl IntoIterator<Item = CqlCode>,
+        display: Option<impl Into<String>>,
+    ) -> Self {
         Self {
             codes: codes.into_iter().collect(),
             display: display.map(Into::into),
@@ -1357,7 +1363,7 @@ impl fmt::Display for CqlList {
         write!(f, "{{")?;
         for (i, elem) in self.elements.iter().enumerate() {
             if i > 0 {
-                write!(f, ", ")?;  // Space after comma for spec compliance
+                write!(f, ", ")?; // Space after comma for spec compliance
             }
             write!(f, "{}", elem)?;
         }
@@ -1515,12 +1521,11 @@ impl CqlTuple {
     }
 
     /// Create a tuple from an iterator of (name, value) pairs
-    pub fn from_elements(elements: impl IntoIterator<Item = (impl Into<String>, CqlValue)>) -> Self {
+    pub fn from_elements(
+        elements: impl IntoIterator<Item = (impl Into<String>, CqlValue)>,
+    ) -> Self {
         Self {
-            elements: elements
-                .into_iter()
-                .map(|(k, v)| (k.into(), v))
-                .collect(),
+            elements: elements.into_iter().map(|(k, v)| (k.into(), v)).collect(),
         }
     }
 
@@ -1563,7 +1568,7 @@ impl PartialEq for CqlTuple {
         }
         self.elements
             .iter()
-            .all(|(k, v)| other.elements.get(k).map_or(false, |ov| v == ov))
+            .all(|(k, v)| other.elements.get(k) == Some(v))
     }
 }
 
@@ -1612,10 +1617,10 @@ mod tests {
 
     #[test]
     fn test_cql_quantity() {
-        let q1 = CqlQuantity::new(Decimal::new(100, 0), "mg");
+        let q1 = CqlQuantity::new(BigDecimal::from(100), "mg");
         assert_eq!(q1.to_string(), "100 'mg'");
 
-        let q2 = CqlQuantity::unitless(Decimal::new(42, 0));
+        let q2 = CqlQuantity::unitless(BigDecimal::from(42));
         assert_eq!(q2.to_string(), "42");
     }
 

@@ -3,11 +3,11 @@
 //! Tests for: And, Or, Xor, Implies, Not, IsNull, IsTrue, IsFalse, Coalesce, If, Case
 //! All operators implement three-valued logic per CQL specification
 
-use octofhir_cql_eval::{CqlEngine, EvaluationContext};
 use octofhir_cql_elm::{
     BinaryExpression, CaseExpression, CaseItem, Element, Expression, IfExpression, Literal,
     NaryExpression, NullLiteral, UnaryExpression,
 };
+use octofhir_cql_eval::{CqlEngine, EvaluationContext};
 use octofhir_cql_types::CqlValue;
 
 // ============================================================================
@@ -39,7 +39,9 @@ fn int_expr(i: i32) -> Box<Expression> {
 }
 
 fn null_expr() -> Box<Expression> {
-    Box::new(Expression::Null(NullLiteral { element: Element::default() }))
+    Box::new(Expression::Null(NullLiteral {
+        element: Element::default(),
+    }))
 }
 
 fn make_binary(left: Box<Expression>, right: Box<Expression>) -> BinaryExpression {
@@ -77,7 +79,9 @@ fn make_unary(operand: Box<Expression>) -> UnaryExpression {
 fn test_and_true_true() {
     let e = engine();
     let mut c = ctx();
-    let result = e.eval_and(&make_binary(bool_expr(true), bool_expr(true)), &mut c).unwrap();
+    let result = e
+        .eval_and(&make_binary(bool_expr(true), bool_expr(true)), &mut c)
+        .unwrap();
     assert_eq!(result, CqlValue::Boolean(true));
 }
 
@@ -85,7 +89,9 @@ fn test_and_true_true() {
 fn test_and_true_false() {
     let e = engine();
     let mut c = ctx();
-    let result = e.eval_and(&make_binary(bool_expr(true), bool_expr(false)), &mut c).unwrap();
+    let result = e
+        .eval_and(&make_binary(bool_expr(true), bool_expr(false)), &mut c)
+        .unwrap();
     assert_eq!(result, CqlValue::Boolean(false));
 }
 
@@ -93,7 +99,9 @@ fn test_and_true_false() {
 fn test_and_true_null() {
     let e = engine();
     let mut c = ctx();
-    let result = e.eval_and(&make_binary(bool_expr(true), null_expr()), &mut c).unwrap();
+    let result = e
+        .eval_and(&make_binary(bool_expr(true), null_expr()), &mut c)
+        .unwrap();
     assert!(result.is_null());
 }
 
@@ -101,7 +109,9 @@ fn test_and_true_null() {
 fn test_and_false_true() {
     let e = engine();
     let mut c = ctx();
-    let result = e.eval_and(&make_binary(bool_expr(false), bool_expr(true)), &mut c).unwrap();
+    let result = e
+        .eval_and(&make_binary(bool_expr(false), bool_expr(true)), &mut c)
+        .unwrap();
     assert_eq!(result, CqlValue::Boolean(false));
 }
 
@@ -109,7 +119,9 @@ fn test_and_false_true() {
 fn test_and_false_false() {
     let e = engine();
     let mut c = ctx();
-    let result = e.eval_and(&make_binary(bool_expr(false), bool_expr(false)), &mut c).unwrap();
+    let result = e
+        .eval_and(&make_binary(bool_expr(false), bool_expr(false)), &mut c)
+        .unwrap();
     assert_eq!(result, CqlValue::Boolean(false));
 }
 
@@ -118,7 +130,9 @@ fn test_and_false_null() {
     let e = engine();
     let mut c = ctx();
     // FALSE dominates NULL in AND
-    let result = e.eval_and(&make_binary(bool_expr(false), null_expr()), &mut c).unwrap();
+    let result = e
+        .eval_and(&make_binary(bool_expr(false), null_expr()), &mut c)
+        .unwrap();
     assert_eq!(result, CqlValue::Boolean(false));
 }
 
@@ -126,7 +140,9 @@ fn test_and_false_null() {
 fn test_and_null_true() {
     let e = engine();
     let mut c = ctx();
-    let result = e.eval_and(&make_binary(null_expr(), bool_expr(true)), &mut c).unwrap();
+    let result = e
+        .eval_and(&make_binary(null_expr(), bool_expr(true)), &mut c)
+        .unwrap();
     assert!(result.is_null());
 }
 
@@ -135,7 +151,9 @@ fn test_and_null_false() {
     let e = engine();
     let mut c = ctx();
     // FALSE dominates NULL in AND
-    let result = e.eval_and(&make_binary(null_expr(), bool_expr(false)), &mut c).unwrap();
+    let result = e
+        .eval_and(&make_binary(null_expr(), bool_expr(false)), &mut c)
+        .unwrap();
     assert_eq!(result, CqlValue::Boolean(false));
 }
 
@@ -143,7 +161,9 @@ fn test_and_null_false() {
 fn test_and_null_null() {
     let e = engine();
     let mut c = ctx();
-    let result = e.eval_and(&make_binary(null_expr(), null_expr()), &mut c).unwrap();
+    let result = e
+        .eval_and(&make_binary(null_expr(), null_expr()), &mut c)
+        .unwrap();
     assert!(result.is_null());
 }
 
@@ -168,7 +188,9 @@ fn test_and_null_null() {
 fn test_or_true_true() {
     let e = engine();
     let mut c = ctx();
-    let result = e.eval_or(&make_binary(bool_expr(true), bool_expr(true)), &mut c).unwrap();
+    let result = e
+        .eval_or(&make_binary(bool_expr(true), bool_expr(true)), &mut c)
+        .unwrap();
     assert_eq!(result, CqlValue::Boolean(true));
 }
 
@@ -176,7 +198,9 @@ fn test_or_true_true() {
 fn test_or_true_false() {
     let e = engine();
     let mut c = ctx();
-    let result = e.eval_or(&make_binary(bool_expr(true), bool_expr(false)), &mut c).unwrap();
+    let result = e
+        .eval_or(&make_binary(bool_expr(true), bool_expr(false)), &mut c)
+        .unwrap();
     assert_eq!(result, CqlValue::Boolean(true));
 }
 
@@ -185,7 +209,9 @@ fn test_or_true_null() {
     let e = engine();
     let mut c = ctx();
     // TRUE dominates NULL in OR
-    let result = e.eval_or(&make_binary(bool_expr(true), null_expr()), &mut c).unwrap();
+    let result = e
+        .eval_or(&make_binary(bool_expr(true), null_expr()), &mut c)
+        .unwrap();
     assert_eq!(result, CqlValue::Boolean(true));
 }
 
@@ -193,7 +219,9 @@ fn test_or_true_null() {
 fn test_or_false_true() {
     let e = engine();
     let mut c = ctx();
-    let result = e.eval_or(&make_binary(bool_expr(false), bool_expr(true)), &mut c).unwrap();
+    let result = e
+        .eval_or(&make_binary(bool_expr(false), bool_expr(true)), &mut c)
+        .unwrap();
     assert_eq!(result, CqlValue::Boolean(true));
 }
 
@@ -201,7 +229,9 @@ fn test_or_false_true() {
 fn test_or_false_false() {
     let e = engine();
     let mut c = ctx();
-    let result = e.eval_or(&make_binary(bool_expr(false), bool_expr(false)), &mut c).unwrap();
+    let result = e
+        .eval_or(&make_binary(bool_expr(false), bool_expr(false)), &mut c)
+        .unwrap();
     assert_eq!(result, CqlValue::Boolean(false));
 }
 
@@ -209,7 +239,9 @@ fn test_or_false_false() {
 fn test_or_false_null() {
     let e = engine();
     let mut c = ctx();
-    let result = e.eval_or(&make_binary(bool_expr(false), null_expr()), &mut c).unwrap();
+    let result = e
+        .eval_or(&make_binary(bool_expr(false), null_expr()), &mut c)
+        .unwrap();
     assert!(result.is_null());
 }
 
@@ -218,7 +250,9 @@ fn test_or_null_true() {
     let e = engine();
     let mut c = ctx();
     // TRUE dominates NULL in OR
-    let result = e.eval_or(&make_binary(null_expr(), bool_expr(true)), &mut c).unwrap();
+    let result = e
+        .eval_or(&make_binary(null_expr(), bool_expr(true)), &mut c)
+        .unwrap();
     assert_eq!(result, CqlValue::Boolean(true));
 }
 
@@ -226,7 +260,9 @@ fn test_or_null_true() {
 fn test_or_null_false() {
     let e = engine();
     let mut c = ctx();
-    let result = e.eval_or(&make_binary(null_expr(), bool_expr(false)), &mut c).unwrap();
+    let result = e
+        .eval_or(&make_binary(null_expr(), bool_expr(false)), &mut c)
+        .unwrap();
     assert!(result.is_null());
 }
 
@@ -234,7 +270,9 @@ fn test_or_null_false() {
 fn test_or_null_null() {
     let e = engine();
     let mut c = ctx();
-    let result = e.eval_or(&make_binary(null_expr(), null_expr()), &mut c).unwrap();
+    let result = e
+        .eval_or(&make_binary(null_expr(), null_expr()), &mut c)
+        .unwrap();
     assert!(result.is_null());
 }
 
@@ -246,7 +284,9 @@ fn test_or_null_null() {
 fn test_xor_true_true() {
     let e = engine();
     let mut c = ctx();
-    let result = e.eval_xor(&make_binary(bool_expr(true), bool_expr(true)), &mut c).unwrap();
+    let result = e
+        .eval_xor(&make_binary(bool_expr(true), bool_expr(true)), &mut c)
+        .unwrap();
     assert_eq!(result, CqlValue::Boolean(false));
 }
 
@@ -254,7 +294,9 @@ fn test_xor_true_true() {
 fn test_xor_true_false() {
     let e = engine();
     let mut c = ctx();
-    let result = e.eval_xor(&make_binary(bool_expr(true), bool_expr(false)), &mut c).unwrap();
+    let result = e
+        .eval_xor(&make_binary(bool_expr(true), bool_expr(false)), &mut c)
+        .unwrap();
     assert_eq!(result, CqlValue::Boolean(true));
 }
 
@@ -262,7 +304,9 @@ fn test_xor_true_false() {
 fn test_xor_false_true() {
     let e = engine();
     let mut c = ctx();
-    let result = e.eval_xor(&make_binary(bool_expr(false), bool_expr(true)), &mut c).unwrap();
+    let result = e
+        .eval_xor(&make_binary(bool_expr(false), bool_expr(true)), &mut c)
+        .unwrap();
     assert_eq!(result, CqlValue::Boolean(true));
 }
 
@@ -270,7 +314,9 @@ fn test_xor_false_true() {
 fn test_xor_false_false() {
     let e = engine();
     let mut c = ctx();
-    let result = e.eval_xor(&make_binary(bool_expr(false), bool_expr(false)), &mut c).unwrap();
+    let result = e
+        .eval_xor(&make_binary(bool_expr(false), bool_expr(false)), &mut c)
+        .unwrap();
     assert_eq!(result, CqlValue::Boolean(false));
 }
 
@@ -278,7 +324,9 @@ fn test_xor_false_false() {
 fn test_xor_with_null() {
     let e = engine();
     let mut c = ctx();
-    let result = e.eval_xor(&make_binary(bool_expr(true), null_expr()), &mut c).unwrap();
+    let result = e
+        .eval_xor(&make_binary(bool_expr(true), null_expr()), &mut c)
+        .unwrap();
     assert!(result.is_null());
 }
 
@@ -303,7 +351,9 @@ fn test_xor_with_null() {
 fn test_implies_true_true() {
     let e = engine();
     let mut c = ctx();
-    let result = e.eval_implies(&make_binary(bool_expr(true), bool_expr(true)), &mut c).unwrap();
+    let result = e
+        .eval_implies(&make_binary(bool_expr(true), bool_expr(true)), &mut c)
+        .unwrap();
     assert_eq!(result, CqlValue::Boolean(true));
 }
 
@@ -311,7 +361,9 @@ fn test_implies_true_true() {
 fn test_implies_true_false() {
     let e = engine();
     let mut c = ctx();
-    let result = e.eval_implies(&make_binary(bool_expr(true), bool_expr(false)), &mut c).unwrap();
+    let result = e
+        .eval_implies(&make_binary(bool_expr(true), bool_expr(false)), &mut c)
+        .unwrap();
     assert_eq!(result, CqlValue::Boolean(false));
 }
 
@@ -319,7 +371,9 @@ fn test_implies_true_false() {
 fn test_implies_true_null() {
     let e = engine();
     let mut c = ctx();
-    let result = e.eval_implies(&make_binary(bool_expr(true), null_expr()), &mut c).unwrap();
+    let result = e
+        .eval_implies(&make_binary(bool_expr(true), null_expr()), &mut c)
+        .unwrap();
     assert!(result.is_null());
 }
 
@@ -328,13 +382,19 @@ fn test_implies_false_anything() {
     let e = engine();
     let mut c = ctx();
     // FALSE implies anything is TRUE
-    let result = e.eval_implies(&make_binary(bool_expr(false), bool_expr(true)), &mut c).unwrap();
+    let result = e
+        .eval_implies(&make_binary(bool_expr(false), bool_expr(true)), &mut c)
+        .unwrap();
     assert_eq!(result, CqlValue::Boolean(true));
 
-    let result = e.eval_implies(&make_binary(bool_expr(false), bool_expr(false)), &mut c).unwrap();
+    let result = e
+        .eval_implies(&make_binary(bool_expr(false), bool_expr(false)), &mut c)
+        .unwrap();
     assert_eq!(result, CqlValue::Boolean(true));
 
-    let result = e.eval_implies(&make_binary(bool_expr(false), null_expr()), &mut c).unwrap();
+    let result = e
+        .eval_implies(&make_binary(bool_expr(false), null_expr()), &mut c)
+        .unwrap();
     assert_eq!(result, CqlValue::Boolean(true));
 }
 
@@ -343,7 +403,9 @@ fn test_implies_null_true() {
     let e = engine();
     let mut c = ctx();
     // Anything implies TRUE is TRUE
-    let result = e.eval_implies(&make_binary(null_expr(), bool_expr(true)), &mut c).unwrap();
+    let result = e
+        .eval_implies(&make_binary(null_expr(), bool_expr(true)), &mut c)
+        .unwrap();
     assert_eq!(result, CqlValue::Boolean(true));
 }
 
@@ -351,7 +413,9 @@ fn test_implies_null_true() {
 fn test_implies_null_false() {
     let e = engine();
     let mut c = ctx();
-    let result = e.eval_implies(&make_binary(null_expr(), bool_expr(false)), &mut c).unwrap();
+    let result = e
+        .eval_implies(&make_binary(null_expr(), bool_expr(false)), &mut c)
+        .unwrap();
     assert!(result.is_null());
 }
 
@@ -400,7 +464,9 @@ fn test_is_null_null() {
 fn test_is_null_value() {
     let e = engine();
     let mut c = ctx();
-    let result = e.eval_is_null(&make_unary(bool_expr(true)), &mut c).unwrap();
+    let result = e
+        .eval_is_null(&make_unary(bool_expr(true)), &mut c)
+        .unwrap();
     assert_eq!(result, CqlValue::Boolean(false));
 }
 
@@ -420,7 +486,9 @@ fn test_is_null_integer() {
 fn test_is_true_true() {
     let e = engine();
     let mut c = ctx();
-    let result = e.eval_is_true(&make_unary(bool_expr(true)), &mut c).unwrap();
+    let result = e
+        .eval_is_true(&make_unary(bool_expr(true)), &mut c)
+        .unwrap();
     assert_eq!(result, CqlValue::Boolean(true));
 }
 
@@ -428,7 +496,9 @@ fn test_is_true_true() {
 fn test_is_true_false() {
     let e = engine();
     let mut c = ctx();
-    let result = e.eval_is_true(&make_unary(bool_expr(false)), &mut c).unwrap();
+    let result = e
+        .eval_is_true(&make_unary(bool_expr(false)), &mut c)
+        .unwrap();
     assert_eq!(result, CqlValue::Boolean(false));
 }
 
@@ -449,7 +519,9 @@ fn test_is_true_null() {
 fn test_is_false_true() {
     let e = engine();
     let mut c = ctx();
-    let result = e.eval_is_false(&make_unary(bool_expr(true)), &mut c).unwrap();
+    let result = e
+        .eval_is_false(&make_unary(bool_expr(true)), &mut c)
+        .unwrap();
     assert_eq!(result, CqlValue::Boolean(false));
 }
 
@@ -457,7 +529,9 @@ fn test_is_false_true() {
 fn test_is_false_false() {
     let e = engine();
     let mut c = ctx();
-    let result = e.eval_is_false(&make_unary(bool_expr(false)), &mut c).unwrap();
+    let result = e
+        .eval_is_false(&make_unary(bool_expr(false)), &mut c)
+        .unwrap();
     assert_eq!(result, CqlValue::Boolean(true));
 }
 

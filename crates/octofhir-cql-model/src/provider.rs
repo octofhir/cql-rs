@@ -1,18 +1,15 @@
 //! Data provider traits for CQL evaluation
 
+use crate::model_info::{PropertyInfo, TypeInfo};
 use async_trait::async_trait;
-use serde_json::Value;
-use crate::model_info::{TypeInfo, PropertyInfo};
 use octofhir_cql_types::{CqlCode, CqlInterval, CqlValue};
+use serde_json::Value;
 
 /// Trait for providing data to CQL evaluation
 #[async_trait]
 pub trait DataProvider: Send + Sync {
     /// Retrieve data of a given type with optional code filter
-    async fn retrieve(
-        &self,
-        context: &RetrieveContext,
-    ) -> Result<Vec<Value>, DataProviderError>;
+    async fn retrieve(&self, context: &RetrieveContext) -> Result<Vec<Value>, DataProviderError>;
 
     /// Get the model name this provider supports (e.g., "FHIR")
     fn model_name(&self) -> &str;
@@ -97,7 +94,11 @@ pub trait ModelProvider: Send + Sync {
     async fn get_type(&self, type_name: &str) -> Result<Option<TypeInfo>, ModelProviderError>;
 
     /// Get property type information for a given parent type and property name
-    async fn get_property_type(&self, parent: &str, property: &str) -> Result<Option<PropertyInfo>, ModelProviderError>;
+    async fn get_property_type(
+        &self,
+        parent: &str,
+        property: &str,
+    ) -> Result<Option<PropertyInfo>, ModelProviderError>;
 
     /// Check if a type is retrievable (can be used in Retrieve expressions)
     fn is_retrievable(&self, type_name: &str) -> bool;
@@ -132,15 +133,16 @@ pub enum ModelProviderError {
 #[async_trait]
 pub trait DataRetriever: Send + Sync {
     /// Retrieve data with optional filtering
+    #[allow(clippy::too_many_arguments)]
     async fn retrieve(
         &self,
-        context: &str,                     // "Patient", "Encounter", etc.
-        data_type: &str,                   // "Observation", "Condition", etc.
-        code_path: Option<&str>,           // "code"
-        codes: Option<&[CqlCode]>,         // Specific codes to filter by
-        valueset: Option<&str>,            // ValueSet URL for terminology filtering
-        date_path: Option<&str>,           // "effective", "onset", etc.
-        date_range: Option<&CqlInterval>,  // Date range for filtering
+        context: &str,                    // "Patient", "Encounter", etc.
+        data_type: &str,                  // "Observation", "Condition", etc.
+        code_path: Option<&str>,          // "code"
+        codes: Option<&[CqlCode]>,        // Specific codes to filter by
+        valueset: Option<&str>,           // ValueSet URL for terminology filtering
+        date_path: Option<&str>,          // "effective", "onset", etc.
+        date_range: Option<&CqlInterval>, // Date range for filtering
     ) -> Result<Vec<CqlValue>, DataRetrieverError>;
 }
 

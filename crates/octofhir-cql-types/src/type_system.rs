@@ -14,9 +14,11 @@ use std::fmt;
 /// This enum represents all types in the CQL type system per the CQL 1.5 specification.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(tag = "type")]
+#[derive(Default)]
 pub enum CqlType {
     // === Special Types ===
     /// The Any type - supertype of all types
+    #[default]
     Any,
 
     // === Primitive Types ===
@@ -255,8 +257,7 @@ impl CqlType {
                 format!("Tuple {{ {} }}", elems.join(", "))
             }
             Self::Choice(types) => {
-                let type_names: Vec<String> =
-                    types.iter().map(|t| t.qualified_name()).collect();
+                let type_names: Vec<String> = types.iter().map(|t| t.qualified_name()).collect();
                 format!("Choice<{}>", type_names.join(", "))
             }
             Self::Named { namespace, name } => {
@@ -415,12 +416,6 @@ impl fmt::Display for CqlType {
     }
 }
 
-impl Default for CqlType {
-    fn default() -> Self {
-        Self::Any
-    }
-}
-
 /// Element of a tuple type
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct TupleTypeElement {
@@ -508,9 +503,7 @@ impl TypeSpecifier {
                     })
                     .collect(),
             ),
-            Self::Choice(c) => {
-                CqlType::choice(c.types.iter().map(|t| t.to_cql_type()).collect())
-            }
+            Self::Choice(c) => CqlType::choice(c.types.iter().map(|t| t.to_cql_type()).collect()),
         }
     }
 

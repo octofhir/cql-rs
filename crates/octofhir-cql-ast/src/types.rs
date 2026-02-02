@@ -1,6 +1,6 @@
 //! Type specifier AST nodes for CQL
 
-use crate::{Identifier, QualifiedIdentifier};
+use crate::Identifier;
 
 /// Type specifier in CQL
 #[derive(Debug, Clone, PartialEq)]

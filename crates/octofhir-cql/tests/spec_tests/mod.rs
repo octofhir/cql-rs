@@ -6,8 +6,8 @@
 //! The tests are expressed in XML format and verify correct behavior of CQL
 //! language capabilities.
 
-pub mod xml_parser;
 pub mod runner;
+pub mod xml_parser;
 
-pub use xml_parser::*;
 pub use runner::*;
+pub use xml_parser::*;

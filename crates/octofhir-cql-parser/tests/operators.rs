@@ -19,14 +19,14 @@ fn parse_expr(input: &str) -> Expression {
 
 fn assert_binary_op(expr: &Expression) -> (&Expression, BinaryOp, &Expression) {
     match expr {
-        Expression::BinaryOp(binop) => (&binop.left.inner, binop.op.clone(), &binop.right.inner),
+        Expression::BinaryOp(binop) => (&binop.left.inner, binop.op, &binop.right.inner),
         _ => panic!("Expected BinaryOp, got: {:?}", expr),
     }
 }
 
 fn assert_unary_op(expr: &Expression) -> (UnaryOp, &Expression) {
     match expr {
-        Expression::UnaryOp(unary) => (unary.op.clone(), &unary.operand.inner),
+        Expression::UnaryOp(unary) => (unary.op, &unary.operand.inner),
         _ => panic!("Expected UnaryOp, got: {:?}", expr),
     }
 }
@@ -287,7 +287,12 @@ fn test_parentheses_override_precedence() {
 #[case("(a + b) * (c - d)", true)]
 fn test_complex_expressions(#[case] input: &str, #[case] should_parse: bool) {
     let result = parse_expression(input);
-    assert_eq!(result.is_ok(), should_parse, "Parse result for '{}' unexpected", input);
+    assert_eq!(
+        result.is_ok(),
+        should_parse,
+        "Parse result for '{}' unexpected",
+        input
+    );
 }
 
 // === Type Assertions ===
@@ -297,7 +302,10 @@ fn test_null_as_type() {
     let expr = parse_expr("null as Integer");
     match &expr {
         Expression::As(as_expr) => {
-            assert!(matches!(&as_expr.operand.inner, Expression::Literal(octofhir_cql_ast::Literal::Null)));
+            assert!(matches!(
+                &as_expr.operand.inner,
+                Expression::Literal(octofhir_cql_ast::Literal::Null)
+            ));
         }
         _ => panic!("Expected As, got: {:?}", expr),
     }
@@ -308,7 +316,10 @@ fn test_parenthesized_null_as_type() {
     let expr = parse_expr("(null as Integer)");
     match &expr {
         Expression::As(as_expr) => {
-            assert!(matches!(&as_expr.operand.inner, Expression::Literal(octofhir_cql_ast::Literal::Null)));
+            assert!(matches!(
+                &as_expr.operand.inner,
+                Expression::Literal(octofhir_cql_ast::Literal::Null)
+            ));
         }
         _ => panic!("Expected As, got: {:?}", expr),
     }

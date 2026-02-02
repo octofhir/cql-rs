@@ -1,8 +1,8 @@
 //! Library structure AST nodes
 
 use crate::{
-    AccessModifier, BoxExpr, Expression, Identifier, OptBoxExpr, QualifiedIdentifier, Spanned,
-    TypeSpecifier, VersionSpecifier,
+    AccessModifier, BoxExpr, Identifier, OptBoxExpr, QualifiedIdentifier, Spanned, TypeSpecifier,
+    VersionSpecifier,
 };
 
 /// A complete CQL library

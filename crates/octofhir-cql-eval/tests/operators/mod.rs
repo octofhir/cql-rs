@@ -6,11 +6,11 @@
 //! - Three-valued logic for logical operators
 //! - Edge cases and boundary conditions
 
+pub mod aggregate;
 pub mod arithmetic;
 pub mod comparison;
-pub mod logical;
-pub mod string;
 pub mod datetime;
 pub mod interval;
 pub mod list;
-pub mod aggregate;
+pub mod logical;
+pub mod string;

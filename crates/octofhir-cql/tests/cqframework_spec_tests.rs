@@ -7,7 +7,7 @@
 
 mod spec_tests;
 
-use spec_tests::{parse_test_file, SpecTestRunner, generate_report};
+use spec_tests::{SpecTestRunner, generate_report, parse_test_file};
 use std::path::PathBuf;
 
 fn test_data_dir() -> PathBuf {
@@ -32,11 +32,10 @@ fn test_parse_all_suites() {
             match parse_test_file(&path) {
                 Ok(suite) => {
                     parsed_count += 1;
-                    let test_count: usize = suite.groups.iter()
-                        .map(|g| g.tests.len())
-                        .sum();
+                    let test_count: usize = suite.groups.iter().map(|g| g.tests.len()).sum();
                     total_tests += test_count;
-                    println!("Parsed {}: {} groups, {} tests",
+                    println!(
+                        "Parsed {}: {} groups, {} tests",
                         suite.name,
                         suite.groups.len(),
                         test_count
@@ -62,11 +61,14 @@ fn test_arithmetic_functions() {
     let runner = SpecTestRunner::new();
     let result = runner.run_suite(&suite);
 
-    println!("\n{}", generate_report(&[result.clone()]));
+    println!("\n{}", generate_report(std::slice::from_ref(&result)));
 
     // Verify tests run and some pass (many fail due to parser syntax differences)
     assert!(result.total > 0);
-    assert!(result.passed > 0, "At least some arithmetic tests should pass");
+    assert!(
+        result.passed > 0,
+        "At least some arithmetic tests should pass"
+    );
 }
 
 /// Run comparison operator tests
@@ -78,9 +80,12 @@ fn test_comparison_operators() {
     let runner = SpecTestRunner::new();
     let result = runner.run_suite(&suite);
 
-    println!("\n{}", generate_report(&[result.clone()]));
+    println!("\n{}", generate_report(std::slice::from_ref(&result)));
     assert!(result.total > 0);
-    assert!(result.passed > 60, "At least 60 comparison tests should pass");
+    assert!(
+        result.passed > 60,
+        "At least 60 comparison tests should pass"
+    );
 }
 
 /// Run logical operator tests - 100% pass rate expected
@@ -92,9 +97,12 @@ fn test_logical_operators() {
     let runner = SpecTestRunner::new();
     let result = runner.run_suite(&suite);
 
-    println!("\n{}", generate_report(&[result.clone()]));
+    println!("\n{}", generate_report(std::slice::from_ref(&result)));
     // Logical operators should have 100% pass rate
-    assert_eq!(result.passed, result.total, "All logical operator tests should pass");
+    assert_eq!(
+        result.passed, result.total,
+        "All logical operator tests should pass"
+    );
 }
 
 /// Run string operator tests
@@ -106,7 +114,7 @@ fn test_string_operators() {
     let runner = SpecTestRunner::new();
     let result = runner.run_suite(&suite);
 
-    println!("\n{}", generate_report(&[result.clone()]));
+    println!("\n{}", generate_report(std::slice::from_ref(&result)));
     assert!(result.total > 0);
     assert!(result.passed > 40, "At least 40 string tests should pass");
 }
@@ -120,10 +128,13 @@ fn test_datetime_operators() {
     let runner = SpecTestRunner::new();
     let result = runner.run_suite(&suite);
 
-    println!("\n{}", generate_report(&[result.clone()]));
+    println!("\n{}", generate_report(std::slice::from_ref(&result)));
     assert!(result.total > 0);
     // Some datetime tests pass
-    assert!(result.passed > 0, "At least some datetime tests should pass");
+    assert!(
+        result.passed > 0,
+        "At least some datetime tests should pass"
+    );
 }
 
 /// Run interval operator tests
@@ -135,10 +146,13 @@ fn test_interval_operators() {
     let runner = SpecTestRunner::new();
     let result = runner.run_suite(&suite);
 
-    println!("\n{}", generate_report(&[result.clone()]));
+    println!("\n{}", generate_report(std::slice::from_ref(&result)));
     assert!(result.total > 0);
     // With Interval constructor and operators, we should pass many tests
-    assert!(result.passed > 140, "At least 140 interval tests should pass");
+    assert!(
+        result.passed > 140,
+        "At least 140 interval tests should pass"
+    );
 }
 
 /// Run list operator tests
@@ -150,7 +164,7 @@ fn test_list_operators() {
     let runner = SpecTestRunner::new();
     let result = runner.run_suite(&suite);
 
-    println!("\n{}", generate_report(&[result.clone()]));
+    println!("\n{}", generate_report(std::slice::from_ref(&result)));
     assert!(result.total > 0);
     // Some list tests pass
     assert!(result.passed > 20, "At least 20 list tests should pass");
@@ -165,9 +179,12 @@ fn test_aggregate_functions() {
     let runner = SpecTestRunner::new();
     let result = runner.run_suite(&suite);
 
-    println!("\n{}", generate_report(&[result.clone()]));
+    println!("\n{}", generate_report(std::slice::from_ref(&result)));
     assert!(result.total > 0);
-    assert!(result.passed > 30, "At least 30 aggregate tests should pass");
+    assert!(
+        result.passed > 30,
+        "At least 30 aggregate tests should pass"
+    );
 }
 
 /// Run type operator tests
@@ -179,7 +196,7 @@ fn test_type_operators() {
     let runner = SpecTestRunner::new();
     let result = runner.run_suite(&suite);
 
-    println!("\n{}", generate_report(&[result.clone()]));
+    println!("\n{}", generate_report(std::slice::from_ref(&result)));
     assert!(result.total > 0);
     // With 'as' type casting support, we should pass some tests
     assert!(result.passed > 5, "At least 5 type tests should pass");
@@ -196,11 +213,11 @@ fn generate_compliance_report() {
 
     for entry in entries.flatten() {
         let path = entry.path();
-        if path.extension().map(|e| e == "xml").unwrap_or(false) {
-            if let Ok(suite) = parse_test_file(&path) {
-                let result = runner.run_suite(&suite);
-                all_results.push(result);
-            }
+        if path.extension().map(|e| e == "xml").unwrap_or(false)
+            && let Ok(suite) = parse_test_file(&path)
+        {
+            let result = runner.run_suite(&suite);
+            all_results.push(result);
         }
     }
 
@@ -208,8 +225,7 @@ fn generate_compliance_report() {
     println!("\n{}", report);
 
     // Write report to file
-    let report_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("compliance_report.md");
+    let report_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("compliance_report.md");
     std::fs::write(&report_path, &report).expect("Failed to write report");
     println!("Report written to: {:?}", report_path);
 }

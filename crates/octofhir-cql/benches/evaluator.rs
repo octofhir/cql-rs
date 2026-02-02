@@ -2,7 +2,9 @@
 //!
 //! Benchmarks for CQL expression evaluation performance.
 
-use octofhir_cql_elm::{BinaryExpression, Element, Expression, ListExpression, Literal, UnaryExpression};
+use octofhir_cql_elm::{
+    BinaryExpression, Element, Expression, ListExpression, Literal, UnaryExpression,
+};
 use octofhir_cql_eval::{CqlEngine, EvaluationContext};
 
 fn main() {
@@ -70,7 +72,9 @@ fn literal_boolean(value: bool) -> Expression {
 // === Literal Evaluation Benchmarks ===
 
 mod literals {
-    use super::*;
+    use super::{
+        CqlEngine, EvaluationContext, literal_boolean, literal_decimal, literal_int, literal_string,
+    };
 
     #[divan::bench]
     fn integer_literal(bencher: divan::Bencher) {
@@ -120,7 +124,9 @@ mod literals {
 // === Arithmetic Operation Benchmarks ===
 
 mod arithmetic {
-    use super::*;
+    use super::{
+        BinaryExpression, CqlEngine, EvaluationContext, Expression, empty_element, literal_int,
+    };
 
     #[divan::bench]
     fn simple_addition(bencher: divan::Bencher) {
@@ -171,7 +177,9 @@ mod arithmetic {
 // === Comparison Operation Benchmarks ===
 
 mod comparisons {
-    use super::*;
+    use super::{
+        BinaryExpression, CqlEngine, EvaluationContext, Expression, empty_element, literal_int,
+    };
 
     #[divan::bench]
     fn integer_comparison(bencher: divan::Bencher) {
@@ -205,14 +213,20 @@ mod comparisons {
 // === Logical Operation Benchmarks ===
 
 mod logical {
-    use super::*;
+    use super::{
+        BinaryExpression, CqlEngine, EvaluationContext, Expression, UnaryExpression, empty_element,
+        literal_boolean,
+    };
 
     #[divan::bench]
     fn and_operation(bencher: divan::Bencher) {
         let engine = CqlEngine::new();
         let expr = Expression::And(BinaryExpression {
             element: empty_element(),
-            operand: vec![Box::new(literal_boolean(true)), Box::new(literal_boolean(false))],
+            operand: vec![
+                Box::new(literal_boolean(true)),
+                Box::new(literal_boolean(false)),
+            ],
         });
 
         bencher.bench_local(|| {
@@ -226,7 +240,10 @@ mod logical {
         let engine = CqlEngine::new();
         let expr = Expression::Or(BinaryExpression {
             element: empty_element(),
-            operand: vec![Box::new(literal_boolean(true)), Box::new(literal_boolean(false))],
+            operand: vec![
+                Box::new(literal_boolean(true)),
+                Box::new(literal_boolean(false)),
+            ],
         });
 
         bencher.bench_local(|| {
@@ -253,7 +270,9 @@ mod logical {
 // === List Operation Benchmarks ===
 
 mod lists {
-    use super::*;
+    use super::{
+        CqlEngine, EvaluationContext, Expression, ListExpression, empty_element, literal_int,
+    };
 
     #[divan::bench]
     fn small_list_creation(bencher: divan::Bencher) {
@@ -296,7 +315,10 @@ mod lists {
 // === Scaling Benchmarks ===
 
 mod scaling {
-    use super::*;
+    use super::{
+        BinaryExpression, CqlEngine, EvaluationContext, Expression, ListExpression, empty_element,
+        literal_int,
+    };
 
     #[divan::bench(args = [10, 50, 100, 200])]
     fn arithmetic_chain_scaling(bencher: divan::Bencher, n: usize) {
@@ -319,7 +341,8 @@ mod scaling {
     #[divan::bench(args = [10, 50, 100, 500, 1000])]
     fn list_size_scaling(bencher: divan::Bencher, n: usize) {
         let engine = CqlEngine::new();
-        let elements: Vec<Box<Expression>> = (1..=n as i64).map(|i| Box::new(literal_int(i))).collect();
+        let elements: Vec<Box<Expression>> =
+            (1..=n as i64).map(|i| Box::new(literal_int(i))).collect();
         let expr = Expression::List(ListExpression {
             element: empty_element(),
             type_specifier: None,

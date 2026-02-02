@@ -1,6 +1,6 @@
 //! Library resolution utilities
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result, anyhow};
 use parking_lot::RwLock;
 use std::collections::{HashMap, HashSet};
 use std::fs;

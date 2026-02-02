@@ -4,7 +4,7 @@
 //! for CQL terminology operations (InValueSet, InCodeSystem, etc.)
 
 use crate::context::TerminologyProvider as EvalTerminologyProvider;
-use octofhir_cql_types::{CqlCode, CqlConcept, CqlValue};
+use octofhir_cql_types::{CqlCode, CqlValue};
 use octofhir_fhir_model::TerminologyProvider as FhirTerminologyProvider;
 use std::sync::Arc;
 
@@ -43,11 +43,13 @@ impl EvalTerminologyProvider for TerminologyAdapter {
         let result = tokio::runtime::Handle::try_current()
             .ok()
             .and_then(|handle| {
-                handle.block_on(async {
-                    self.provider
-                        .validate_code_vs(value_set_id, system, code_str, display)
-                        .await
-                        .ok()
+                tokio::task::block_in_place(|| {
+                    handle.block_on(async {
+                        self.provider
+                            .validate_code_vs(value_set_id, system, code_str, display)
+                            .await
+                            .ok()
+                    })
                 })
             });
 
@@ -63,7 +65,7 @@ impl EvalTerminologyProvider for TerminologyAdapter {
         };
 
         // Check if the code's system matches the given code system
-        Some(&cql_code.system == code_system_id)
+        Some(cql_code.system == code_system_id)
     }
 
     fn expand_value_set(&self, value_set_id: &str) -> Option<Vec<CqlValue>> {
@@ -72,10 +74,7 @@ impl EvalTerminologyProvider for TerminologyAdapter {
             .ok()
             .and_then(|handle| {
                 handle.block_on(async {
-                    self.provider
-                        .expand_valueset(value_set_id, None)
-                        .await
-                        .ok()
+                    self.provider.expand_valueset(value_set_id, None).await.ok()
                 })
             });
 
@@ -116,11 +115,13 @@ impl EvalTerminologyProvider for TerminologyAdapter {
         let result = tokio::runtime::Handle::try_current()
             .ok()
             .and_then(|handle| {
-                handle.block_on(async {
-                    self.provider
-                        .lookup_code(system, code_str, version, None)
-                        .await
-                        .ok()
+                tokio::task::block_in_place(|| {
+                    handle.block_on(async {
+                        self.provider
+                            .lookup_code(system, code_str, version, None)
+                            .await
+                            .ok()
+                    })
                 })
             });
 
@@ -139,7 +140,7 @@ mod tests {
         let _adapter = TerminologyAdapter::new(provider);
     }
 
-    #[tokio::test]
+    #[tokio::test(flavor = "multi_thread")]
     async fn test_in_value_set() {
         let provider = Arc::new(NoOpTerminologyProvider) as Arc<dyn FhirTerminologyProvider>;
         let adapter = TerminologyAdapter::new(provider);

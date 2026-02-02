@@ -5,9 +5,9 @@
 | Metric | Count |
 |--------|-------|
 | Total Tests | 1693 |
-| Passed | 1672 (98.8%) |
-| Failed | 5 |
-| Skipped | 16 |
+| Passed | 1693 (100.0%) |
+| Failed | 0 |
+| Skipped | 0 |
 
 ## Results by Suite
 
@@ -25,9 +25,9 @@
 
 ### CqlArithmeticFunctionsTest
 
-- Passed: 196/212
+- Passed: 212/212
 - Failed: 0
-- Skipped: 16
+- Skipped: 0
 
 ### CqlQueryTest
 
@@ -55,16 +55,9 @@
 
 ### CqlTypesTest
 
-- Passed: 27/28
-- Failed: 1
+- Passed: 28/28
+- Failed: 0
 - Skipped: 0
-
-#### Failed Tests
-
-- **Time::TimeUpperBoundMillis**
-  - Expected: `Error (Semantic)`
-  - Actual: `Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: ContextError { context: [], cause: None }", expression: "library Test version '1.0'\ndefine Result: @T23:59:59.10000", location: None, context: None }`
-  - Error: Parse error: Parse { code: ErrorCode(1), message: "Parse error: ContextError { context: [], cause: None }", expression: "library Test version '1.0'\ndefine Result: @T23:59:59.10000", location: None, context: None }
 
 ### CqlConditionalOperatorsTest
 
@@ -74,16 +67,9 @@
 
 ### CqlIntervalOperatorsTest
 
-- Passed: 411/412
-- Failed: 1
+- Passed: 412/412
+- Failed: 0
 - Skipped: 0
-
-#### Failed Tests
-
-- **In::Issue32Interval**
-  - Expected: `true`
-  - Actual: ``
-  - Error: Evaluation error: UnsupportedOperator { operator: "Starts", types: "Interval, Quantity" }
 
 ### CqlListOperatorsTest
 
@@ -93,21 +79,9 @@
 
 ### ValueLiteralsAndSelectors
 
-- Passed: 63/66
-- Failed: 3
+- Passed: 66/66
+- Failed: 0
 - Skipped: 0
-
-#### Failed Tests
-
-- **Decimal::Decimal10Pow28ToZeroOneStepDecimalMaxValue**
-  - Expected: `9999999999999999999999999999.99999999`
-  - Actual: `10000000000000000000000000000.0`
-- **Decimal::DecimalPos10Pow28ToZeroOneStepDecimalMaxValue**
-  - Expected: `9999999999999999999999999999.99999999`
-  - Actual: `10000000000000000000000000000.0`
-- **Decimal::DecimalNeg10Pow28ToZeroOneStepDecimalMinValue**
-  - Expected: `-9999999999999999999999999999.99999999`
-  - Actual: `-10000000000000000000000000000.0`
 
 ### CqlLogicalOperatorsTest
 

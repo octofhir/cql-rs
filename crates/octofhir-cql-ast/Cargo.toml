@@ -10,7 +10,7 @@ repository.workspace = true
 [dependencies]
 octofhir-cql-diagnostics = { workspace = true }
 serde = { workspace = true }
-rust_decimal = { workspace = true }
+bigdecimal = { workspace = true }
 smallvec = { workspace = true }
 
 [lints]

@@ -263,7 +263,10 @@ impl CqlError {
             Self::Evaluation { code, .. } => *code,
             Self::Model { code, .. } => *code,
             Self::System { code, .. } => *code,
-            Self::Multiple(errors) => errors.first().map(|e| e.code()).unwrap_or(ErrorCode::new(0)),
+            Self::Multiple(errors) => errors
+                .first()
+                .map(|e| e.code())
+                .unwrap_or(ErrorCode::new(0)),
         }
     }
 
@@ -280,14 +283,24 @@ impl CqlError {
     /// Convert to a diagnostic
     pub fn to_diagnostic(&self) -> Diagnostic {
         match self {
-            Self::Parse { code, message, location, .. } => {
+            Self::Parse {
+                code,
+                message,
+                location,
+                ..
+            } => {
                 let mut diag = Diagnostic::error(*code, message.clone());
                 if let Some(loc) = location {
                     diag = diag.with_location(loc.clone());
                 }
                 diag
             }
-            Self::Semantic { code, message, location, context } => {
+            Self::Semantic {
+                code,
+                message,
+                location,
+                context,
+            } => {
                 let mut diag = Diagnostic::error(*code, message.clone());
                 if let Some(loc) = location {
                     diag = diag.with_location(loc.clone());
@@ -297,7 +310,12 @@ impl CqlError {
                 }
                 diag
             }
-            Self::Evaluation { code, message, location, context } => {
+            Self::Evaluation {
+                code,
+                message,
+                location,
+                context,
+            } => {
                 let mut diag = Diagnostic::error(*code, message.clone());
                 if let Some(loc) = location {
                     diag = diag.with_location(loc.clone());
@@ -307,14 +325,23 @@ impl CqlError {
                 }
                 diag
             }
-            Self::Model { code, message, context, .. } => {
+            Self::Model {
+                code,
+                message,
+                context,
+                ..
+            } => {
                 let mut diag = Diagnostic::error(*code, message.clone());
                 if let Some(ctx) = context {
                     diag = diag.with_help(ctx.clone());
                 }
                 diag
             }
-            Self::System { code, message, context } => {
+            Self::System {
+                code,
+                message,
+                context,
+            } => {
                 let mut diag = Diagnostic::error(*code, message.clone());
                 if let Some(ctx) = context {
                     diag = diag.with_help(ctx.clone());

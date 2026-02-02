@@ -11,14 +11,14 @@
 //! - Aggregate clause
 //! - Distinct return
 
-use octofhir_cql_eval::{CqlEngine, EvaluationContext};
 use octofhir_cql_elm::{
-    AggregateClause, AliasedQuerySource, BinaryExpression, Element, Expression, LetClause,
-    ListExpression, Literal, NullLiteral, Query, QueryLetRef, ReturnClause, SortByItem,
-    SortClause, SortDirection, TupleElementExpression, TupleExpression, WithClause, WithoutClause,
-    RelationshipClause, AliasRef,
+    AggregateClause, AliasRef, AliasedQuerySource, BinaryExpression, Element, Expression,
+    LetClause, ListExpression, Literal, NullLiteral, Query, QueryLetRef, RelationshipClause,
+    ReturnClause, SortByItem, SortClause, SortDirection, TupleElementExpression, TupleExpression,
+    WithClause, WithoutClause,
 };
-use octofhir_cql_types::{CqlList, CqlTuple, CqlType, CqlValue};
+use octofhir_cql_eval::{CqlEngine, EvaluationContext};
+use octofhir_cql_types::CqlValue;
 
 // ============================================================================
 // Test Helpers
@@ -37,22 +37,6 @@ fn int_expr(i: i32) -> Box<Expression> {
         element: Element::default(),
         value_type: "{urn:hl7-org:elm-types:r1}Integer".to_string(),
         value: Some(i.to_string()),
-    }))
-}
-
-fn string_expr(s: &str) -> Box<Expression> {
-    Box::new(Expression::Literal(Literal {
-        element: Element::default(),
-        value_type: "{urn:hl7-org:elm-types:r1}String".to_string(),
-        value: Some(s.to_string()),
-    }))
-}
-
-fn bool_expr(b: bool) -> Box<Expression> {
-    Box::new(Expression::Literal(Literal {
-        element: Element::default(),
-        value_type: "{urn:hl7-org:elm-types:r1}Boolean".to_string(),
-        value: Some(b.to_string()),
     }))
 }
 
@@ -80,15 +64,7 @@ fn list_expr(values: Vec<i32>) -> Box<Expression> {
     Box::new(Expression::List(ListExpression {
         element: Element::default(),
         type_specifier: None,
-        elements: Some(values.into_iter().map(|v| int_expr(v)).collect()),
-    }))
-}
-
-fn string_list_expr(values: Vec<&str>) -> Box<Expression> {
-    Box::new(Expression::List(ListExpression {
-        element: Element::default(),
-        type_specifier: None,
-        elements: Some(values.into_iter().map(|v| string_expr(v)).collect()),
+        elements: Some(values.into_iter().map(int_expr).collect()),
     }))
 }
 
@@ -107,7 +83,11 @@ fn make_source(alias: &str, expr: Box<Expression>) -> AliasedQuerySource {
     }
 }
 
-fn make_binary(op: fn(BinaryExpression) -> Expression, left: Box<Expression>, right: Box<Expression>) -> Box<Expression> {
+fn make_binary(
+    op: fn(BinaryExpression) -> Expression,
+    left: Box<Expression>,
+    right: Box<Expression>,
+) -> Box<Expression> {
     Box::new(op(BinaryExpression {
         element: Element::default(),
         operand: vec![left, right],
@@ -272,7 +252,11 @@ fn test_query_where_greater_than() {
         source: vec![make_source("X", list_expr(vec![1, 2, 3, 4, 5]))],
         let_clause: None,
         relationship: None,
-        where_clause: Some(make_binary(Expression::Greater, alias_ref("X"), int_expr(2))),
+        where_clause: Some(make_binary(
+            Expression::Greater,
+            alias_ref("X"),
+            int_expr(2),
+        )),
         return_clause: Some(ReturnClause {
             expression: alias_ref("X"),
             distinct: None,
@@ -320,7 +304,11 @@ fn test_query_where_filters_all() {
         source: vec![make_source("X", list_expr(vec![1, 2, 3]))],
         let_clause: None,
         relationship: None,
-        where_clause: Some(make_binary(Expression::Greater, alias_ref("X"), int_expr(10))),
+        where_clause: Some(make_binary(
+            Expression::Greater,
+            alias_ref("X"),
+            int_expr(10),
+        )),
         return_clause: None,
         aggregate: None,
         sort: None,
@@ -437,7 +425,11 @@ fn test_query_let_used_in_where() {
             expression: make_binary(Expression::Multiply, alias_ref("X"), int_expr(2)),
         }]),
         relationship: None,
-        where_clause: Some(make_binary(Expression::Greater, let_ref("Double"), int_expr(5))),
+        where_clause: Some(make_binary(
+            Expression::Greater,
+            let_ref("Double"),
+            int_expr(5),
+        )),
         return_clause: Some(ReturnClause {
             expression: alias_ref("X"),
             distinct: None,
@@ -986,7 +978,8 @@ fn test_query_aggregate_sum() {
         aggregate: Some(AggregateClause {
             identifier: "Sum".to_string(),
             starting: Some(int_expr(0)),
-            expression: make_binary(Expression::Add,
+            expression: make_binary(
+                Expression::Add,
                 Box::new(Expression::OperandRef(octofhir_cql_elm::OperandRef {
                     element: Element::default(),
                     name: "Sum".to_string(),
@@ -1018,7 +1011,8 @@ fn test_query_aggregate_product() {
         aggregate: Some(AggregateClause {
             identifier: "Product".to_string(),
             starting: Some(int_expr(1)),
-            expression: make_binary(Expression::Multiply,
+            expression: make_binary(
+                Expression::Multiply,
                 Box::new(Expression::OperandRef(octofhir_cql_elm::OperandRef {
                     element: Element::default(),
                     name: "Product".to_string(),
@@ -1050,7 +1044,8 @@ fn test_query_aggregate_count() {
         aggregate: Some(AggregateClause {
             identifier: "Count".to_string(),
             starting: Some(int_expr(0)),
-            expression: make_binary(Expression::Add,
+            expression: make_binary(
+                Expression::Add,
                 Box::new(Expression::OperandRef(octofhir_cql_elm::OperandRef {
                     element: Element::default(),
                     name: "Count".to_string(),
@@ -1082,7 +1077,8 @@ fn test_query_aggregate_distinct() {
         aggregate: Some(AggregateClause {
             identifier: "Sum".to_string(),
             starting: Some(int_expr(0)),
-            expression: make_binary(Expression::Add,
+            expression: make_binary(
+                Expression::Add,
                 Box::new(Expression::OperandRef(octofhir_cql_elm::OperandRef {
                     element: Element::default(),
                     name: "Sum".to_string(),
@@ -1114,7 +1110,8 @@ fn test_query_aggregate_empty() {
         aggregate: Some(AggregateClause {
             identifier: "Sum".to_string(),
             starting: Some(int_expr(0)),
-            expression: make_binary(Expression::Add,
+            expression: make_binary(
+                Expression::Add,
                 Box::new(Expression::OperandRef(octofhir_cql_elm::OperandRef {
                     element: Element::default(),
                     name: "Sum".to_string(),
@@ -1145,7 +1142,11 @@ fn test_query_where_return_sort() {
         source: vec![make_source("X", list_expr(vec![5, 3, 1, 4, 2]))],
         let_clause: None,
         relationship: None,
-        where_clause: Some(make_binary(Expression::Greater, alias_ref("X"), int_expr(1))),
+        where_clause: Some(make_binary(
+            Expression::Greater,
+            alias_ref("X"),
+            int_expr(1),
+        )),
         return_clause: Some(ReturnClause {
             expression: make_binary(Expression::Multiply, alias_ref("X"), int_expr(2)),
             distinct: None,

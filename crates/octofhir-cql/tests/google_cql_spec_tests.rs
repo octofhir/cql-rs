@@ -45,11 +45,9 @@ fn run_google_cql_tests() {
         match GoogleTestRunner::load_test_file(&path) {
             Ok(test_file) => {
                 let result = runner.run_file(&test_file);
-                eprintln!("{}: {}/{} passed ({} skipped)",
-                    file_name,
-                    result.passed,
-                    result.total,
-                    result.skipped
+                eprintln!(
+                    "{}: {}/{} passed ({} skipped)",
+                    file_name, result.passed, result.total, result.skipped
                 );
                 all_results.push(result);
             }
@@ -74,8 +72,12 @@ fn run_google_cql_tests() {
         0.0
     };
 
-    eprintln!("\nGoogle CQL Tests: {}/{} passed ({:.1}%)",
-        total_passed, total_tests - total_skipped, pass_rate);
+    eprintln!(
+        "\nGoogle CQL Tests: {}/{} passed ({:.1}%)",
+        total_passed,
+        total_tests - total_skipped,
+        pass_rate
+    );
 
     // We don't fail the test - this is informational
     // Later we can add a threshold
@@ -87,15 +89,18 @@ fn run_arithmetic_tests_only() {
     let runner = GoogleTestRunner::new();
 
     let path = test_dir.join("operator_arithmetic.json");
-    let test_file = GoogleTestRunner::load_test_file(&path)
-        .expect("Failed to load arithmetic tests");
+    let test_file =
+        GoogleTestRunner::load_test_file(&path).expect("Failed to load arithmetic tests");
 
     let result = runner.run_file(&test_file);
 
     // Print failed tests for debugging
     for test_result in &result.results {
         if !test_result.passed && !test_result.skipped {
-            eprintln!("FAIL: {}::{}", test_result.function_name, test_result.test_name);
+            eprintln!(
+                "FAIL: {}::{}",
+                test_result.function_name, test_result.test_name
+            );
             eprintln!("  Expected: {}", test_result.expected);
             eprintln!("  Actual: {}", test_result.actual);
             if let Some(err) = &test_result.error {
@@ -104,8 +109,10 @@ fn run_arithmetic_tests_only() {
         }
     }
 
-    eprintln!("\nArithmetic: {}/{} passed ({} skipped)",
-        result.passed, result.total, result.skipped);
+    eprintln!(
+        "\nArithmetic: {}/{} passed ({} skipped)",
+        result.passed, result.total, result.skipped
+    );
 }
 
 #[test]
@@ -114,15 +121,18 @@ fn run_comparison_tests_only() {
     let runner = GoogleTestRunner::new();
 
     let path = test_dir.join("operator_comparison.json");
-    let test_file = GoogleTestRunner::load_test_file(&path)
-        .expect("Failed to load comparison tests");
+    let test_file =
+        GoogleTestRunner::load_test_file(&path).expect("Failed to load comparison tests");
 
     let result = runner.run_file(&test_file);
 
     // Print failed tests for debugging
     for test_result in &result.results {
         if !test_result.passed && !test_result.skipped {
-            eprintln!("FAIL: {}::{}", test_result.function_name, test_result.test_name);
+            eprintln!(
+                "FAIL: {}::{}",
+                test_result.function_name, test_result.test_name
+            );
             eprintln!("  Expected: {}", test_result.expected);
             eprintln!("  Actual: {}", test_result.actual);
             if let Some(err) = &test_result.error {
@@ -131,8 +141,10 @@ fn run_comparison_tests_only() {
         }
     }
 
-    eprintln!("\nComparison: {}/{} passed ({} skipped)",
-        result.passed, result.total, result.skipped);
+    eprintln!(
+        "\nComparison: {}/{} passed ({} skipped)",
+        result.passed, result.total, result.skipped
+    );
 }
 
 #[test]
@@ -141,15 +153,17 @@ fn run_logic_tests_only() {
     let runner = GoogleTestRunner::new();
 
     let path = test_dir.join("operator_logic.json");
-    let test_file = GoogleTestRunner::load_test_file(&path)
-        .expect("Failed to load logic tests");
+    let test_file = GoogleTestRunner::load_test_file(&path).expect("Failed to load logic tests");
 
     let result = runner.run_file(&test_file);
 
     // Print failed tests for debugging
     for test_result in &result.results {
         if !test_result.passed && !test_result.skipped {
-            eprintln!("FAIL: {}::{}", test_result.function_name, test_result.test_name);
+            eprintln!(
+                "FAIL: {}::{}",
+                test_result.function_name, test_result.test_name
+            );
             eprintln!("  Expected: {}", test_result.expected);
             eprintln!("  Actual: {}", test_result.actual);
             if let Some(err) = &test_result.error {
@@ -158,6 +172,8 @@ fn run_logic_tests_only() {
         }
     }
 
-    eprintln!("\nLogic: {}/{} passed ({} skipped)",
-        result.passed, result.total, result.skipped);
+    eprintln!(
+        "\nLogic: {}/{} passed ({} skipped)",
+        result.passed, result.total, result.skipped
+    );
 }

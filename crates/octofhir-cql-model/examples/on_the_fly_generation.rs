@@ -5,8 +5,8 @@
 //! to generate configurations dynamically.
 
 use octofhir_cql_model::{
-    model_info::{ModelInfo, PropertyInfo, TypeInfo},
     ModelProvider, ModelRegistry,
+    model_info::{ModelInfo, PropertyInfo, TypeInfo},
 };
 
 #[tokio::main]
@@ -21,15 +21,19 @@ async fn main() -> anyhow::Result<()> {
     // Each call creates a new registry from embedded data - NO FILE READING
     let r4_registry = octofhir_cql_model::fhir::fhir_r4_registry()?;
     println!("   ✓ Created R4 registry (no file I/O)");
-    println!("   - Model: {} v{}", r4_registry.model_name(), r4_registry.model_version());
+    println!(
+        "   - Model: {} v{}",
+        r4_registry.model_name(),
+        r4_registry.model_version()
+    );
 
     // Can create multiple instances without I/O
-    let another_r4 = octofhir_cql_model::fhir::fhir_r4_registry()?;
-    let r5_registry = octofhir_cql_model::fhir::fhir_r5_registry()?;
+    let _another_r4 = octofhir_cql_model::fhir::fhir_r4_registry()?;
+    let _r5_registry = octofhir_cql_model::fhir::fhir_r5_registry()?;
     println!("   ✓ Created multiple registries simultaneously (no I/O)");
 
     // Cheap cloning via Arc
-    let cloned = r4_registry.clone();
+    let _cloned = r4_registry.clone();
     println!("   ✓ Cloned registry (cheap via Arc)");
 
     // ========================================================================
@@ -57,16 +61,21 @@ async fn main() -> anyhow::Result<()> {
     custom_type.elements.push(PropertyInfo {
         name: "name".to_string(),
         element_type: "string".to_string(),
-        is_list: true,  // List of names
+        is_list: true, // List of names
         target: None,
     });
 
-    custom_model.type_infos.insert("CustomPatient".to_string(), custom_type);
+    custom_model
+        .type_infos
+        .insert("CustomPatient".to_string(), custom_type);
 
     // Create registry from the in-memory ModelInfo
     let custom_registry = ModelRegistry::new(custom_model);
     println!("   ✓ Created custom ModelInfo programmatically (no I/O)");
-    println!("   - Retrievable types: {}", custom_registry.get_retrievable_types().len());
+    println!(
+        "   - Retrievable types: {}",
+        custom_registry.get_retrievable_types().len()
+    );
 
     if let Some(patient) = custom_registry.get_type("CustomPatient").await? {
         println!("   - CustomPatient properties: {}", patient.elements.len());
@@ -90,7 +99,8 @@ async fn main() -> anyhow::Result<()> {
     // Parse from string - no file I/O
     let runtime_registry = ModelRegistry::from_xml(xml_string)?;
     println!("   ✓ Parsed ModelInfo from in-memory string (no I/O)");
-    println!("   - Model: {} v{}",
+    println!(
+        "   - Model: {} v{}",
         runtime_registry.model_name(),
         runtime_registry.model_version()
     );
@@ -103,7 +113,10 @@ async fn main() -> anyhow::Result<()> {
     // Simulate generating ModelInfo based on runtime configuration
     let config = vec![
         ("Patient", vec!["id", "name", "birthDate"]),
-        ("Observation", vec!["id", "code", "value", "effectiveDateTime"]),
+        (
+            "Observation",
+            vec!["id", "code", "value", "effectiveDateTime"],
+        ),
         ("Condition", vec!["id", "code", "clinicalStatus"]),
     ];
 
@@ -122,12 +135,17 @@ async fn main() -> anyhow::Result<()> {
             });
         }
 
-        dynamic_model.type_infos.insert(type_name.to_string(), type_info);
+        dynamic_model
+            .type_infos
+            .insert(type_name.to_string(), type_info);
     }
 
     let dynamic_registry = ModelRegistry::new(dynamic_model);
     println!("   ✓ Generated ModelInfo from runtime config (no I/O)");
-    println!("   - Generated {} retrievable types dynamically", dynamic_registry.get_retrievable_types().len());
+    println!(
+        "   - Generated {} retrievable types dynamically",
+        dynamic_registry.get_retrievable_types().len()
+    );
 
     // ========================================================================
     // Method 5: Modify Embedded ModelInfo at Runtime
@@ -136,7 +154,7 @@ async fn main() -> anyhow::Result<()> {
 
     // Load embedded ModelInfo
     let fhir_model_info = octofhir_cql_model::model_info::parse_xml(
-        octofhir_cql_model::fhir::r4::FHIR_R4_MODEL_INFO_XML
+        octofhir_cql_model::fhir::r4::FHIR_R4_MODEL_INFO_XML,
     )?;
 
     // Clone and modify in memory
@@ -151,9 +169,11 @@ async fn main() -> anyhow::Result<()> {
         target: None,
     });
 
-    modified_model.type_infos.insert("CustomExtension".to_string(), extension_type);
+    modified_model
+        .type_infos
+        .insert("CustomExtension".to_string(), extension_type);
 
-    let modified_registry = ModelRegistry::new(modified_model);
+    let _modified_registry = ModelRegistry::new(modified_model);
     println!("   ✓ Modified embedded ModelInfo at runtime (no I/O)");
     println!("   - Extended with custom types");
 

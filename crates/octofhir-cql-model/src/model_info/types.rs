@@ -47,7 +47,11 @@ impl ModelInfo {
     }
 
     /// Get property type, traversing base types if necessary
-    pub fn get_property_type(&self, parent_type: &str, property_name: &str) -> Option<&PropertyInfo> {
+    pub fn get_property_type(
+        &self,
+        parent_type: &str,
+        property_name: &str,
+    ) -> Option<&PropertyInfo> {
         let mut current_type = self.get_type(parent_type)?;
 
         // Try to find property in current type
@@ -91,18 +95,14 @@ impl ModelInfo {
             None => return false,
         };
 
-        loop {
-            if let Some(ref base_type_name) = current_type.base_type {
-                if base_type_name == parent_type {
-                    return true;
-                }
-                current_type = match self.get_type(base_type_name) {
-                    Some(t) => t,
-                    None => return false,
-                };
-            } else {
-                break;
+        while let Some(ref base_type_name) = current_type.base_type {
+            if base_type_name == parent_type {
+                return true;
             }
+            current_type = match self.get_type(base_type_name) {
+                Some(t) => t,
+                None => return false,
+            };
         }
 
         false

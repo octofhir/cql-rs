@@ -8,19 +8,23 @@ use crate::context::EvaluationContext;
 use crate::engine::CqlEngine;
 use crate::error::{EvalError, EvalResult};
 use crate::operators::comparison::{cql_compare, cql_equal};
+use bigdecimal::{BigDecimal, FromPrimitive, RoundingMode, Zero};
+use num_traits::ToPrimitive;
 use octofhir_cql_elm::{
-    AggregateExpression, BinaryExpression, FilterExpression, FirstLastExpression, ForEachExpression,
-    IndexOfExpression, ListExpression, NaryExpression, RepeatExpression, SliceExpression,
+    AggregateExpression, BinaryExpression, FilterExpression, FirstLastExpression,
+    ForEachExpression, IndexOfExpression, ListExpression, RepeatExpression, SliceExpression,
     SortExpression, UnaryExpression,
 };
 use octofhir_cql_types::{CqlDate, CqlDateTime, CqlList, CqlQuantity, CqlType, CqlValue};
-use rust_decimal::prelude::*;
-use rust_decimal::Decimal;
 use std::cmp::Ordering;
 
 impl CqlEngine {
     /// Evaluate List constructor
-    pub fn eval_list_constructor(&self, expr: &ListExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_list_constructor(
+        &self,
+        expr: &ListExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let mut elements = Vec::new();
 
         if let Some(element_exprs) = &expr.elements {
@@ -44,7 +48,11 @@ impl CqlEngine {
     }
 
     /// Evaluate Exists - returns true if list contains at least one non-null element
-    pub fn eval_exists(&self, expr: &UnaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_exists(
+        &self,
+        expr: &UnaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let operand = self.evaluate(&expr.operand, ctx)?;
 
         match &operand {
@@ -60,7 +68,11 @@ impl CqlEngine {
     }
 
     /// Evaluate Times (cartesian product)
-    pub fn eval_times(&self, expr: &BinaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_times(
+        &self,
+        expr: &BinaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let (left, right) = self.eval_binary_operands(expr, ctx)?;
 
         if left.is_null() || right.is_null() {
@@ -93,7 +105,11 @@ impl CqlEngine {
     }
 
     /// Evaluate Filter
-    pub fn eval_filter(&self, expr: &FilterExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_filter(
+        &self,
+        expr: &FilterExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let source = self.evaluate(&expr.source, ctx)?;
 
         if source.is_null() {
@@ -131,7 +147,11 @@ impl CqlEngine {
     }
 
     /// Evaluate First
-    pub fn eval_first(&self, expr: &FirstLastExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_first(
+        &self,
+        expr: &FirstLastExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let source = self.evaluate(&expr.source, ctx)?;
 
         match &source {
@@ -142,7 +162,11 @@ impl CqlEngine {
     }
 
     /// Evaluate Last
-    pub fn eval_last(&self, expr: &FirstLastExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_last(
+        &self,
+        expr: &FirstLastExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let source = self.evaluate(&expr.source, ctx)?;
 
         match &source {
@@ -153,7 +177,11 @@ impl CqlEngine {
     }
 
     /// Evaluate Slice
-    pub fn eval_slice(&self, expr: &SliceExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_slice(
+        &self,
+        expr: &SliceExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let source = self.evaluate(&expr.source, ctx)?;
 
         if source.is_null() {
@@ -177,7 +205,12 @@ impl CqlEngine {
         let start = match &start_index {
             CqlValue::Null => 0,
             CqlValue::Integer(i) => (*i).max(0) as usize,
-            _ => return Err(EvalError::type_mismatch("Integer", start_index.get_type().name())),
+            _ => {
+                return Err(EvalError::type_mismatch(
+                    "Integer",
+                    start_index.get_type().name(),
+                ));
+            }
         };
 
         let end = match &end_index {
@@ -191,7 +224,12 @@ impl CqlEngine {
                 }
             }
             CqlValue::Integer(i) => ((*i).max(0) as usize).min(list.len()),
-            _ => return Err(EvalError::type_mismatch("Integer", end_index.get_type().name())),
+            _ => {
+                return Err(EvalError::type_mismatch(
+                    "Integer",
+                    end_index.get_type().name(),
+                ));
+            }
         };
 
         if start >= list.len() || start >= end {
@@ -207,7 +245,11 @@ impl CqlEngine {
     }
 
     /// Evaluate IndexOf - returns 0-based index of element in list
-    pub fn eval_index_of(&self, expr: &IndexOfExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_index_of(
+        &self,
+        expr: &IndexOfExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let source = self.evaluate(&expr.source, ctx)?;
         let element = self.evaluate(&expr.element_to_find, ctx)?;
 
@@ -235,7 +277,11 @@ impl CqlEngine {
     }
 
     /// Evaluate Flatten - flattens nested lists
-    pub fn eval_flatten(&self, expr: &UnaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_flatten(
+        &self,
+        expr: &UnaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let operand = self.evaluate(&expr.operand, ctx)?;
 
         match &operand {
@@ -262,7 +308,11 @@ impl CqlEngine {
     }
 
     /// Evaluate Sort
-    pub fn eval_sort(&self, expr: &SortExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_sort(
+        &self,
+        expr: &SortExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let source = self.evaluate(&expr.source, ctx)?;
 
         if source.is_null() {
@@ -279,7 +329,8 @@ impl CqlEngine {
         // Sort using CQL comparison with special handling for DateTimes
         elements.sort_by(|a, b| {
             let cmp_result = cql_compare(a, b);
-            let result = match &cmp_result {
+
+            match &cmp_result {
                 Ok(Some(ord)) => *ord,
                 Ok(None) => {
                     // When comparison is indeterminate (e.g., different precision),
@@ -300,19 +351,17 @@ impl CqlEngine {
                     }
                 }
                 Err(_) => Ordering::Equal,
-            };
-            result
+            }
         });
 
         // Handle sort direction
-        if let Some(first_by) = expr.by.first() {
-            if matches!(
+        if let Some(first_by) = expr.by.first()
+            && matches!(
                 first_by.direction,
-                octofhir_cql_elm::SortDirection::Descending
-                    | octofhir_cql_elm::SortDirection::Desc
-            ) {
-                elements.reverse();
-            }
+                octofhir_cql_elm::SortDirection::Descending | octofhir_cql_elm::SortDirection::Desc
+            )
+        {
+            elements.reverse();
         }
 
         Ok(CqlValue::List(CqlList {
@@ -322,7 +371,11 @@ impl CqlEngine {
     }
 
     /// Evaluate ForEach
-    pub fn eval_for_each(&self, expr: &ForEachExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_for_each(
+        &self,
+        expr: &ForEachExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let source = self.evaluate(&expr.source, ctx)?;
 
         if source.is_null() {
@@ -354,7 +407,11 @@ impl CqlEngine {
     }
 
     /// Evaluate Repeat
-    pub fn eval_repeat(&self, expr: &RepeatExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_repeat(
+        &self,
+        expr: &RepeatExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let source = self.evaluate(&expr.source, ctx)?;
 
         if source.is_null() {
@@ -388,14 +445,21 @@ impl CqlEngine {
                 match expanded {
                     CqlValue::List(inner) => {
                         for inner_item in inner.iter() {
-                            if !result.iter().any(|r| cql_equal(r, inner_item).unwrap_or(Some(false)).unwrap_or(false)) {
+                            if !result.iter().any(|r| {
+                                cql_equal(r, inner_item)
+                                    .unwrap_or(Some(false))
+                                    .unwrap_or(false)
+                            }) {
                                 new_items.push(inner_item.clone());
                             }
                         }
                     }
                     CqlValue::Null => {}
                     other => {
-                        if !result.iter().any(|r| cql_equal(r, &other).unwrap_or(Some(false)).unwrap_or(false)) {
+                        if !result
+                            .iter()
+                            .any(|r| cql_equal(r, &other).unwrap_or(Some(false)).unwrap_or(false))
+                        {
                             new_items.push(other);
                         }
                     }
@@ -415,7 +479,11 @@ impl CqlEngine {
     ///
     /// For the Distinct operator, null values are considered equivalent to each other,
     /// so multiple nulls are reduced to a single null.
-    pub fn eval_distinct(&self, expr: &UnaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_distinct(
+        &self,
+        expr: &UnaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let operand = self.evaluate(&expr.operand, ctx)?;
 
         match &operand {
@@ -457,39 +525,56 @@ impl CqlEngine {
     }
 
     /// Evaluate Current ($this)
-    pub fn eval_current(&self, _expr: &octofhir_cql_elm::CurrentExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_current(
+        &self,
+        _expr: &octofhir_cql_elm::CurrentExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         ctx.get_special("$this")
             .cloned()
             .ok_or_else(|| EvalError::undefined_alias("$this"))
     }
 
     /// Evaluate Iteration ($index)
-    pub fn eval_iteration(&self, _expr: &octofhir_cql_elm::IterationExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_iteration(
+        &self,
+        _expr: &octofhir_cql_elm::IterationExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         ctx.get_special("$index")
             .cloned()
             .ok_or_else(|| EvalError::undefined_alias("$index"))
     }
 
     /// Evaluate Total ($total)
-    pub fn eval_total(&self, _expr: &octofhir_cql_elm::TotalExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_total(
+        &self,
+        _expr: &octofhir_cql_elm::TotalExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         ctx.get_special("$total")
             .cloned()
             .ok_or_else(|| EvalError::undefined_alias("$total"))
     }
 
     /// Evaluate SingletonFrom - returns single element or null/error
-    pub fn eval_singleton_from(&self, expr: &UnaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_singleton_from(
+        &self,
+        expr: &UnaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let operand = self.evaluate(&expr.operand, ctx)?;
 
         match &operand {
             CqlValue::Null => Ok(CqlValue::Null),
-            CqlValue::List(list) => {
-                match list.len() {
-                    0 => Ok(CqlValue::Null),
-                    1 => Ok(list.first().unwrap().clone()),
-                    _ => Err(EvalError::invalid_operand("SingletonFrom", "list has more than one element")),
-                }
-            }
+            CqlValue::List(list) => match list.len() {
+                0 => Ok(CqlValue::Null),
+                1 => Ok(list.first().unwrap().clone()),
+                _ => Err(EvalError::invalid_operand(
+                    "SingletonFrom",
+                    "list has more than one element",
+                )),
+            },
             // Single value returns itself
             _ => Ok(operand),
         }
@@ -500,7 +585,11 @@ impl CqlEngine {
     // =========================================================================
 
     /// Helper to evaluate the source from an AggregateExpression
-    fn eval_aggregate_source(&self, expr: &AggregateExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    fn eval_aggregate_source(
+        &self,
+        expr: &AggregateExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         if let Some(source_expr) = &expr.source {
             self.evaluate(source_expr, ctx)
         } else {
@@ -509,7 +598,11 @@ impl CqlEngine {
     }
 
     /// Evaluate Aggregate expression
-    pub fn eval_aggregate(&self, expr: &AggregateExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_aggregate(
+        &self,
+        expr: &AggregateExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let source = self.eval_aggregate_source(expr, ctx)?;
 
         if source.is_null() {
@@ -549,7 +642,11 @@ impl CqlEngine {
     }
 
     /// Evaluate Count
-    pub fn eval_count(&self, expr: &AggregateExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_count(
+        &self,
+        expr: &AggregateExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let source = self.eval_aggregate_source(expr, ctx)?;
 
         match &source {
@@ -563,7 +660,11 @@ impl CqlEngine {
     }
 
     /// Evaluate Sum
-    pub fn eval_sum(&self, expr: &AggregateExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_sum(
+        &self,
+        expr: &AggregateExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let source = self.eval_aggregate_source(expr, ctx)?;
 
         if source.is_null() {
@@ -592,7 +693,7 @@ impl CqlEngine {
                     if let Some(b) = item.as_integer() {
                         CqlValue::Integer(a + b)
                     } else if let Some(b) = item.as_decimal() {
-                        CqlValue::Decimal(Decimal::from(a) + b)
+                        CqlValue::Decimal(BigDecimal::from(a) + b)
                     } else {
                         return Err(EvalError::type_mismatch("numeric", item.get_type().name()));
                     }
@@ -601,7 +702,7 @@ impl CqlEngine {
                     if let Some(b) = item.as_long() {
                         CqlValue::Long(a + b)
                     } else if let Some(b) = item.as_decimal() {
-                        CqlValue::Decimal(Decimal::from(a) + b)
+                        CqlValue::Decimal(BigDecimal::from(a) + b)
                     } else {
                         return Err(EvalError::type_mismatch("numeric", item.get_type().name()));
                     }
@@ -617,7 +718,7 @@ impl CqlEngine {
                     if let CqlValue::Quantity(q2) = item {
                         if q.unit == q2.unit {
                             CqlValue::Quantity(CqlQuantity {
-                                value: q.value + q2.value,
+                                value: q.value + &q2.value,
                                 unit: q.unit.clone(),
                             })
                         } else {
@@ -630,7 +731,12 @@ impl CqlEngine {
                         return Err(EvalError::type_mismatch("Quantity", item.get_type().name()));
                     }
                 }
-                _ => return Err(EvalError::type_mismatch("numeric", source.get_type().name())),
+                _ => {
+                    return Err(EvalError::type_mismatch(
+                        "numeric",
+                        source.get_type().name(),
+                    ));
+                }
             });
         }
 
@@ -638,7 +744,11 @@ impl CqlEngine {
     }
 
     /// Evaluate Product
-    pub fn eval_product(&self, expr: &AggregateExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_product(
+        &self,
+        expr: &AggregateExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let source = self.eval_aggregate_source(expr, ctx)?;
 
         if source.is_null() {
@@ -667,19 +777,17 @@ impl CqlEngine {
                     if let Some(b) = item.as_integer() {
                         CqlValue::Integer(a * b)
                     } else if let Some(b) = item.as_decimal() {
-                        CqlValue::Decimal(Decimal::from(a) * b)
+                        CqlValue::Decimal(BigDecimal::from(a) * b)
                     } else {
                         return Err(EvalError::type_mismatch("numeric", item.get_type().name()));
                     }
                 }
-                Some(CqlValue::Long(a)) => {
-                    match item {
-                        CqlValue::Long(b) => CqlValue::Long(a * b),
-                        CqlValue::Integer(b) => CqlValue::Long(a * (*b as i64)),
-                        CqlValue::Decimal(b) => CqlValue::Decimal(Decimal::from(a) * b),
-                        _ => return Err(EvalError::type_mismatch("numeric", item.get_type().name())),
-                    }
-                }
+                Some(CqlValue::Long(a)) => match item {
+                    CqlValue::Long(b) => CqlValue::Long(a * b),
+                    CqlValue::Integer(b) => CqlValue::Long(a * (*b as i64)),
+                    CqlValue::Decimal(b) => CqlValue::Decimal(BigDecimal::from(a) * b),
+                    _ => return Err(EvalError::type_mismatch("numeric", item.get_type().name())),
+                },
                 Some(CqlValue::Decimal(a)) => {
                     if let Some(b) = item.as_decimal() {
                         CqlValue::Decimal(a * b)
@@ -687,7 +795,12 @@ impl CqlEngine {
                         return Err(EvalError::type_mismatch("numeric", item.get_type().name()));
                     }
                 }
-                _ => return Err(EvalError::type_mismatch("numeric", source.get_type().name())),
+                _ => {
+                    return Err(EvalError::type_mismatch(
+                        "numeric",
+                        source.get_type().name(),
+                    ));
+                }
             });
         }
 
@@ -695,7 +808,11 @@ impl CqlEngine {
     }
 
     /// Evaluate Min
-    pub fn eval_min(&self, expr: &AggregateExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_min(
+        &self,
+        expr: &AggregateExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let source = self.eval_aggregate_source(expr, ctx)?;
 
         if source.is_null() {
@@ -716,12 +833,10 @@ impl CqlEngine {
 
             min = Some(match min {
                 None => item.clone(),
-                Some(current) => {
-                    match cql_compare(&current, item)? {
-                        Some(Ordering::Greater) => item.clone(),
-                        _ => current,
-                    }
-                }
+                Some(current) => match cql_compare(&current, item)? {
+                    Some(Ordering::Greater) => item.clone(),
+                    _ => current,
+                },
             });
         }
 
@@ -729,7 +844,11 @@ impl CqlEngine {
     }
 
     /// Evaluate Max
-    pub fn eval_max(&self, expr: &AggregateExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_max(
+        &self,
+        expr: &AggregateExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let source = self.eval_aggregate_source(expr, ctx)?;
 
         if source.is_null() {
@@ -750,12 +869,10 @@ impl CqlEngine {
 
             max = Some(match max {
                 None => item.clone(),
-                Some(current) => {
-                    match cql_compare(&current, item)? {
-                        Some(Ordering::Less) => item.clone(),
-                        _ => current,
-                    }
-                }
+                Some(current) => match cql_compare(&current, item)? {
+                    Some(Ordering::Less) => item.clone(),
+                    _ => current,
+                },
             });
         }
 
@@ -763,33 +880,44 @@ impl CqlEngine {
     }
 
     /// Evaluate Avg
-    pub fn eval_avg(&self, expr: &AggregateExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_avg(
+        &self,
+        expr: &AggregateExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let sum_result = self.eval_sum(expr, ctx)?;
         let count_result = self.eval_count(expr, ctx)?;
 
         match (&sum_result, &count_result) {
             (CqlValue::Null, _) | (_, CqlValue::Integer(0)) => Ok(CqlValue::Null),
-            (CqlValue::Integer(sum), CqlValue::Integer(count)) => {
-                Ok(CqlValue::Decimal(Decimal::from(*sum) / Decimal::from(*count)))
-            }
-            (CqlValue::Long(sum), CqlValue::Integer(count)) => {
-                Ok(CqlValue::Decimal(Decimal::from(*sum) / Decimal::from(*count)))
-            }
+            (CqlValue::Integer(sum), CqlValue::Integer(count)) => Ok(CqlValue::Decimal(
+                BigDecimal::from(*sum) / BigDecimal::from(*count),
+            )),
+            (CqlValue::Long(sum), CqlValue::Integer(count)) => Ok(CqlValue::Decimal(
+                BigDecimal::from(*sum) / BigDecimal::from(*count),
+            )),
             (CqlValue::Decimal(sum), CqlValue::Integer(count)) => {
-                Ok(CqlValue::Decimal(*sum / Decimal::from(*count)))
+                Ok(CqlValue::Decimal(sum.clone() / BigDecimal::from(*count)))
             }
             (CqlValue::Quantity(q), CqlValue::Integer(count)) => {
                 Ok(CqlValue::Quantity(CqlQuantity {
-                    value: q.value / Decimal::from(*count),
+                    value: q.value.clone() / BigDecimal::from(*count),
                     unit: q.unit.clone(),
                 }))
             }
-            _ => Err(EvalError::type_mismatch("numeric", sum_result.get_type().name())),
+            _ => Err(EvalError::type_mismatch(
+                "numeric",
+                sum_result.get_type().name(),
+            )),
         }
     }
 
     /// Evaluate GeometricMean
-    pub fn eval_geometric_mean(&self, expr: &AggregateExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_geometric_mean(
+        &self,
+        expr: &AggregateExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let source = self.eval_aggregate_source(expr, ctx)?;
 
         if source.is_null() {
@@ -819,11 +947,17 @@ impl CqlEngine {
         let n = non_null.len() as f64;
         let geo_mean = product.powf(1.0 / n);
 
-        Ok(CqlValue::Decimal(Decimal::from_f64(geo_mean).unwrap_or(Decimal::ZERO)))
+        Ok(CqlValue::Decimal(
+            BigDecimal::from_f64(geo_mean).unwrap_or(BigDecimal::zero()),
+        ))
     }
 
     /// Evaluate Median
-    pub fn eval_median(&self, expr: &AggregateExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_median(
+        &self,
+        expr: &AggregateExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let source = self.eval_aggregate_source(expr, ctx)?;
 
         if source.is_null() {
@@ -841,7 +975,11 @@ impl CqlEngine {
             return Ok(CqlValue::Null);
         }
 
-        values.sort_by(|a, b| cql_compare(a, b).unwrap_or(Some(Ordering::Equal)).unwrap_or(Ordering::Equal));
+        values.sort_by(|a, b| {
+            cql_compare(a, b)
+                .unwrap_or(Some(Ordering::Equal))
+                .unwrap_or(Ordering::Equal)
+        });
 
         let len = values.len();
         if len % 2 == 1 {
@@ -852,14 +990,18 @@ impl CqlEngine {
             let mid2 = &values[len / 2];
 
             match (mid1.as_decimal(), mid2.as_decimal()) {
-                (Some(d1), Some(d2)) => Ok(CqlValue::Decimal((d1 + d2) / Decimal::from(2))),
+                (Some(d1), Some(d2)) => Ok(CqlValue::Decimal((d1 + d2) / BigDecimal::from(2))),
                 _ => Ok(mid1.clone()),
             }
         }
     }
 
     /// Evaluate Mode
-    pub fn eval_mode(&self, expr: &AggregateExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_mode(
+        &self,
+        expr: &AggregateExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let source = self.eval_aggregate_source(expr, ctx)?;
 
         if source.is_null() {
@@ -880,7 +1022,9 @@ impl CqlEngine {
         // Count occurrences
         let mut counts: Vec<(&CqlValue, usize)> = Vec::new();
         for item in &non_null {
-            let found = counts.iter_mut().find(|(v, _)| cql_equal(v, item).unwrap_or(Some(false)).unwrap_or(false));
+            let found = counts
+                .iter_mut()
+                .find(|(v, _)| cql_equal(v, item).unwrap_or(Some(false)).unwrap_or(false));
             match found {
                 Some((_, count)) => *count += 1,
                 None => counts.push((item, 1)),
@@ -899,16 +1043,29 @@ impl CqlEngine {
     }
 
     /// Evaluate Variance
-    pub fn eval_variance(&self, expr: &AggregateExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_variance(
+        &self,
+        expr: &AggregateExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         self.eval_variance_impl(expr, ctx, false)
     }
 
     /// Evaluate PopulationVariance
-    pub fn eval_population_variance(&self, expr: &AggregateExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_population_variance(
+        &self,
+        expr: &AggregateExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         self.eval_variance_impl(expr, ctx, true)
     }
 
-    fn eval_variance_impl(&self, expr: &AggregateExpression, ctx: &mut EvaluationContext, population: bool) -> EvalResult<CqlValue> {
+    fn eval_variance_impl(
+        &self,
+        expr: &AggregateExpression,
+        ctx: &mut EvaluationContext,
+        population: bool,
+    ) -> EvalResult<CqlValue> {
         let source = self.eval_aggregate_source(expr, ctx)?;
 
         if source.is_null() {
@@ -944,41 +1101,65 @@ impl CqlEngine {
             sum_sq_diff / (n - 1) as f64
         };
 
-        Ok(CqlValue::Decimal(Decimal::from_f64(variance).unwrap_or(Decimal::ZERO)))
+        Ok(CqlValue::Decimal(
+            BigDecimal::from_f64(variance).unwrap_or(BigDecimal::zero()),
+        ))
     }
 
     /// Evaluate StdDev
-    pub fn eval_stddev(&self, expr: &AggregateExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_stddev(
+        &self,
+        expr: &AggregateExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let variance = self.eval_variance(expr, ctx)?;
         match variance {
             CqlValue::Decimal(v) => {
                 let stddev = v.to_f64().map(|f| f.sqrt()).unwrap_or(0.0);
-                let result = Decimal::from_f64(stddev).unwrap_or(Decimal::ZERO);
+                let result = BigDecimal::from_f64(stddev).unwrap_or(BigDecimal::zero());
                 // Round to 8 decimal places (CQL Decimal precision)
-                Ok(CqlValue::Decimal(result.round_dp(8)))
+                Ok(CqlValue::Decimal(
+                    result.with_scale_round(8, RoundingMode::HalfUp),
+                ))
             }
             CqlValue::Null => Ok(CqlValue::Null),
-            _ => Err(EvalError::type_mismatch("Decimal", variance.get_type().name())),
+            _ => Err(EvalError::type_mismatch(
+                "Decimal",
+                variance.get_type().name(),
+            )),
         }
     }
 
     /// Evaluate PopulationStdDev
-    pub fn eval_population_stddev(&self, expr: &AggregateExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_population_stddev(
+        &self,
+        expr: &AggregateExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let variance = self.eval_population_variance(expr, ctx)?;
         match variance {
             CqlValue::Decimal(v) => {
                 let stddev = v.to_f64().map(|f| f.sqrt()).unwrap_or(0.0);
-                let result = Decimal::from_f64(stddev).unwrap_or(Decimal::ZERO);
+                let result = BigDecimal::from_f64(stddev).unwrap_or(BigDecimal::zero());
                 // Round to 8 decimal places (CQL Decimal precision)
-                Ok(CqlValue::Decimal(result.round_dp(8)))
+                Ok(CqlValue::Decimal(
+                    result.with_scale_round(8, RoundingMode::HalfUp),
+                ))
             }
             CqlValue::Null => Ok(CqlValue::Null),
-            _ => Err(EvalError::type_mismatch("Decimal", variance.get_type().name())),
+            _ => Err(EvalError::type_mismatch(
+                "Decimal",
+                variance.get_type().name(),
+            )),
         }
     }
 
     /// Evaluate AllTrue
-    pub fn eval_all_true(&self, expr: &AggregateExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_all_true(
+        &self,
+        expr: &AggregateExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let source = self.eval_aggregate_source(expr, ctx)?;
 
         if source.is_null() {
@@ -1003,7 +1184,11 @@ impl CqlEngine {
     }
 
     /// Evaluate AnyTrue
-    pub fn eval_any_true(&self, expr: &AggregateExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_any_true(
+        &self,
+        expr: &AggregateExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let source = self.eval_aggregate_source(expr, ctx)?;
 
         if source.is_null() {
@@ -1060,13 +1245,6 @@ fn date_precision(d: &CqlDate) -> u8 {
 mod tests {
     use super::*;
 
-    fn make_int_list(values: Vec<i32>) -> CqlValue {
-        CqlValue::List(CqlList {
-            element_type: CqlType::Integer,
-            elements: values.into_iter().map(CqlValue::Integer).collect(),
-        })
-    }
-
     #[test]
     fn test_list_operations() {
         let list = CqlList::from_elements(vec![
@@ -1092,7 +1270,10 @@ mod tests {
 
         let mut result: Vec<CqlValue> = Vec::new();
         for item in list.iter() {
-            if !result.iter().any(|r| cql_equal(r, item).unwrap_or(Some(false)).unwrap_or(false)) {
+            if !result
+                .iter()
+                .any(|r| cql_equal(r, item).unwrap_or(Some(false)).unwrap_or(false))
+            {
                 result.push(item.clone());
             }
         }
@@ -1149,7 +1330,11 @@ mod tests {
 
         // cql_compare should return None for different precisions
         let cmp_result = cql_compare(&dt_day, &dt_hour);
-        assert_eq!(cmp_result.unwrap(), None, "Expected None for different precisions");
+        assert_eq!(
+            cmp_result.unwrap(),
+            None,
+            "Expected None for different precisions"
+        );
 
         // datetime_precision should return 3 for day precision, 4 for hour precision
         if let CqlValue::DateTime(dt) = &dt_day {
@@ -1166,23 +1351,47 @@ mod tests {
         // Input: [Oct 5 hour 10, Jan 1 no hour, Jan 1 hour 12, Oct 5 no hour]
         // Expected ascending: [Jan 1 no hour, Jan 1 hour 12, Oct 5 no hour, Oct 5 hour 10]
         let oct5_hour10 = CqlValue::DateTime(CqlDateTime {
-            year: 2012, month: Some(10), day: Some(5), hour: Some(10),
-            minute: None, second: None, millisecond: None, timezone_offset: None,
+            year: 2012,
+            month: Some(10),
+            day: Some(5),
+            hour: Some(10),
+            minute: None,
+            second: None,
+            millisecond: None,
+            timezone_offset: None,
         });
         let jan1_nohour = CqlValue::DateTime(CqlDateTime {
-            year: 2012, month: Some(1), day: Some(1), hour: None,
-            minute: None, second: None, millisecond: None, timezone_offset: None,
+            year: 2012,
+            month: Some(1),
+            day: Some(1),
+            hour: None,
+            minute: None,
+            second: None,
+            millisecond: None,
+            timezone_offset: None,
         });
         let jan1_hour12 = CqlValue::DateTime(CqlDateTime {
-            year: 2012, month: Some(1), day: Some(1), hour: Some(12),
-            minute: None, second: None, millisecond: None, timezone_offset: None,
+            year: 2012,
+            month: Some(1),
+            day: Some(1),
+            hour: Some(12),
+            minute: None,
+            second: None,
+            millisecond: None,
+            timezone_offset: None,
         });
         let oct5_nohour = CqlValue::DateTime(CqlDateTime {
-            year: 2012, month: Some(10), day: Some(5), hour: None,
-            minute: None, second: None, millisecond: None, timezone_offset: None,
+            year: 2012,
+            month: Some(10),
+            day: Some(5),
+            hour: None,
+            minute: None,
+            second: None,
+            millisecond: None,
+            timezone_offset: None,
         });
 
-        let mut elements = vec![
+        let mut elements = [
             oct5_hour10.clone(),
             jan1_nohour.clone(),
             jan1_hour12.clone(),
@@ -1194,16 +1403,14 @@ mod tests {
             let cmp_result = cql_compare(a, b);
             match &cmp_result {
                 Ok(Some(ord)) => *ord,
-                Ok(None) => {
-                    match (a, b) {
-                        (CqlValue::DateTime(da), CqlValue::DateTime(db)) => {
-                            let precision_a = datetime_precision(da);
-                            let precision_b = datetime_precision(db);
-                            precision_a.cmp(&precision_b)
-                        }
-                        _ => Ordering::Equal,
+                Ok(None) => match (a, b) {
+                    (CqlValue::DateTime(da), CqlValue::DateTime(db)) => {
+                        let precision_a = datetime_precision(da);
+                        let precision_b = datetime_precision(db);
+                        precision_a.cmp(&precision_b)
                     }
-                }
+                    _ => Ordering::Equal,
+                },
                 Err(_) => Ordering::Equal,
             }
         });

@@ -11,7 +11,7 @@ fn main() {
 // === Simple Expression Benchmarks ===
 
 mod literals {
-    use super::*;
+    use super::parse_expression;
 
     #[divan::bench]
     fn integer_literal(bencher: divan::Bencher) {
@@ -40,16 +40,14 @@ mod literals {
 
     #[divan::bench]
     fn datetime_literal(bencher: divan::Bencher) {
-        bencher.bench_local(|| {
-            parse_expression(divan::black_box("@2024-03-15T10:30:00.123Z"))
-        });
+        bencher.bench_local(|| parse_expression(divan::black_box("@2024-03-15T10:30:00.123Z")));
     }
 }
 
 // === Arithmetic Expression Benchmarks ===
 
 mod arithmetic {
-    use super::*;
+    use super::parse_expression;
 
     #[divan::bench]
     fn simple_addition(bencher: divan::Bencher) {
@@ -58,9 +56,7 @@ mod arithmetic {
 
     #[divan::bench]
     fn complex_arithmetic(bencher: divan::Bencher) {
-        bencher.bench_local(|| {
-            parse_expression(divan::black_box("(1 + 2) * 3 - 4 / 2 + 5 ^ 2"))
-        });
+        bencher.bench_local(|| parse_expression(divan::black_box("(1 + 2) * 3 - 4 / 2 + 5 ^ 2")));
     }
 
     #[divan::bench]
@@ -76,7 +72,7 @@ mod arithmetic {
 // === Logical Expression Benchmarks ===
 
 mod logical {
-    use super::*;
+    use super::parse_expression;
 
     #[divan::bench]
     fn simple_logical(bencher: divan::Bencher) {
@@ -96,7 +92,7 @@ mod logical {
 // === Query Benchmarks ===
 
 mod queries {
-    use super::*;
+    use super::parse_expression;
 
     #[divan::bench]
     fn simple_query(bencher: divan::Bencher) {
@@ -123,7 +119,7 @@ mod queries {
 // === List and Tuple Benchmarks ===
 
 mod collections {
-    use super::*;
+    use super::parse_expression;
 
     #[divan::bench]
     fn small_list(bencher: divan::Bencher) {
@@ -157,12 +153,11 @@ mod collections {
 // === Library Benchmarks ===
 
 mod libraries {
-    use super::*;
+    use super::parse;
 
     #[divan::bench]
     fn minimal_library(bencher: divan::Bencher) {
-        bencher
-            .bench_local(|| parse(divan::black_box("library Test version '1.0.0'")));
+        bencher.bench_local(|| parse(divan::black_box("library Test version '1.0.0'")));
     }
 
     #[divan::bench]
@@ -218,7 +213,7 @@ mod libraries {
 // === Scaling Benchmarks ===
 
 mod scaling {
-    use super::*;
+    use super::parse_expression;
 
     #[divan::bench(args = [10, 50, 100, 200, 500])]
     fn expression_scaling(bencher: divan::Bencher, n: usize) {
@@ -236,7 +231,10 @@ mod scaling {
     fn list_scaling(bencher: divan::Bencher, n: usize) {
         let list_expr = format!(
             "{{{}}}",
-            (1..=n).map(|i| i.to_string()).collect::<Vec<_>>().join(", ")
+            (1..=n)
+                .map(|i| i.to_string())
+                .collect::<Vec<_>>()
+                .join(", ")
         );
 
         bencher

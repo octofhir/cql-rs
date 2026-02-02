@@ -41,8 +41,14 @@ fn half_open_interval(low: i32, high: i32) -> CqlValue {
 fn test_closed_interval_construction() {
     let interval = closed_interval(1, 10);
     if let CqlValue::Interval(i) = interval {
-        assert_eq!(i.low.as_ref().map(|v| v.as_ref()), Some(&CqlValue::Integer(1)));
-        assert_eq!(i.high.as_ref().map(|v| v.as_ref()), Some(&CqlValue::Integer(10)));
+        assert_eq!(
+            i.low.as_ref().map(|v| v.as_ref()),
+            Some(&CqlValue::Integer(1))
+        );
+        assert_eq!(
+            i.high.as_ref().map(|v| v.as_ref()),
+            Some(&CqlValue::Integer(10))
+        );
         assert!(i.low_closed);
         assert!(i.high_closed);
     } else {
@@ -178,7 +184,7 @@ fn test_intervals_touch_at_point() {
 #[test]
 fn test_intervals_adjacent_open() {
     let i1 = half_open_interval(1, 5); // [1, 5)
-    let i2 = closed_interval(5, 10);   // [5, 10]
+    let i2 = closed_interval(5, 10); // [5, 10]
     // [1, 5) and [5, 10] do not overlap (5 is not in first interval)
     if let (CqlValue::Interval(int1), CqlValue::Interval(int2)) = (&i1, &i2) {
         // They meet but don't overlap
@@ -272,7 +278,10 @@ fn test_interval_after() {
 fn test_interval_start() {
     let interval = closed_interval(5, 10);
     if let CqlValue::Interval(i) = &interval {
-        assert_eq!(i.low.as_ref().map(|v| v.as_ref()), Some(&CqlValue::Integer(5)));
+        assert_eq!(
+            i.low.as_ref().map(|v| v.as_ref()),
+            Some(&CqlValue::Integer(5))
+        );
     }
 }
 
@@ -280,7 +289,10 @@ fn test_interval_start() {
 fn test_interval_end() {
     let interval = closed_interval(5, 10);
     if let CqlValue::Interval(i) = &interval {
-        assert_eq!(i.high.as_ref().map(|v| v.as_ref()), Some(&CqlValue::Integer(10)));
+        assert_eq!(
+            i.high.as_ref().map(|v| v.as_ref()),
+            Some(&CqlValue::Integer(10))
+        );
     }
 }
 
@@ -320,8 +332,14 @@ fn test_interval_union_overlapping() {
         let union = interval_union(int1, int2);
         // Union of [1, 5] and [3, 8] is [1, 8]
         if let Some(u) = union {
-            assert_eq!(u.low.as_ref().map(|v| v.as_ref()), Some(&CqlValue::Integer(1)));
-            assert_eq!(u.high.as_ref().map(|v| v.as_ref()), Some(&CqlValue::Integer(8)));
+            assert_eq!(
+                u.low.as_ref().map(|v| v.as_ref()),
+                Some(&CqlValue::Integer(1))
+            );
+            assert_eq!(
+                u.high.as_ref().map(|v| v.as_ref()),
+                Some(&CqlValue::Integer(8))
+            );
         } else {
             panic!("Expected union result");
         }
@@ -336,8 +354,14 @@ fn test_interval_union_adjacent() {
         let union = interval_union(int1, int2);
         // Union of [1, 5] and [6, 10] is [1, 10] (they're adjacent for integers)
         if let Some(u) = union {
-            assert_eq!(u.low.as_ref().map(|v| v.as_ref()), Some(&CqlValue::Integer(1)));
-            assert_eq!(u.high.as_ref().map(|v| v.as_ref()), Some(&CqlValue::Integer(10)));
+            assert_eq!(
+                u.low.as_ref().map(|v| v.as_ref()),
+                Some(&CqlValue::Integer(1))
+            );
+            assert_eq!(
+                u.high.as_ref().map(|v| v.as_ref()),
+                Some(&CqlValue::Integer(10))
+            );
         } else {
             panic!("Expected union result");
         }
@@ -356,8 +380,14 @@ fn test_interval_intersect() {
         let intersect = interval_intersect(int1, int2);
         // Intersection of [1, 7] and [5, 10] is [5, 7]
         if let Some(i) = intersect {
-            assert_eq!(i.low.as_ref().map(|v| v.as_ref()), Some(&CqlValue::Integer(5)));
-            assert_eq!(i.high.as_ref().map(|v| v.as_ref()), Some(&CqlValue::Integer(7)));
+            assert_eq!(
+                i.low.as_ref().map(|v| v.as_ref()),
+                Some(&CqlValue::Integer(5))
+            );
+            assert_eq!(
+                i.high.as_ref().map(|v| v.as_ref()),
+                Some(&CqlValue::Integer(7))
+            );
         } else {
             panic!("Expected intersect result");
         }
@@ -423,10 +453,10 @@ fn intervals_overlap(a: &CqlInterval, b: &CqlInterval) -> bool {
 
     match (a_start, a_end, b_start, b_end) {
         (Some(as_), Some(ae), Some(bs), Some(be)) => {
-            let a_starts_before_b_ends = compare_values(as_, be) < 0 ||
-                (compare_values(as_, be) == 0 && a.low_closed && b.high_closed);
-            let a_ends_after_b_starts = compare_values(ae, bs) > 0 ||
-                (compare_values(ae, bs) == 0 && a.high_closed && b.low_closed);
+            let a_starts_before_b_ends = compare_values(as_, be) < 0
+                || (compare_values(as_, be) == 0 && a.low_closed && b.high_closed);
+            let a_ends_after_b_starts = compare_values(ae, bs) > 0
+                || (compare_values(ae, bs) == 0 && a.high_closed && b.low_closed);
             a_starts_before_b_ends && a_ends_after_b_starts
         }
         _ => false,
@@ -437,10 +467,10 @@ fn interval_includes(a: &CqlInterval, b: &CqlInterval) -> bool {
     // a includes b if a.start <= b.start and a.end >= b.end
     match (&a.low, &a.high, &b.low, &b.high) {
         (Some(as_), Some(ae), Some(bs), Some(be)) => {
-            let start_ok = compare_values(as_, bs) < 0 ||
-                (compare_values(as_, bs) == 0 && (a.low_closed || !b.low_closed));
-            let end_ok = compare_values(ae, be) > 0 ||
-                (compare_values(ae, be) == 0 && (a.high_closed || !b.high_closed));
+            let start_ok = compare_values(as_, bs) < 0
+                || (compare_values(as_, bs) == 0 && (a.low_closed || !b.low_closed));
+            let end_ok = compare_values(ae, be) > 0
+                || (compare_values(ae, be) == 0 && (a.high_closed || !b.high_closed));
             start_ok && end_ok
         }
         _ => false,
@@ -450,8 +480,8 @@ fn interval_includes(a: &CqlInterval, b: &CqlInterval) -> bool {
 fn interval_before(a: &CqlInterval, b: &CqlInterval) -> bool {
     match (&a.high, &b.low) {
         (Some(ae), Some(bs)) => {
-            compare_values(ae, bs) < 0 ||
-                (compare_values(ae, bs) == 0 && (!a.high_closed || !b.low_closed))
+            compare_values(ae, bs) < 0
+                || (compare_values(ae, bs) == 0 && (!a.high_closed || !b.low_closed))
         }
         _ => false,
     }
@@ -463,12 +493,10 @@ fn interval_after(a: &CqlInterval, b: &CqlInterval) -> bool {
 
 fn interval_width(interval: &CqlInterval) -> Option<i32> {
     match (&interval.low, &interval.high) {
-        (Some(low), Some(high)) => {
-            match (low.as_ref(), high.as_ref()) {
-                (CqlValue::Integer(l), CqlValue::Integer(h)) => Some(h - l),
-                _ => None,
-            }
-        }
+        (Some(low), Some(high)) => match (low.as_ref(), high.as_ref()) {
+            (CqlValue::Integer(l), CqlValue::Integer(h)) => Some(h - l),
+            _ => None,
+        },
         _ => None,
     }
 }
@@ -508,12 +536,10 @@ fn interval_union(a: &CqlInterval, b: &CqlInterval) -> Option<CqlInterval> {
 
 fn intervals_adjacent(a: &CqlInterval, b: &CqlInterval) -> bool {
     match (&a.high, &b.low) {
-        (Some(ae), Some(bs)) => {
-            match (ae.as_ref(), bs.as_ref()) {
-                (CqlValue::Integer(h), CqlValue::Integer(l)) => h + 1 == *l,
-                _ => false,
-            }
-        }
+        (Some(ae), Some(bs)) => match (ae.as_ref(), bs.as_ref()) {
+            (CqlValue::Integer(h), CqlValue::Integer(l)) => h + 1 == *l,
+            _ => false,
+        },
         _ => false,
     }
 }

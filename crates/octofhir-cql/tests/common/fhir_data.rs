@@ -5,8 +5,9 @@
 
 use chrono::{DateTime, Utc};
 use indexmap::IndexMap;
-use octofhir_cql_types::{CqlCode, CqlConcept, CqlDate, CqlDateTime, CqlQuantity, CqlTuple, CqlValue};
-use rust_decimal::Decimal;
+use octofhir_cql_types::{
+    CqlCode, CqlConcept, CqlDate, CqlDateTime, CqlQuantity, CqlTuple, CqlValue,
+};
 
 /// Builder for FHIR Patient resources
 #[derive(Default)]
@@ -67,7 +68,10 @@ impl PatientBuilder {
             if let Some(family) = self.family {
                 name_fields.push(("family", CqlValue::string(family)));
             }
-            fields.push(("name", CqlValue::list(vec![CqlValue::Tuple(CqlTuple::from_elements(name_fields))])));
+            fields.push((
+                "name",
+                CqlValue::list(vec![CqlValue::Tuple(CqlTuple::from_elements(name_fields))]),
+            ));
         }
 
         if let Some(birth_date) = self.birth_date {
@@ -111,7 +115,12 @@ impl ObservationBuilder {
         self
     }
 
-    pub fn code(mut self, system: impl Into<String>, code: impl Into<String>, display: Option<String>) -> Self {
+    pub fn code(
+        mut self,
+        system: impl Into<String>,
+        code: impl Into<String>,
+        display: Option<String>,
+    ) -> Self {
         self.code = Some(CqlCode {
             system: system.into(),
             version: None,
@@ -127,7 +136,7 @@ impl ObservationBuilder {
     }
 
     pub fn value_quantity(mut self, value: &str, unit: impl Into<String>) -> Self {
-        let decimal = value.parse::<Decimal>().expect("Invalid decimal");
+        let decimal = value.parse::<BigDecimal>().expect("Invalid decimal");
         self.value = Some(CqlValue::Quantity(CqlQuantity {
             value: decimal,
             unit: unit.into(),
@@ -167,7 +176,10 @@ impl ObservationBuilder {
         if let Some(subject) = self.subject {
             fields.push((
                 "subject",
-                CqlValue::Tuple(CqlTuple::from_elements([("reference", CqlValue::string(subject))])),
+                CqlValue::Tuple(CqlTuple::from_elements([(
+                    "reference",
+                    CqlValue::string(subject),
+                )])),
             ));
         }
 
@@ -211,7 +223,12 @@ impl ConditionBuilder {
         self
     }
 
-    pub fn code(mut self, system: impl Into<String>, code: impl Into<String>, display: Option<String>) -> Self {
+    pub fn code(
+        mut self,
+        system: impl Into<String>,
+        code: impl Into<String>,
+        display: Option<String>,
+    ) -> Self {
         self.code = Some(CqlCode {
             system: system.into(),
             version: None,
@@ -248,7 +265,10 @@ impl ConditionBuilder {
         if let Some(subject) = self.subject {
             fields.push((
                 "subject",
-                CqlValue::Tuple(CqlTuple::from_elements([("reference", CqlValue::string(subject))])),
+                CqlValue::Tuple(CqlTuple::from_elements([(
+                    "reference",
+                    CqlValue::string(subject),
+                )])),
             ));
         }
 
@@ -277,7 +297,12 @@ impl MedicationBuilder {
         self
     }
 
-    pub fn code(mut self, system: impl Into<String>, code: impl Into<String>, display: Option<String>) -> Self {
+    pub fn code(
+        mut self,
+        system: impl Into<String>,
+        code: impl Into<String>,
+        display: Option<String>,
+    ) -> Self {
         self.code = Some(CqlCode {
             system: system.into(),
             version: None,
@@ -332,7 +357,12 @@ impl EncounterBuilder {
         self
     }
 
-    pub fn class(mut self, system: impl Into<String>, code: impl Into<String>, display: Option<String>) -> Self {
+    pub fn class(
+        mut self,
+        system: impl Into<String>,
+        code: impl Into<String>,
+        display: Option<String>,
+    ) -> Self {
         self.class_code = Some(CqlCode {
             system: system.into(),
             version: None,
@@ -370,7 +400,10 @@ impl EncounterBuilder {
         if let Some(subject) = self.subject {
             fields.push((
                 "subject",
-                CqlValue::Tuple(CqlTuple::from_elements([("reference", CqlValue::string(subject))])),
+                CqlValue::Tuple(CqlTuple::from_elements([(
+                    "reference",
+                    CqlValue::string(subject),
+                )])),
             ));
         }
 
@@ -382,7 +415,10 @@ impl EncounterBuilder {
             if let Some(end) = self.period_end {
                 period_fields.push(("end", CqlValue::DateTime(end)));
             }
-            fields.push(("period", CqlValue::Tuple(CqlTuple::from_elements(period_fields))));
+            fields.push((
+                "period",
+                CqlValue::Tuple(CqlTuple::from_elements(period_fields)),
+            ));
         }
 
         CqlValue::Tuple(CqlTuple::from_elements(fields))
@@ -456,7 +492,11 @@ mod tests {
     fn test_observation_builder() {
         let obs = ObservationBuilder::new()
             .id("obs1")
-            .code("http://loinc.org", "8480-6", Some("Systolic BP".to_string()))
+            .code(
+                "http://loinc.org",
+                "8480-6",
+                Some("Systolic BP".to_string()),
+            )
             .value_quantity("120", "mmHg")
             .build();
 
@@ -476,7 +516,11 @@ mod tests {
     fn test_condition_builder() {
         let condition = ConditionBuilder::new()
             .id("c1")
-            .code("http://snomed.info/sct", "44054006", Some("Diabetes".to_string()))
+            .code(
+                "http://snomed.info/sct",
+                "44054006",
+                Some("Diabetes".to_string()),
+            )
             .build();
 
         match condition {

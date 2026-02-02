@@ -1,6 +1,7 @@
 [package]
 name = "octofhir-cql-cli"
 description = "CQL command-line interface"
+publish = false
 version.workspace = true
 edition.workspace = true
 authors.workspace = true

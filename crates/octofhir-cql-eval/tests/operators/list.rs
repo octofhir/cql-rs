@@ -3,11 +3,11 @@
 //! Tests for: List constructor, Exists, First, Last, Slice, IndexOf, Flatten,
 //! Sort, ForEach, Distinct, SingletonFrom, and set operations (Union, Intersect, Except)
 
-use octofhir_cql_eval::{CqlEngine, EvaluationContext};
 use octofhir_cql_elm::{
     Element, Expression, FirstLastExpression, IndexOfExpression, ListExpression, Literal,
     NullLiteral, SliceExpression, UnaryExpression,
 };
+use octofhir_cql_eval::{CqlEngine, EvaluationContext};
 use octofhir_cql_types::{CqlList, CqlType, CqlValue};
 
 // ============================================================================
@@ -30,16 +30,10 @@ fn int_expr(i: i32) -> Box<Expression> {
     }))
 }
 
-fn string_expr(s: &str) -> Box<Expression> {
-    Box::new(Expression::Literal(Literal {
-        element: Element::default(),
-        value_type: "{urn:hl7-org:elm-types:r1}String".to_string(),
-        value: Some(s.to_string()),
-    }))
-}
-
 fn null_expr() -> Box<Expression> {
-    Box::new(Expression::Null(NullLiteral { element: Element::default() }))
+    Box::new(Expression::Null(NullLiteral {
+        element: Element::default(),
+    }))
 }
 
 fn make_int_list(values: &[i32]) -> CqlValue {
@@ -546,7 +540,9 @@ fn test_singleton_from_null() {
     let e = engine();
     let mut c = ctx();
 
-    let result = e.eval_singleton_from(&make_unary(null_expr()), &mut c).unwrap();
+    let result = e
+        .eval_singleton_from(&make_unary(null_expr()), &mut c)
+        .unwrap();
     assert!(result.is_null());
 }
 

@@ -118,6 +118,7 @@ pub trait TerminologyProvider: Send + Sync {
 /// Implementations provide access to clinical data (FHIR resources, etc.)
 pub trait DataProvider: Send + Sync {
     /// Retrieve data of a given type
+    #[allow(clippy::too_many_arguments)]
     fn retrieve(
         &self,
         data_type: &str,
@@ -181,10 +182,7 @@ impl EvaluationContext {
     }
 
     /// Set the terminology provider
-    pub fn with_terminology_provider(
-        mut self,
-        provider: Arc<dyn TerminologyProvider>,
-    ) -> Self {
+    pub fn with_terminology_provider(mut self, provider: Arc<dyn TerminologyProvider>) -> Self {
         self.terminology_provider = Some(provider);
         self
     }
@@ -500,9 +498,10 @@ mod tests {
 
     #[test]
     fn test_context_with_patient() {
-        let patient = CqlValue::Tuple(octofhir_cql_types::CqlTuple::from_elements([
-            ("id", CqlValue::string("123")),
-        ]));
+        let patient = CqlValue::Tuple(octofhir_cql_types::CqlTuple::from_elements([(
+            "id",
+            CqlValue::string("123"),
+        )]));
         let ctx = EvaluationContext::new().with_context("Patient", patient);
         assert_eq!(ctx.context_type, Some("Patient".to_string()));
     }

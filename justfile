@@ -255,6 +255,14 @@ publish-dry:
 publish:
     cargo publish -p octofhir-cql
 
+# Create release PR (bump versions + changelogs) via release-plz
+release-pr:
+    release-plz release-pr
+
+# Publish unpublished crates to crates.io via release-plz
+release-publish:
+    release-plz release
+
 # ============================================================================
 # Shortcuts
 # ============================================================================

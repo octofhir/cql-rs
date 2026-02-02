@@ -57,7 +57,9 @@ pub mod terminology;
 pub mod value;
 
 // Re-export main types
-pub use context::{DataProvider, EvaluationContext, EvaluationContextBuilder, Scope, TerminologyProvider};
+pub use context::{
+    DataProvider, EvaluationContext, EvaluationContextBuilder, Scope, TerminologyProvider,
+};
 pub use engine::CqlEngine;
 pub use error::{EvalError, EvalResult};
 pub use registry::{FunctionRegistry, OperatorRegistry};
@@ -66,5 +68,5 @@ pub use terminology::TerminologyAdapter;
 pub use value::*;
 
 // Re-export commonly used operator helpers
-pub use operators::comparison::{cql_compare, cql_equal, cql_equivalent};
 pub use operators::clinical::{code_in_codes, codes_equivalent, concept_in_codes};
+pub use operators::comparison::{cql_compare, cql_equal, cql_equivalent};

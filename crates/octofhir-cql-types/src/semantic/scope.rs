@@ -7,8 +7,8 @@
 use indexmap::IndexMap;
 use std::fmt;
 
-use crate::CqlType;
 use super::symbols::{Symbol, SymbolKind};
+use crate::CqlType;
 
 /// A scope in the CQL semantic analysis
 #[derive(Debug, Clone)]
@@ -80,10 +80,8 @@ impl Scope {
     /// Define a let binding
     pub fn define_let(&mut self, name: impl Into<String>, let_type: CqlType) {
         let name = name.into();
-        self.symbols.insert(
-            name.clone(),
-            Symbol::new(name, SymbolKind::Let, let_type),
-        );
+        self.symbols
+            .insert(name.clone(), Symbol::new(name, SymbolKind::Let, let_type));
     }
 
     /// Look up a symbol in this scope or parent scopes
@@ -158,8 +156,7 @@ impl Scope {
 
     /// Get the $index variable if in an iteration context
     pub fn has_index(&self) -> bool {
-        self.symbols.contains_key("$index")
-            || self.parent.as_ref().is_some_and(|p| p.has_index())
+        self.symbols.contains_key("$index") || self.parent.as_ref().is_some_and(|p| p.has_index())
     }
 }
 
@@ -304,11 +301,8 @@ impl ScopeManager {
             SymbolKind::Iteration,
             element_type.clone(),
         ));
-        self.current.define(Symbol::new(
-            "$index",
-            SymbolKind::Index,
-            CqlType::Integer,
-        ));
+        self.current
+            .define(Symbol::new("$index", SymbolKind::Index, CqlType::Integer));
     }
 
     /// Enter an aggregate scope with $total binding
@@ -319,11 +313,8 @@ impl ScopeManager {
             SymbolKind::Aggregate,
             accumulator_type,
         ));
-        self.current.define(Symbol::new(
-            "$this",
-            SymbolKind::Iteration,
-            element_type,
-        ));
+        self.current
+            .define(Symbol::new("$this", SymbolKind::Iteration, element_type));
     }
 
     /// Execute a closure with a temporary scope

@@ -3,11 +3,14 @@
 //! Tests for: Count, Sum, Avg, Min, Max, Median, Mode, Product, GeometricMean,
 //! Variance, PopulationVariance, StdDev, PopulationStdDev, AllTrue, AnyTrue
 
+use bigdecimal::BigDecimal;
+use num_traits::ToPrimitive;
+use octofhir_cql_elm::{
+    AggregateExpression, Element, Expression, ListExpression, Literal, NullLiteral,
+};
 use octofhir_cql_eval::{CqlEngine, EvaluationContext};
-use octofhir_cql_elm::{AggregateExpression, Element, Expression, ListExpression, Literal, NullLiteral};
-use octofhir_cql_types::{CqlList, CqlType, CqlValue};
-use rust_decimal::Decimal;
-use rust_decimal::prelude::ToPrimitive;
+use octofhir_cql_types::CqlValue;
+use std::str::FromStr;
 
 // ============================================================================
 // Test Helpers
@@ -46,7 +49,9 @@ fn bool_expr(b: bool) -> Box<Expression> {
 }
 
 fn null_expr() -> Box<Expression> {
-    Box::new(Expression::Null(NullLiteral { element: Element::default() }))
+    Box::new(Expression::Null(NullLiteral {
+        element: Element::default(),
+    }))
 }
 
 fn make_int_list_expr(values: &[i32]) -> Box<Expression> {
@@ -179,7 +184,7 @@ fn test_sum_decimals() {
     let expr = make_aggregate(make_decimal_list_expr(&["1.5", "2.5", "3.0"]));
     let result = e.eval_sum(&expr, &mut c).unwrap();
     if let CqlValue::Decimal(d) = result {
-        assert_eq!(d, Decimal::from_str_exact("7.0").unwrap());
+        assert_eq!(d, BigDecimal::from_str("7.0").unwrap());
     } else {
         panic!("Expected Decimal");
     }
@@ -224,7 +229,7 @@ fn test_avg_integers() {
     let result = e.eval_avg(&expr, &mut c).unwrap();
     if let CqlValue::Decimal(d) = result {
         // Average of 1, 2, 3, 4, 5 is 3
-        assert_eq!(d, Decimal::from(3));
+        assert_eq!(d, BigDecimal::from(3));
     } else {
         panic!("Expected Decimal, got {:?}", result);
     }
@@ -245,7 +250,7 @@ fn test_avg_with_nulls() {
     let result = e.eval_avg(&expr, &mut c).unwrap();
     if let CqlValue::Decimal(d) = result {
         // Average of 2 and 4 is 3
-        assert_eq!(d, Decimal::from(3));
+        assert_eq!(d, BigDecimal::from(3));
     } else {
         panic!("Expected Decimal");
     }
@@ -383,7 +388,7 @@ fn test_median_even_count() {
     let result = e.eval_median(&expr, &mut c).unwrap();
     // Sorted: 1, 2, 3, 4 -> median is average of 2 and 3 = 2.5
     if let CqlValue::Decimal(d) = result {
-        assert_eq!(d, Decimal::from_str_exact("2.5").unwrap());
+        assert_eq!(d, BigDecimal::from_str("2.5").unwrap());
     } else {
         panic!("Expected Decimal");
     }

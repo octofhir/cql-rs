@@ -12,22 +12,15 @@
 //! - Clinical operators (CalculateAge, InValueSet, etc.)
 
 pub mod arithmetic;
+pub mod clinical;
 pub mod comparison;
-pub mod logical;
-pub mod string;
 pub mod datetime;
 pub mod interval;
 pub mod list;
+pub mod logical;
+pub mod string;
 pub mod type_ops;
-pub mod clinical;
 
 // Re-export helper functions
-pub use arithmetic::*;
-pub use comparison::*;
-pub use logical::*;
-pub use string::*;
-pub use datetime::*;
-pub use interval::*;
-pub use list::*;
-pub use type_ops::*;
 pub use clinical::*;
+pub use comparison::*;

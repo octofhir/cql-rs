@@ -6,27 +6,10 @@
 use crate::context::EvaluationContext;
 use crate::error::{EvalError, EvalResult};
 use crate::registry::OperatorRegistry;
-use octofhir_cql_elm::{
-    AggregateExpression, AsExpression, BinaryExpression, BoundaryExpression, CalculateAgeAtExpression,
-    CalculateAgeExpression, CaseExpression, CodeLiteralExpression, CombineExpression,
-    ConceptLiteralExpression, ConvertExpression, DateExpression, DateTimeComponentFromExpression,
-    DateTimeExpression, DifferenceBetweenExpression, DurationBetweenExpression, ExpandExpression,
-    Expression, ExpressionDef, FilterExpression, FirstLastExpression, ForEachExpression,
-    FunctionRef, IfExpression, InCodeSystemExpression, InValueSetExpression, IndexOfExpression,
-    IntervalExpression, IsExpression, LastPositionOfExpression, Library, ListExpression, Literal,
-    MinMaxValueExpression, NaryExpression, PositionOfExpression, Query, QuantityExpression,
-    RatioExpression, RepeatExpression, Retrieve, RoundExpression, SameAsExpression,
-    SameOrAfterExpression, SameOrBeforeExpression, SliceExpression, SortExpression, SplitExpression,
-    SplitOnMatchesExpression, SubstringExpression, TernaryExpression, TimeExpression,
-    TupleExpression, UnaryExpression,
-};
-use octofhir_cql_types::{
-    CqlCode, CqlConcept, CqlDate, CqlDateTime, CqlInterval, CqlList, CqlQuantity, CqlRatio,
-    CqlTime, CqlTuple, CqlType, CqlValue, DateTimePrecision,
-};
-use rust_decimal::Decimal;
+use bigdecimal::BigDecimal;
+use octofhir_cql_elm::{Expression, FunctionRef, Library, Literal};
+use octofhir_cql_types::{CqlDate, CqlDateTime, CqlList, CqlTime, CqlTuple, CqlType, CqlValue};
 use std::str::FromStr;
-use std::sync::Arc;
 
 /// The main CQL evaluation engine
 ///
@@ -367,53 +350,46 @@ impl CqlEngine {
         let type_name = &lit.value_type;
 
         // Handle qualified type names like "{urn:hl7-org:elm-types:r1}Boolean"
-        let simple_type = type_name
-            .rsplit('}')
-            .next()
-            .unwrap_or(type_name);
+        let simple_type = type_name.rsplit('}').next().unwrap_or(type_name);
 
         match simple_type {
             "Boolean" => {
-                let b = value_str.parse::<bool>().map_err(|_| {
-                    EvalError::conversion_error(value_str, "Boolean")
-                })?;
+                let b = value_str
+                    .parse::<bool>()
+                    .map_err(|_| EvalError::conversion_error(value_str, "Boolean"))?;
                 Ok(CqlValue::Boolean(b))
             }
             "Integer" => {
-                let i = value_str.parse::<i32>().map_err(|_| {
-                    EvalError::conversion_error(value_str, "Integer")
-                })?;
+                let i = value_str
+                    .parse::<i32>()
+                    .map_err(|_| EvalError::conversion_error(value_str, "Integer"))?;
                 Ok(CqlValue::Integer(i))
             }
             "Long" => {
-                let l = value_str.parse::<i64>().map_err(|_| {
-                    EvalError::conversion_error(value_str, "Long")
-                })?;
+                let l = value_str
+                    .parse::<i64>()
+                    .map_err(|_| EvalError::conversion_error(value_str, "Long"))?;
                 Ok(CqlValue::Long(l))
             }
             "Decimal" => {
-                let d = Decimal::from_str(value_str).map_err(|_| {
-                    EvalError::conversion_error(value_str, "Decimal")
-                })?;
+                let d = BigDecimal::from_str(value_str)
+                    .map_err(|_| EvalError::conversion_error(value_str, "Decimal"))?;
                 Ok(CqlValue::Decimal(d))
             }
             "String" => Ok(CqlValue::String(value_str.to_string())),
             "Date" => {
-                let date = CqlDate::parse(value_str).ok_or_else(|| {
-                    EvalError::conversion_error(value_str, "Date")
-                })?;
+                let date = CqlDate::parse(value_str)
+                    .ok_or_else(|| EvalError::conversion_error(value_str, "Date"))?;
                 Ok(CqlValue::Date(date))
             }
             "DateTime" => {
-                let datetime = CqlDateTime::parse(value_str).ok_or_else(|| {
-                    EvalError::conversion_error(value_str, "DateTime")
-                })?;
+                let datetime = CqlDateTime::parse(value_str)
+                    .ok_or_else(|| EvalError::conversion_error(value_str, "DateTime"))?;
                 Ok(CqlValue::DateTime(datetime))
             }
             "Time" => {
-                let time = CqlTime::parse(value_str).ok_or_else(|| {
-                    EvalError::conversion_error(value_str, "Time")
-                })?;
+                let time = CqlTime::parse(value_str)
+                    .ok_or_else(|| EvalError::conversion_error(value_str, "Time"))?;
                 Ok(CqlValue::Time(time))
             }
             _ => Err(EvalError::unsupported_expression(format!(
@@ -455,10 +431,10 @@ impl CqlEngine {
 
         // Look up function in registry
         let arg_types: Vec<CqlType> = args.iter().map(|v| v.get_type()).collect();
-        if let Some(def) = self.registry.functions.get(&r.name, &arg_types) {
-            if let Some(impl_fn) = &def.implementation {
-                return impl_fn(&args, ctx);
-            }
+        if let Some(def) = self.registry.functions.get(&r.name, &arg_types)
+            && let Some(impl_fn) = &def.implementation
+        {
+            return impl_fn(&args, ctx);
         }
 
         // Try to find user-defined function in library
@@ -506,7 +482,9 @@ impl CqlEngine {
     ) -> EvalResult<CqlValue> {
         ctx.get_let(&r.name)
             .cloned()
-            .ok_or_else(|| EvalError::UndefinedLetVariable { name: r.name.clone() })
+            .ok_or_else(|| EvalError::UndefinedLetVariable {
+                name: r.name.clone(),
+            })
     }
 
     fn eval_identifier_ref(

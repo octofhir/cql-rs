@@ -1,6 +1,6 @@
 //! Literal AST nodes for CQL
 
-use rust_decimal::Decimal;
+use bigdecimal::BigDecimal;
 use serde::{Deserialize, Serialize};
 
 /// A literal value in CQL
@@ -15,7 +15,7 @@ pub enum Literal {
     /// Long literal (64-bit signed, suffix 'L')
     Long(i64),
     /// Decimal literal (arbitrary precision)
-    Decimal(Decimal),
+    Decimal(BigDecimal),
     /// String literal
     String(String),
     /// Date literal (@YYYY-MM-DD)
@@ -198,13 +198,13 @@ impl TimeLiteral {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct QuantityLiteral {
     /// Numeric value
-    pub value: Decimal,
+    pub value: BigDecimal,
     /// Unit string (UCUM)
     pub unit: Option<String>,
 }
 
 impl QuantityLiteral {
-    pub fn new(value: Decimal) -> Self {
+    pub fn new(value: BigDecimal) -> Self {
         Self { value, unit: None }
     }
 
@@ -273,7 +273,10 @@ mod tests {
             DatePrecision::Month
         );
         assert_eq!(
-            DateLiteral::new(2024).with_month(1).with_day(15).precision(),
+            DateLiteral::new(2024)
+                .with_month(1)
+                .with_day(15)
+                .precision(),
             DatePrecision::Day
         );
     }

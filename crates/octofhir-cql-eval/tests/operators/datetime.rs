@@ -4,13 +4,14 @@
 //! DateTimeComponentFrom, DurationBetween, DifferenceBetween,
 //! SameAs, SameOrBefore, SameOrAfter
 
-use octofhir_cql_eval::{CqlEngine, EvaluationContext};
 use octofhir_cql_elm::{
-    DateExpression, DateTimeComponentFromExpression, DateTimeExpression, DifferenceBetweenExpression,
-    DurationBetweenExpression, Element, Expression, Literal, NullLiteral, SameAsExpression,
-    SameOrAfterExpression, SameOrBeforeExpression, TimeExpression, UnaryExpression,
+    DateExpression, DateTimeComponentFromExpression, DateTimeExpression,
+    DifferenceBetweenExpression, DurationBetweenExpression, Element, Expression, Literal,
+    NullLiteral, SameAsExpression, SameOrAfterExpression, SameOrBeforeExpression, TimeExpression,
+    UnaryExpression,
 };
-use octofhir_cql_types::{CqlDate, CqlDateTime, CqlTime, CqlValue};
+use octofhir_cql_eval::{CqlEngine, EvaluationContext};
+use octofhir_cql_types::{CqlDate, CqlValue};
 
 // ============================================================================
 // Test Helpers
@@ -33,7 +34,9 @@ fn int_expr(i: i32) -> Box<Expression> {
 }
 
 fn null_expr() -> Box<Expression> {
-    Box::new(Expression::Null(NullLiteral { element: Element::default() }))
+    Box::new(Expression::Null(NullLiteral {
+        element: Element::default(),
+    }))
 }
 
 fn date_expr(year: i32, month: u8, day: u8) -> Box<Expression> {
@@ -45,7 +48,14 @@ fn date_expr(year: i32, month: u8, day: u8) -> Box<Expression> {
     }))
 }
 
-fn datetime_expr(year: i32, month: u8, day: u8, hour: u8, minute: u8, second: u8) -> Box<Expression> {
+fn datetime_expr(
+    year: i32,
+    month: u8,
+    day: u8,
+    hour: u8,
+    minute: u8,
+    second: u8,
+) -> Box<Expression> {
     Box::new(Expression::DateTime(DateTimeExpression {
         element: Element::default(),
         year: int_expr(year),
@@ -314,7 +324,9 @@ fn test_date_from_datetime() {
     let e = engine();
     let mut c = ctx();
 
-    let result = e.eval_date_from(&make_unary(datetime_expr(2024, 3, 15, 10, 30, 0)), &mut c).unwrap();
+    let result = e
+        .eval_date_from(&make_unary(datetime_expr(2024, 3, 15, 10, 30, 0)), &mut c)
+        .unwrap();
     if let CqlValue::Date(d) = result {
         assert_eq!(d.year, 2024);
         assert_eq!(d.month, Some(3));
@@ -342,7 +354,9 @@ fn test_time_from_datetime() {
     let e = engine();
     let mut c = ctx();
 
-    let result = e.eval_time_from(&make_unary(datetime_expr(2024, 3, 15, 10, 30, 45)), &mut c).unwrap();
+    let result = e
+        .eval_time_from(&make_unary(datetime_expr(2024, 3, 15, 10, 30, 45)), &mut c)
+        .unwrap();
     if let CqlValue::Time(t) = result {
         assert_eq!(t.hour, 10);
         assert_eq!(t.minute, Some(30));

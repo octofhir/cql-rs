@@ -6,10 +6,10 @@
 use crate::context::EvaluationContext;
 use crate::engine::CqlEngine;
 use crate::error::{EvalError, EvalResult};
+use bigdecimal::BigDecimal;
+use bigdecimal::ToPrimitive;
 use octofhir_cql_elm::BinaryExpression;
-use octofhir_cql_types::{CqlCode, CqlConcept, CqlInterval, CqlList, CqlQuantity, CqlTuple, CqlType, CqlValue};
-use rust_decimal::Decimal;
-use rust_decimal::prelude::ToPrimitive;
+use octofhir_cql_types::{CqlInterval, CqlQuantity, CqlValue};
 use std::cmp::Ordering;
 
 impl CqlEngine {
@@ -17,7 +17,11 @@ impl CqlEngine {
     ///
     /// Returns null if either operand is null (unless both are null, then true)
     /// For structured types, compares all elements
-    pub fn eval_equal(&self, expr: &BinaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_equal(
+        &self,
+        expr: &BinaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let (left, right) = self.eval_binary_operands(expr, ctx)?;
 
         // Both null -> null (not true per CQL spec for Equal)
@@ -39,7 +43,11 @@ impl CqlEngine {
     /// Evaluate NotEqual (!=) operator
     ///
     /// Equivalent to Not(Equal(left, right))
-    pub fn eval_not_equal(&self, expr: &BinaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_not_equal(
+        &self,
+        expr: &BinaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let (left, right) = self.eval_binary_operands(expr, ctx)?;
 
         if left.is_null() || right.is_null() {
@@ -57,8 +65,13 @@ impl CqlEngine {
     /// Unlike Equal, Equivalent handles nulls:
     /// - null ~ null -> true
     /// - null ~ non-null -> false
+    ///
     /// For codes, compares code and system only
-    pub fn eval_equivalent(&self, expr: &BinaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_equivalent(
+        &self,
+        expr: &BinaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let (left, right) = self.eval_binary_operands(expr, ctx)?;
 
         // Both null -> true
@@ -75,7 +88,11 @@ impl CqlEngine {
     }
 
     /// Evaluate Less (<) operator
-    pub fn eval_less(&self, expr: &BinaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_less(
+        &self,
+        expr: &BinaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let (left, right) = self.eval_binary_operands(expr, ctx)?;
 
         if left.is_null() || right.is_null() {
@@ -90,7 +107,11 @@ impl CqlEngine {
     }
 
     /// Evaluate Greater (>) operator
-    pub fn eval_greater(&self, expr: &BinaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_greater(
+        &self,
+        expr: &BinaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let (left, right) = self.eval_binary_operands(expr, ctx)?;
 
         if left.is_null() || right.is_null() {
@@ -105,7 +126,11 @@ impl CqlEngine {
     }
 
     /// Evaluate LessOrEqual (<=) operator
-    pub fn eval_less_or_equal(&self, expr: &BinaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_less_or_equal(
+        &self,
+        expr: &BinaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let (left, right) = self.eval_binary_operands(expr, ctx)?;
 
         if left.is_null() || right.is_null() {
@@ -120,7 +145,11 @@ impl CqlEngine {
     }
 
     /// Evaluate GreaterOrEqual (>=) operator
-    pub fn eval_greater_or_equal(&self, expr: &BinaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_greater_or_equal(
+        &self,
+        expr: &BinaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let (left, right) = self.eval_binary_operands(expr, ctx)?;
 
         if left.is_null() || right.is_null() {
@@ -151,10 +180,10 @@ pub fn cql_equal(left: &CqlValue, right: &CqlValue) -> EvalResult<Option<bool>> 
         // Cross-type numeric comparisons
         (CqlValue::Integer(a), CqlValue::Long(b)) => Ok(Some((*a as i64) == *b)),
         (CqlValue::Long(a), CqlValue::Integer(b)) => Ok(Some(*a == (*b as i64))),
-        (CqlValue::Integer(a), CqlValue::Decimal(b)) => Ok(Some(Decimal::from(*a) == *b)),
-        (CqlValue::Decimal(a), CqlValue::Integer(b)) => Ok(Some(*a == Decimal::from(*b))),
-        (CqlValue::Long(a), CqlValue::Decimal(b)) => Ok(Some(Decimal::from(*a) == *b)),
-        (CqlValue::Decimal(a), CqlValue::Long(b)) => Ok(Some(*a == Decimal::from(*b))),
+        (CqlValue::Integer(a), CqlValue::Decimal(b)) => Ok(Some(b == (*a as i64))),
+        (CqlValue::Decimal(a), CqlValue::Integer(b)) => Ok(Some(a == (*b as i64))),
+        (CqlValue::Long(a), CqlValue::Decimal(b)) => Ok(Some(b == a)),
+        (CqlValue::Decimal(a), CqlValue::Long(b)) => Ok(Some(a == b)),
 
         // Date/Time comparisons - handle different precisions as uncertain
         (CqlValue::Date(a), CqlValue::Date(b)) => compare_dates_equal(a, b),
@@ -162,24 +191,20 @@ pub fn cql_equal(left: &CqlValue, right: &CqlValue) -> EvalResult<Option<bool>> 
         (CqlValue::Time(a), CqlValue::Time(b)) => compare_times_equal(a, b),
 
         // Quantity comparison (same units or UCUM-convertible)
-        (CqlValue::Quantity(a), CqlValue::Quantity(b)) => {
-            compare_quantities_equal(a, b)
-        }
+        (CqlValue::Quantity(a), CqlValue::Quantity(b)) => compare_quantities_equal(a, b),
 
         // Ratio comparison
-        (CqlValue::Ratio(a), CqlValue::Ratio(b)) => {
-            Ok(Some(a.numerator == b.numerator && a.denominator == b.denominator))
-        }
+        (CqlValue::Ratio(a), CqlValue::Ratio(b)) => Ok(Some(
+            a.numerator == b.numerator && a.denominator == b.denominator,
+        )),
 
         // Code comparison - must match code, system, and version
-        (CqlValue::Code(a), CqlValue::Code(b)) => {
-            Ok(Some(a.code == b.code && a.system == b.system && a.version == b.version))
-        }
+        (CqlValue::Code(a), CqlValue::Code(b)) => Ok(Some(
+            a.code == b.code && a.system == b.system && a.version == b.version,
+        )),
 
         // Concept comparison - codes must match
-        (CqlValue::Concept(a), CqlValue::Concept(b)) => {
-            Ok(Some(a.codes == b.codes))
-        }
+        (CqlValue::Concept(a), CqlValue::Concept(b)) => Ok(Some(a.codes == b.codes)),
 
         // List comparison - element-wise
         // Per CQL spec: null elements are considered equal within lists
@@ -200,8 +225,8 @@ pub fn cql_equal(left: &CqlValue, right: &CqlValue) -> EvalResult<Option<bool>> 
                 }
                 match cql_equal(elem_a, elem_b)? {
                     Some(false) => return Ok(Some(false)), // Definite difference
-                    Some(true) => {} // Continue checking
-                    None => has_uncertain = true, // Uncertain
+                    Some(true) => {}                       // Continue checking
+                    None => has_uncertain = true,          // Uncertain
                 }
             }
             if has_uncertain {
@@ -212,9 +237,7 @@ pub fn cql_equal(left: &CqlValue, right: &CqlValue) -> EvalResult<Option<bool>> 
         }
 
         // Interval comparison
-        (CqlValue::Interval(a), CqlValue::Interval(b)) => {
-            interval_equal(a, b)
-        }
+        (CqlValue::Interval(a), CqlValue::Interval(b)) => interval_equal(a, b),
 
         // Tuple comparison - all elements must match
         // Per CQL spec: null elements are considered equal within tuples
@@ -237,8 +260,8 @@ pub fn cql_equal(left: &CqlValue, right: &CqlValue) -> EvalResult<Option<bool>> 
                         }
                         match cql_equal(val_a, val_b)? {
                             Some(false) => return Ok(Some(false)), // Definite difference
-                            Some(true) => {} // Continue checking
-                            None => has_uncertain = true, // Uncertain
+                            Some(true) => {}                       // Continue checking
+                            None => has_uncertain = true,          // Uncertain
                         }
                     }
                     None => return Ok(Some(false)),
@@ -264,9 +287,7 @@ pub fn cql_equal(left: &CqlValue, right: &CqlValue) -> EvalResult<Option<bool>> 
 pub fn cql_equivalent(left: &CqlValue, right: &CqlValue) -> EvalResult<bool> {
     match (left, right) {
         // Code equivalence - ignores version and display
-        (CqlValue::Code(a), CqlValue::Code(b)) => {
-            Ok(a.code == b.code && a.system == b.system)
-        }
+        (CqlValue::Code(a), CqlValue::Code(b)) => Ok(a.code == b.code && a.system == b.system),
 
         // Concept equivalence - any equivalent code
         (CqlValue::Concept(a), CqlValue::Concept(b)) => {
@@ -282,13 +303,13 @@ pub fn cql_equivalent(left: &CqlValue, right: &CqlValue) -> EvalResult<bool> {
 
         // Code to Concept
         (CqlValue::Code(a), CqlValue::Concept(b)) | (CqlValue::Concept(b), CqlValue::Code(a)) => {
-            Ok(b.codes.iter().any(|c| c.code == a.code && c.system == a.system))
+            Ok(b.codes
+                .iter()
+                .any(|c| c.code == a.code && c.system == a.system))
         }
 
         // String equivalence is case-insensitive
-        (CqlValue::String(a), CqlValue::String(b)) => {
-            Ok(a.to_lowercase() == b.to_lowercase())
-        }
+        (CqlValue::String(a), CqlValue::String(b)) => Ok(a.to_lowercase() == b.to_lowercase()),
 
         // List equivalence - order matters, element equivalence
         (CqlValue::List(a), CqlValue::List(b)) => {
@@ -298,7 +319,7 @@ pub fn cql_equivalent(left: &CqlValue, right: &CqlValue) -> EvalResult<bool> {
             for (elem_a, elem_b) in a.iter().zip(b.iter()) {
                 // Handle null equivalence for elements
                 match (elem_a.is_null(), elem_b.is_null()) {
-                    (true, true) => continue, // null ~ null is true
+                    (true, true) => continue,                          // null ~ null is true
                     (true, false) | (false, true) => return Ok(false), // null ~ non-null is false
                     (false, false) => {
                         if !cql_equivalent(elem_a, elem_b)? {
@@ -320,7 +341,7 @@ pub fn cql_equivalent(left: &CqlValue, right: &CqlValue) -> EvalResult<bool> {
                     Some(val_b) => {
                         // Handle null equivalence for elements
                         match (val_a.is_null(), val_b.is_null()) {
-                            (true, true) => continue, // null ~ null is true
+                            (true, true) => continue,                          // null ~ null is true
                             (true, false) | (false, true) => return Ok(false), // null ~ non-null is false
                             (false, false) => {
                                 if !cql_equivalent(val_a, val_b)? {
@@ -372,10 +393,10 @@ pub fn cql_compare(left: &CqlValue, right: &CqlValue) -> EvalResult<Option<Order
 
         // Decimal comparisons
         (CqlValue::Decimal(a), CqlValue::Decimal(b)) => Ok(Some(a.cmp(b))),
-        (CqlValue::Integer(a), CqlValue::Decimal(b)) => Ok(Some(Decimal::from(*a).cmp(b))),
-        (CqlValue::Decimal(a), CqlValue::Integer(b)) => Ok(Some(a.cmp(&Decimal::from(*b)))),
-        (CqlValue::Long(a), CqlValue::Decimal(b)) => Ok(Some(Decimal::from(*a).cmp(b))),
-        (CqlValue::Decimal(a), CqlValue::Long(b)) => Ok(Some(a.cmp(&Decimal::from(*b)))),
+        (CqlValue::Integer(a), CqlValue::Decimal(b)) => Ok(Some(BigDecimal::from(*a).cmp(b))),
+        (CqlValue::Decimal(a), CqlValue::Integer(b)) => Ok(Some(a.cmp(&BigDecimal::from(*b)))),
+        (CqlValue::Long(a), CqlValue::Decimal(b)) => Ok(Some(BigDecimal::from(*a).cmp(b))),
+        (CqlValue::Decimal(a), CqlValue::Long(b)) => Ok(Some(a.cmp(&BigDecimal::from(*b)))),
 
         // String comparison (lexicographic)
         (CqlValue::String(a), CqlValue::String(b)) => Ok(Some(a.cmp(b))),
@@ -457,9 +478,7 @@ pub fn cql_compare(left: &CqlValue, right: &CqlValue) -> EvalResult<Option<Order
         (CqlValue::Time(a), CqlValue::Time(b)) => compare_times(a, b),
 
         // Quantity comparison (same units or UCUM-convertible)
-        (CqlValue::Quantity(a), CqlValue::Quantity(b)) => {
-            compare_quantities(a, b)
-        }
+        (CqlValue::Quantity(a), CqlValue::Quantity(b)) => compare_quantities(a, b),
 
         _ => Err(EvalError::unsupported_operator(
             "Compare",
@@ -483,7 +502,10 @@ fn compare_quantities_equal(a: &CqlQuantity, b: &CqlQuantity) -> EvalResult<Opti
     match octofhir_ucum::is_comparable(unit_a, unit_b) {
         Ok(true) => {
             // Convert both to canonical form and compare
-            match (octofhir_ucum::get_canonical_units(unit_a), octofhir_ucum::get_canonical_units(unit_b)) {
+            match (
+                octofhir_ucum::get_canonical_units(unit_a),
+                octofhir_ucum::get_canonical_units(unit_b),
+            ) {
                 (Ok(canon_a), Ok(canon_b)) => {
                     // Convert values to canonical units
                     let val_a = a.value.to_f64().unwrap_or(0.0) * canon_a.factor;
@@ -524,7 +546,10 @@ fn compare_quantities(a: &CqlQuantity, b: &CqlQuantity) -> EvalResult<Option<Ord
     match octofhir_ucum::is_comparable(unit_a, unit_b) {
         Ok(true) => {
             // Convert both to canonical form and compare
-            match (octofhir_ucum::get_canonical_units(unit_a), octofhir_ucum::get_canonical_units(unit_b)) {
+            match (
+                octofhir_ucum::get_canonical_units(unit_a),
+                octofhir_ucum::get_canonical_units(unit_b),
+            ) {
                 (Ok(canon_a), Ok(canon_b)) => {
                     // Convert values to canonical units
                     let val_a = a.value.to_f64().unwrap_or(0.0) * canon_a.factor;
@@ -575,14 +600,19 @@ fn interval_equal(a: &CqlInterval, b: &CqlInterval) -> EvalResult<Option<bool>> 
     };
 
     match (low_equal, high_equal) {
-        (Some(le), Some(he)) => Ok(Some(le && he && a.low_closed == b.low_closed && a.high_closed == b.high_closed)),
+        (Some(le), Some(he)) => Ok(Some(
+            le && he && a.low_closed == b.low_closed && a.high_closed == b.high_closed,
+        )),
         // If either bound comparison is uncertain, result is uncertain
         _ => Ok(None),
     }
 }
 
 /// Compare two dates for equality with precision handling
-fn compare_dates_equal(a: &octofhir_cql_types::CqlDate, b: &octofhir_cql_types::CqlDate) -> EvalResult<Option<bool>> {
+fn compare_dates_equal(
+    a: &octofhir_cql_types::CqlDate,
+    b: &octofhir_cql_types::CqlDate,
+) -> EvalResult<Option<bool>> {
     // Compare year (always present)
     if a.year != b.year {
         return Ok(Some(false));
@@ -596,19 +626,22 @@ fn compare_dates_equal(a: &octofhir_cql_types::CqlDate, b: &octofhir_cql_types::
             }
         }
         (None, None) => return Ok(Some(true)), // Both have same precision
-        _ => return Ok(None), // Different precision - uncertain
+        _ => return Ok(None),                  // Different precision - uncertain
     }
 
     // Compare day if both have it
     match (a.day, b.day) {
         (Some(ad), Some(bd)) => Ok(Some(ad == bd)),
         (None, None) => Ok(Some(true)), // Both have same precision
-        _ => Ok(None), // Different precision - uncertain
+        _ => Ok(None),                  // Different precision - uncertain
     }
 }
 
 /// Compare two datetimes for equality with precision handling
-fn compare_datetimes_equal(a: &octofhir_cql_types::CqlDateTime, b: &octofhir_cql_types::CqlDateTime) -> EvalResult<Option<bool>> {
+fn compare_datetimes_equal(
+    a: &octofhir_cql_types::CqlDateTime,
+    b: &octofhir_cql_types::CqlDateTime,
+) -> EvalResult<Option<bool>> {
     // Compare required fields first
     if a.year != b.year {
         return Ok(Some(false));
@@ -628,7 +661,7 @@ fn compare_datetimes_equal(a: &octofhir_cql_types::CqlDateTime, b: &octofhir_cql
             }
         }
         (None, None) => return Ok(Some(true)), // Both have same precision
-        _ => return Ok(None), // Different precision - uncertain
+        _ => return Ok(None),                  // Different precision - uncertain
     }
 
     match (a.minute, b.minute) {
@@ -660,7 +693,10 @@ fn compare_datetimes_equal(a: &octofhir_cql_types::CqlDateTime, b: &octofhir_cql
 
 /// Compare two times for ordering with precision handling
 /// Returns None when the comparison is uncertain due to precision differences
-fn compare_times(a: &octofhir_cql_types::CqlTime, b: &octofhir_cql_types::CqlTime) -> EvalResult<Option<Ordering>> {
+fn compare_times(
+    a: &octofhir_cql_types::CqlTime,
+    b: &octofhir_cql_types::CqlTime,
+) -> EvalResult<Option<Ordering>> {
     // Compare hour (always present)
     match a.hour.cmp(&b.hour) {
         Ordering::Equal => {}
@@ -699,7 +735,10 @@ fn compare_times(a: &octofhir_cql_types::CqlTime, b: &octofhir_cql_types::CqlTim
 }
 
 /// Compare two times for equality with precision handling
-fn compare_times_equal(a: &octofhir_cql_types::CqlTime, b: &octofhir_cql_types::CqlTime) -> EvalResult<Option<bool>> {
+fn compare_times_equal(
+    a: &octofhir_cql_types::CqlTime,
+    b: &octofhir_cql_types::CqlTime,
+) -> EvalResult<Option<bool>> {
     // Compare hour (always present)
     if a.hour != b.hour {
         return Ok(Some(false));
@@ -713,7 +752,7 @@ fn compare_times_equal(a: &octofhir_cql_types::CqlTime, b: &octofhir_cql_types::
             }
         }
         (None, None) => return Ok(Some(true)), // Both have same precision
-        _ => return Ok(None), // Different precision - uncertain
+        _ => return Ok(None),                  // Different precision - uncertain
     }
 
     // Compare second if both have it
@@ -743,7 +782,10 @@ fn compare_times_equal(a: &octofhir_cql_types::CqlTime, b: &octofhir_cql_types::
 /// - Returns Some(Less) if interval.high < point (all possible values are less)
 /// - Returns Some(Equal) if interval.low == interval.high == point (single value equals point)
 /// - Returns None otherwise (uncertain - some values might be greater, some less)
-fn interval_compare_point(interval: &CqlInterval, point: &CqlValue) -> EvalResult<Option<Ordering>> {
+fn interval_compare_point(
+    interval: &CqlInterval,
+    point: &CqlValue,
+) -> EvalResult<Option<Ordering>> {
     let low = match &interval.low {
         Some(v) => v,
         None => return Ok(None), // Unbounded low means uncertain
@@ -778,10 +820,10 @@ fn cql_compare_values(left: &CqlValue, right: &CqlValue) -> EvalResult<Option<Or
         (CqlValue::Integer(a), CqlValue::Long(b)) => Ok(Some((*a as i64).cmp(b))),
         (CqlValue::Long(a), CqlValue::Integer(b)) => Ok(Some(a.cmp(&(*b as i64)))),
         (CqlValue::Decimal(a), CqlValue::Decimal(b)) => Ok(Some(a.cmp(b))),
-        (CqlValue::Integer(a), CqlValue::Decimal(b)) => Ok(Some(Decimal::from(*a).cmp(b))),
-        (CqlValue::Decimal(a), CqlValue::Integer(b)) => Ok(Some(a.cmp(&Decimal::from(*b)))),
-        (CqlValue::Long(a), CqlValue::Decimal(b)) => Ok(Some(Decimal::from(*a).cmp(b))),
-        (CqlValue::Decimal(a), CqlValue::Long(b)) => Ok(Some(a.cmp(&Decimal::from(*b)))),
+        (CqlValue::Integer(a), CqlValue::Decimal(b)) => Ok(Some(BigDecimal::from(*a).cmp(b))),
+        (CqlValue::Decimal(a), CqlValue::Integer(b)) => Ok(Some(a.cmp(&BigDecimal::from(*b)))),
+        (CqlValue::Long(a), CqlValue::Decimal(b)) => Ok(Some(BigDecimal::from(*a).cmp(b))),
+        (CqlValue::Decimal(a), CqlValue::Long(b)) => Ok(Some(a.cmp(&BigDecimal::from(*b)))),
         (CqlValue::String(a), CqlValue::String(b)) => Ok(Some(a.cmp(b))),
         (CqlValue::Date(a), CqlValue::Date(b)) => Ok(a.partial_cmp(b)),
         (CqlValue::Time(a), CqlValue::Time(b)) => compare_times(a, b),
@@ -792,47 +834,82 @@ fn cql_compare_values(left: &CqlValue, right: &CqlValue) -> EvalResult<Option<Or
 #[cfg(test)]
 mod tests {
     use super::*;
+    use octofhir_cql_types::CqlCode;
 
     #[test]
     fn test_integer_equality() {
-        assert_eq!(cql_equal(&CqlValue::Integer(5), &CqlValue::Integer(5)).unwrap(), Some(true));
-        assert_eq!(cql_equal(&CqlValue::Integer(5), &CqlValue::Integer(6)).unwrap(), Some(false));
+        assert_eq!(
+            cql_equal(&CqlValue::Integer(5), &CqlValue::Integer(5)).unwrap(),
+            Some(true)
+        );
+        assert_eq!(
+            cql_equal(&CqlValue::Integer(5), &CqlValue::Integer(6)).unwrap(),
+            Some(false)
+        );
     }
 
     #[test]
     fn test_cross_type_numeric_equality() {
-        assert_eq!(cql_equal(&CqlValue::Integer(5), &CqlValue::Long(5)).unwrap(), Some(true));
-        assert_eq!(cql_equal(
-            &CqlValue::Integer(5),
-            &CqlValue::Decimal(Decimal::from(5))
-        ).unwrap(), Some(true));
+        assert_eq!(
+            cql_equal(&CqlValue::Integer(5), &CqlValue::Long(5)).unwrap(),
+            Some(true)
+        );
+        assert_eq!(
+            cql_equal(
+                &CqlValue::Integer(5),
+                &CqlValue::Decimal(BigDecimal::from(5))
+            )
+            .unwrap(),
+            Some(true)
+        );
     }
 
     #[test]
     fn test_string_equality() {
-        assert_eq!(cql_equal(
-            &CqlValue::String("hello".to_string()),
-            &CqlValue::String("hello".to_string())
-        ).unwrap(), Some(true));
-        assert_eq!(cql_equal(
-            &CqlValue::String("hello".to_string()),
-            &CqlValue::String("Hello".to_string())
-        ).unwrap(), Some(false));
+        assert_eq!(
+            cql_equal(
+                &CqlValue::String("hello".to_string()),
+                &CqlValue::String("hello".to_string())
+            )
+            .unwrap(),
+            Some(true)
+        );
+        assert_eq!(
+            cql_equal(
+                &CqlValue::String("hello".to_string()),
+                &CqlValue::String("Hello".to_string())
+            )
+            .unwrap(),
+            Some(false)
+        );
     }
 
     #[test]
     fn test_string_equivalence() {
         // Equivalence is case-insensitive for strings
-        assert!(cql_equivalent(
-            &CqlValue::String("hello".to_string()),
-            &CqlValue::String("HELLO".to_string())
-        ).unwrap());
+        assert!(
+            cql_equivalent(
+                &CqlValue::String("hello".to_string()),
+                &CqlValue::String("HELLO".to_string())
+            )
+            .unwrap()
+        );
     }
 
     #[test]
     fn test_code_equivalence() {
-        let code1 = CqlValue::Code(CqlCode::new("123", "http://snomed.info/sct", Some("1.0"), Some("Test")));
-        let code2 = CqlValue::Code(CqlCode::new("123", "http://snomed.info/sct", Some("2.0"), Some("Different")));
+        let code1 = CqlValue::Code(CqlCode::new(
+            "123",
+            "http://snomed.info/sct",
+            Some("1.0"),
+            Some("Test"),
+        ));
+        let code2 = CqlValue::Code(CqlCode::new(
+            "123",
+            "http://snomed.info/sct",
+            Some("2.0"),
+            Some("Different"),
+        ));
 
         // Equal fails because version differs
         assert_eq!(cql_equal(&code1, &code2).unwrap(), Some(false));
@@ -870,10 +947,15 @@ mod tests {
         t2.set("Name".to_string(), CqlValue::Null);
 
         // For equivalence, null ~ null is true
-        assert!(cql_equivalent(&CqlValue::Tuple(t1.clone()), &CqlValue::Tuple(t2.clone())).unwrap());
+        assert!(
+            cql_equivalent(&CqlValue::Tuple(t1.clone()), &CqlValue::Tuple(t2.clone())).unwrap()
+        );
 
         // Per CQL spec: null elements are considered equal within tuples
-        assert_eq!(cql_equal(&CqlValue::Tuple(t1), &CqlValue::Tuple(t2)).unwrap(), Some(true));
+        assert_eq!(
+            cql_equal(&CqlValue::Tuple(t1), &CqlValue::Tuple(t2)).unwrap(),
+            Some(true)
+        );
     }
 
     #[test]
@@ -890,6 +972,9 @@ mod tests {
         t2.set("Name".to_string(), CqlValue::String("John".to_string()));
 
         // One null, one value - uncertain
-        assert_eq!(cql_equal(&CqlValue::Tuple(t1), &CqlValue::Tuple(t2)).unwrap(), None);
+        assert_eq!(
+            cql_equal(&CqlValue::Tuple(t1), &CqlValue::Tuple(t2)).unwrap(),
+            None
+        );
     }
 }

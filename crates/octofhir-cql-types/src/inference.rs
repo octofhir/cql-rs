@@ -35,7 +35,10 @@ pub enum TypeInferenceError {
 
     /// Invalid operation for type
     #[error("Invalid operation {operation} for type {type_name}")]
-    InvalidOperation { operation: String, type_name: String },
+    InvalidOperation {
+        operation: String,
+        type_name: String,
+    },
 
     /// Cannot infer type
     #[error("Cannot infer type for expression")]
@@ -106,14 +109,13 @@ impl TypeInferrer {
         match expr {
             Expression::Literal(lit) => Ok(self.infer_literal(lit)),
 
-            Expression::IdentifierRef(id_ref) => {
-                self.type_env
-                    .lookup(&id_ref.name.name)
-                    .cloned()
-                    .ok_or_else(|| TypeInferenceError::UnknownIdentifier {
-                        name: id_ref.name.name.clone(),
-                    })
-            }
+            Expression::IdentifierRef(id_ref) => self
+                .type_env
+                .lookup(&id_ref.name.name)
+                .cloned()
+                .ok_or_else(|| TypeInferenceError::UnknownIdentifier {
+                    name: id_ref.name.name.clone(),
+                }),
 
             Expression::QualifiedIdentifierRef(qid_ref) => {
                 let name = if let Some(q) = &qid_ref.name.qualifier {
@@ -124,7 +126,7 @@ impl TypeInferrer {
                 self.type_env
                     .lookup(&name)
                     .cloned()
-                    .ok_or_else(|| TypeInferenceError::UnknownIdentifier { name })
+                    .ok_or(TypeInferenceError::UnknownIdentifier { name })
             }
 
             Expression::BinaryOp(bin_op) => {
@@ -262,37 +264,34 @@ impl TypeInferrer {
 
             Expression::Start(start_expr) => {
                 let interval_type = self.infer_expression(&start_expr.operand.inner)?;
-                interval_type
-                    .point_type()
-                    .cloned()
-                    .ok_or_else(|| TypeInferenceError::InvalidOperation {
+                interval_type.point_type().cloned().ok_or_else(|| {
+                    TypeInferenceError::InvalidOperation {
                         operation: "start".to_string(),
                         type_name: interval_type.qualified_name(),
-                    })
+                    }
+                })
             }
 
             Expression::End(end_expr) => {
                 let interval_type = self.infer_expression(&end_expr.operand.inner)?;
-                interval_type
-                    .point_type()
-                    .cloned()
-                    .ok_or_else(|| TypeInferenceError::InvalidOperation {
+                interval_type.point_type().cloned().ok_or_else(|| {
+                    TypeInferenceError::InvalidOperation {
                         operation: "end".to_string(),
                         type_name: interval_type.qualified_name(),
-                    })
+                    }
+                })
             }
 
             Expression::Width(_) | Expression::Size(_) => Ok(CqlType::Integer),
 
             Expression::PointFrom(point_from) => {
                 let interval_type = self.infer_expression(&point_from.operand.inner)?;
-                interval_type
-                    .point_type()
-                    .cloned()
-                    .ok_or_else(|| TypeInferenceError::InvalidOperation {
+                interval_type.point_type().cloned().ok_or_else(|| {
+                    TypeInferenceError::InvalidOperation {
                         operation: "point from".to_string(),
                         type_name: interval_type.qualified_name(),
-                    })
+                    }
+                })
             }
 
             Expression::Now => Ok(CqlType::DateTime),
@@ -324,35 +323,32 @@ impl TypeInferrer {
 
             Expression::First(first) => {
                 let source_type = self.infer_expression(&first.source.inner)?;
-                source_type
-                    .element_type()
-                    .cloned()
-                    .ok_or_else(|| TypeInferenceError::InvalidOperation {
+                source_type.element_type().cloned().ok_or_else(|| {
+                    TypeInferenceError::InvalidOperation {
                         operation: "first".to_string(),
                         type_name: source_type.qualified_name(),
-                    })
+                    }
+                })
             }
 
             Expression::Last(last) => {
                 let source_type = self.infer_expression(&last.source.inner)?;
-                source_type
-                    .element_type()
-                    .cloned()
-                    .ok_or_else(|| TypeInferenceError::InvalidOperation {
+                source_type.element_type().cloned().ok_or_else(|| {
+                    TypeInferenceError::InvalidOperation {
                         operation: "last".to_string(),
                         type_name: source_type.qualified_name(),
-                    })
+                    }
+                })
             }
 
             Expression::Single(single) => {
                 let source_type = self.infer_expression(&single.source.inner)?;
-                source_type
-                    .element_type()
-                    .cloned()
-                    .ok_or_else(|| TypeInferenceError::InvalidOperation {
+                source_type.element_type().cloned().ok_or_else(|| {
+                    TypeInferenceError::InvalidOperation {
                         operation: "single".to_string(),
                         type_name: source_type.qualified_name(),
-                    })
+                    }
+                })
             }
 
             Expression::Slice(slice) => {
@@ -477,19 +473,17 @@ impl TypeInferrer {
             // List operations
             BinaryOp::In | BinaryOp::Contains => Ok(CqlType::Boolean),
 
-            BinaryOp::Union => {
-                match (left, right) {
-                    (CqlType::List(elem1), CqlType::List(elem2)) => {
-                        let common = elem1.common_supertype(elem2).unwrap_or(CqlType::Any);
-                        Ok(CqlType::list(common))
-                    }
-                    _ => Err(TypeInferenceError::IncompatibleOperands {
-                        left: left.qualified_name(),
-                        right: right.qualified_name(),
-                        operation: "union".to_string(),
-                    }),
+            BinaryOp::Union => match (left, right) {
+                (CqlType::List(elem1), CqlType::List(elem2)) => {
+                    let common = elem1.common_supertype(elem2).unwrap_or(CqlType::Any);
+                    Ok(CqlType::list(common))
                 }
-            }
+                _ => Err(TypeInferenceError::IncompatibleOperands {
+                    left: left.qualified_name(),
+                    right: right.qualified_name(),
+                    operation: "union".to_string(),
+                }),
+            },
 
             // Type operators handled separately
             BinaryOp::Is | BinaryOp::As => Ok(CqlType::Any),
@@ -563,13 +557,12 @@ impl TypeInferrer {
         match (left, right) {
             // Numeric + Numeric
             (l, r) if l.is_numeric() && r.is_numeric() => {
-                l.common_supertype(r).ok_or_else(|| {
-                    TypeInferenceError::IncompatibleOperands {
+                l.common_supertype(r)
+                    .ok_or_else(|| TypeInferenceError::IncompatibleOperands {
                         left: l.qualified_name(),
                         right: r.qualified_name(),
                         operation: format!("{:?}", op),
-                    }
-                })
+                    })
             }
 
             // Quantity operations
@@ -599,15 +592,13 @@ impl TypeInferrer {
     /// Infer property access type
     fn infer_property_type(&self, source: &CqlType, property: &str) -> InferenceResult<CqlType> {
         match source {
-            CqlType::Tuple(elements) => {
-                elements
-                    .iter()
-                    .find(|e| e.name == property)
-                    .map(|e| e.element_type.clone())
-                    .ok_or_else(|| TypeInferenceError::TupleElementNotFound {
-                        name: property.to_string(),
-                    })
-            }
+            CqlType::Tuple(elements) => elements
+                .iter()
+                .find(|e| e.name == property)
+                .map(|e| e.element_type.clone())
+                .ok_or_else(|| TypeInferenceError::TupleElementNotFound {
+                    name: property.to_string(),
+                }),
 
             CqlType::Quantity => match property {
                 "value" => Ok(CqlType::Decimal),
@@ -669,7 +660,10 @@ impl TypeInferrer {
                 format!("List<{}>", self.ast_type_to_string(&list.element_type))
             }
             AstTypeSpecifier::Interval(interval) => {
-                format!("Interval<{}>", self.ast_type_to_string(&interval.point_type))
+                format!(
+                    "Interval<{}>",
+                    self.ast_type_to_string(&interval.point_type)
+                )
             }
             AstTypeSpecifier::Tuple(_) => "Tuple".to_string(),
             AstTypeSpecifier::Choice(_) => "Choice".to_string(),
@@ -801,8 +795,14 @@ mod tests {
     fn test_infer_literal() {
         let inferrer = TypeInferrer::new();
 
-        assert_eq!(inferrer.infer_literal(&Literal::Boolean(true)), CqlType::Boolean);
-        assert_eq!(inferrer.infer_literal(&Literal::Integer(42)), CqlType::Integer);
+        assert_eq!(
+            inferrer.infer_literal(&Literal::Boolean(true)),
+            CqlType::Boolean
+        );
+        assert_eq!(
+            inferrer.infer_literal(&Literal::Integer(42)),
+            CqlType::Integer
+        );
         assert_eq!(
             inferrer.infer_literal(&Literal::String("hello".to_string())),
             CqlType::String

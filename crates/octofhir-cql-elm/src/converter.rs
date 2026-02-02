@@ -4,35 +4,33 @@
 //! It handles all expression types, library structures, and preserves type information.
 
 use octofhir_cql_ast::{
-    self as ast, AccessModifier as AstAccessModifier, BinaryOp, DateTimeComponent, Expression as AstExpression,
-    IntervalOp, Library as AstLibrary, Literal, Query as AstQuery, Retrieve as AstRetrieve,
-    SortDirection as AstSortDirection, Statement, TemporalPrecision, UnaryOp,
+    self as ast, AccessModifier as AstAccessModifier, BinaryOp, DateTimeComponent,
+    Expression as AstExpression, IntervalOp, Library as AstLibrary, Literal, Query as AstQuery,
+    Retrieve as AstRetrieve, SortDirection as AstSortDirection, Statement, TemporalPrecision,
+    UnaryOp,
 };
 // Note: Spanned has `.inner` field (not `.inner`)
 
 use crate::model::{
-    AccessModifier, AfterExpression, AggregateClause, AggregateExpression, AliasRef, AliasedQuerySource,
-    AsExpression, BeforeExpression, BinaryExpression, BoundaryExpression, CalculateAgeAtExpression,
-    CalculateAgeExpression, CanConvertExpression, CaseExpression, CaseItem, CodeDef,
-    CodeDefs, CodeLiteralExpression, CodeRef, CodeSystemDef, CodeSystemDefs, CodeSystemRef,
-    CombineExpression, ConceptDef, ConceptDefs, ConceptRef, ContextDef, ContextDefs,
-    ConvertExpression, CurrentExpression, DateExpression, DateTimeComponentFromExpression,
-    DateTimeExpression, DateTimePrecision, DifferenceBetweenExpression, DurationBetweenExpression,
-    Element, ExpandExpression, Expression, ExpressionDef, ExpressionRef, FilterExpression,
-    FirstLastExpression, ForEachExpression, FunctionDef, FunctionRef, IdentifierRef, IfExpression,
+    AccessModifier, AfterExpression, AggregateClause, AggregateExpression, AliasedQuerySource,
+    AsExpression, BeforeExpression, BinaryExpression, BoundaryExpression, CaseExpression, CaseItem,
+    CodeDef, CodeDefs, CodeRef, CodeSystemDef, CodeSystemDefs, CodeSystemRef, CombineExpression,
+    ConceptDef, ConceptDefs, ContextDef, ContextDefs, ConvertExpression, CurrentExpression,
+    DateExpression, DateTimeComponentFromExpression, DateTimeExpression, DateTimePrecision,
+    DifferenceBetweenExpression, DurationBetweenExpression, Element, ExpandExpression, Expression,
+    ExpressionDef, ExpressionRef, FirstLastExpression, FunctionRef, IdentifierRef, IfExpression,
     IncludeDef, IncludeDefs, IndexOfExpression, InstanceElementExpression, InstanceExpression,
     IntervalExpression, IsExpression, IterationExpression, LastPositionOfExpression, LetClause,
     Library, ListExpression, ListTypeSpecifier, Literal as ElmLiteral, MessageExpression,
     MinMaxValueExpression, NamedTypeSpecifier, NaryExpression, NowExpression, NullLiteral,
-    OperandDef, OperandRef, ParameterDef, ParameterDefs, ParameterRef, PositionOfExpression,
-    Property, QuantityExpression, Query, QueryLetRef, RatioExpression, RelationshipClause,
-    RepeatExpression, Retrieve, ReturnClause, RoundExpression, SameAsExpression,
+    ParameterDef, ParameterDefs, PositionOfExpression, Property, QuantityExpression, Query,
+    RatioExpression, RelationshipClause, Retrieve, ReturnClause, RoundExpression, SameAsExpression,
     SameOrAfterExpression, SameOrBeforeExpression, SliceExpression, SortByItem, SortClause,
-    SortDirection, SortExpression, SplitExpression, SplitOnMatchesExpression, Statements,
-    SubstringExpression, TernaryExpression, TimeExpression, TimeOfDayExpression, TodayExpression,
-    TotalExpression, TupleElementDefinition, TupleElementExpression, TupleExpression,
-    TupleTypeSpecifier, TypeSpecifier, UnaryExpression, UsingDef, UsingDefs, ValueSetDef,
-    ValueSetDefs, ValueSetRef, VersionedIdentifier, WithClause, WithoutClause,
+    SortDirection, SplitExpression, SplitOnMatchesExpression, Statements, SubstringExpression,
+    TernaryExpression, TimeExpression, TimeOfDayExpression, TodayExpression, TotalExpression,
+    TupleElementDefinition, TupleElementExpression, TupleExpression, TupleTypeSpecifier,
+    TypeSpecifier, UnaryExpression, UsingDef, UsingDefs, ValueSetDef, ValueSetDefs,
+    VersionedIdentifier, WithClause, WithoutClause,
 };
 
 /// AST to ELM Converter
@@ -361,7 +359,11 @@ impl AstToElmConverter {
             }),
             ast::TypeSpecifier::Choice(choice) => {
                 TypeSpecifier::Choice(crate::model::ChoiceTypeSpecifier {
-                    choice: choice.types.iter().map(|t| self.convert_type_specifier(t)).collect(),
+                    choice: choice
+                        .types
+                        .iter()
+                        .map(|t| self.convert_type_specifier(t))
+                        .collect(),
                 })
             }
         }
@@ -589,10 +591,11 @@ impl AstToElmConverter {
             // === Function Calls ===
             AstExpression::FunctionRef(fn_ref) => {
                 // Check if this is a built-in function that should be converted to an operator
-                if fn_ref.library.is_none() {
-                    if let Some(expr) = self.try_convert_builtin_function(&fn_ref.name.name, &fn_ref.arguments) {
-                        return expr;
-                    }
+                if fn_ref.library.is_none()
+                    && let Some(expr) =
+                        self.try_convert_builtin_function(&fn_ref.name.name, &fn_ref.arguments)
+                {
+                    return expr;
                 }
                 // Otherwise, treat as a regular function reference
                 Expression::FunctionRef(FunctionRef {
@@ -736,31 +739,25 @@ impl AstToElmConverter {
             AstExpression::DateTimeComponent(dtc) => {
                 // Handle `date from` and `time from` specially - they produce different ELM expressions
                 match dtc.component {
-                    DateTimeComponent::Date => {
-                        Expression::DateFrom(UnaryExpression {
-                            element: Element::default(),
-                            operand: Box::new(self.convert_expression(&dtc.source.inner)),
-                        })
-                    }
-                    DateTimeComponent::Time => {
-                        Expression::TimeFrom(UnaryExpression {
-                            element: Element::default(),
-                            operand: Box::new(self.convert_expression(&dtc.source.inner)),
-                        })
-                    }
+                    DateTimeComponent::Date => Expression::DateFrom(UnaryExpression {
+                        element: Element::default(),
+                        operand: Box::new(self.convert_expression(&dtc.source.inner)),
+                    }),
+                    DateTimeComponent::Time => Expression::TimeFrom(UnaryExpression {
+                        element: Element::default(),
+                        operand: Box::new(self.convert_expression(&dtc.source.inner)),
+                    }),
                     DateTimeComponent::TimezoneOffset => {
                         Expression::TimezoneOffsetFrom(UnaryExpression {
                             element: Element::default(),
                             operand: Box::new(self.convert_expression(&dtc.source.inner)),
                         })
                     }
-                    _ => {
-                        Expression::DateTimeComponentFrom(DateTimeComponentFromExpression {
-                            element: Element::default(),
-                            operand: Box::new(self.convert_expression(&dtc.source.inner)),
-                            precision: self.convert_datetime_component(dtc.component),
-                        })
-                    }
+                    _ => Expression::DateTimeComponentFrom(DateTimeComponentFromExpression {
+                        element: Element::default(),
+                        operand: Box::new(self.convert_expression(&dtc.source.inner)),
+                        precision: self.convert_datetime_component(dtc.component),
+                    }),
                 }
             }
 
@@ -875,7 +872,9 @@ impl AstToElmConverter {
                     Box::new(self.convert_expression(&same_as.left.inner)),
                     Box::new(self.convert_expression(&same_as.right.inner)),
                 ],
-                precision: same_as.precision.map(|p| self.convert_temporal_precision(p)),
+                precision: same_as
+                    .precision
+                    .map(|p| self.convert_temporal_precision(p)),
             }),
             AstExpression::SameOrBefore(sob) => Expression::SameOrBefore(SameOrBeforeExpression {
                 element: Element::default(),
@@ -973,7 +972,10 @@ impl AstToElmConverter {
                         .month
                         .map(|m| format!("-{:02}", m))
                         .unwrap_or_default(),
-                    dt.date.day.map(|d| format!("-{:02}", d)).unwrap_or_default()
+                    dt.date
+                        .day
+                        .map(|d| format!("-{:02}", d))
+                        .unwrap_or_default()
                 );
                 if let Some(h) = dt.hour {
                     value.push_str(&format!("T{:02}", h));
@@ -1020,19 +1022,19 @@ impl AstToElmConverter {
             }
             Literal::Quantity(q) => Expression::Quantity(QuantityExpression {
                 element: Element::default(),
-                value: Some(q.value),
+                value: Some(q.value.clone()),
                 unit: q.unit.clone(),
             }),
             Literal::Ratio(r) => Expression::Ratio(RatioExpression {
                 element: Element::default(),
                 numerator: Box::new(QuantityExpression {
                     element: Element::default(),
-                    value: Some(r.numerator.value),
+                    value: Some(r.numerator.value.clone()),
                     unit: r.numerator.unit.clone(),
                 }),
                 denominator: Box::new(QuantityExpression {
                     element: Element::default(),
-                    value: Some(r.denominator.value),
+                    value: Some(r.denominator.value.clone()),
                     unit: r.denominator.unit.clone(),
                 }),
             }),
@@ -1208,16 +1210,20 @@ impl AstToElmConverter {
         let operand = vec![left, right];
 
         match int_op.op {
-            IntervalOp::ProperlyIncludes => Expression::ProperIncludes(crate::model::ProperIncludesExpression {
-                element: Element::default(),
-                operand,
-                precision: int_op.precision.map(|p| self.convert_temporal_precision(p)),
-            }),
-            IntervalOp::ProperlyIncludedIn => Expression::ProperIncludedIn(crate::model::ProperIncludedInExpression {
-                element: Element::default(),
-                operand,
-                precision: int_op.precision.map(|p| self.convert_temporal_precision(p)),
-            }),
+            IntervalOp::ProperlyIncludes => {
+                Expression::ProperIncludes(crate::model::ProperIncludesExpression {
+                    element: Element::default(),
+                    operand,
+                    precision: int_op.precision.map(|p| self.convert_temporal_precision(p)),
+                })
+            }
+            IntervalOp::ProperlyIncludedIn => {
+                Expression::ProperIncludedIn(crate::model::ProperIncludedInExpression {
+                    element: Element::default(),
+                    operand,
+                    precision: int_op.precision.map(|p| self.convert_temporal_precision(p)),
+                })
+            }
             IntervalOp::Includes => Expression::Includes(BinaryExpression {
                 element: Element::default(),
                 operand,
@@ -1473,7 +1479,10 @@ impl AstToElmConverter {
                 }
             }
             ast::TypeSpecifier::List(list) => {
-                format!("List<{}>", self.type_specifier_to_string(&list.element_type))
+                format!(
+                    "List<{}>",
+                    self.type_specifier_to_string(&list.element_type)
+                )
             }
             ast::TypeSpecifier::Interval(interval) => {
                 format!(
@@ -1544,11 +1553,13 @@ impl AstToElmConverter {
         match name {
             // === String Operators ===
             "Combine" => {
-                if args.len() >= 1 {
+                if !args.is_empty() {
                     Some(Expression::Combine(CombineExpression {
                         element: Element::default(),
                         source: Box::new(self.convert_expression(&args[0].inner)),
-                        separator: args.get(1).map(|a| Box::new(self.convert_expression(&a.inner))),
+                        separator: args
+                            .get(1)
+                            .map(|a| Box::new(self.convert_expression(&a.inner))),
                     }))
                 } else {
                     None
@@ -1588,7 +1599,9 @@ impl AstToElmConverter {
                         element: Element::default(),
                         string_to_sub: Box::new(self.convert_expression(&args[0].inner)),
                         start_index: Box::new(self.convert_expression(&args[1].inner)),
-                        length: args.get(2).map(|a| Box::new(self.convert_expression(&a.inner))),
+                        length: args
+                            .get(2)
+                            .map(|a| Box::new(self.convert_expression(&a.inner))),
                     }))
                 } else {
                     None
@@ -1635,11 +1648,13 @@ impl AstToElmConverter {
             "Floor" => unary(args).map(Expression::Floor),
             "Truncate" => unary(args).map(Expression::Truncate),
             "Round" => {
-                if args.len() >= 1 {
+                if !args.is_empty() {
                     Some(Expression::Round(RoundExpression {
                         element: Element::default(),
                         operand: Box::new(self.convert_expression(&args[0].inner)),
-                        precision: args.get(1).map(|a| Box::new(self.convert_expression(&a.inner))),
+                        precision: args
+                            .get(1)
+                            .map(|a| Box::new(self.convert_expression(&a.inner))),
                     }))
                 } else {
                     None
@@ -1674,22 +1689,26 @@ impl AstToElmConverter {
             }
             "Precision" => unary(args).map(Expression::Precision),
             "LowBoundary" => {
-                if args.len() >= 1 {
+                if !args.is_empty() {
                     Some(Expression::LowBoundary(BoundaryExpression {
                         element: Element::default(),
                         operand: Box::new(self.convert_expression(&args[0].inner)),
-                        precision: args.get(1).map(|a| Box::new(self.convert_expression(&a.inner))),
+                        precision: args
+                            .get(1)
+                            .map(|a| Box::new(self.convert_expression(&a.inner))),
                     }))
                 } else {
                     None
                 }
             }
             "HighBoundary" => {
-                if args.len() >= 1 {
+                if !args.is_empty() {
                     Some(Expression::HighBoundary(BoundaryExpression {
                         element: Element::default(),
                         operand: Box::new(self.convert_expression(&args[0].inner)),
-                        precision: args.get(1).map(|a| Box::new(self.convert_expression(&a.inner))),
+                        precision: args
+                            .get(1)
+                            .map(|a| Box::new(self.convert_expression(&a.inner))),
                     }))
                 } else {
                     None
@@ -1697,10 +1716,10 @@ impl AstToElmConverter {
             }
 
             // === Aggregate Operators ===
-            "Sum" | "Avg" | "Min" | "Max" | "Count" | "Median" | "Mode" |
-            "StdDev" | "Variance" | "PopulationStdDev" | "PopulationVariance" |
-            "AllTrue" | "AnyTrue" | "Product" | "GeometricMean" => {
-                if args.len() >= 1 {
+            "Sum" | "Avg" | "Min" | "Max" | "Count" | "Median" | "Mode" | "StdDev" | "Variance"
+            | "PopulationStdDev" | "PopulationVariance" | "AllTrue" | "AnyTrue" | "Product"
+            | "GeometricMean" => {
+                if !args.is_empty() {
                     let agg_expr = AggregateExpression {
                         element: Element::default(),
                         source: Some(Box::new(self.convert_expression(&args[0].inner))),
@@ -1733,7 +1752,7 @@ impl AstToElmConverter {
 
             // === List Operators ===
             "First" => {
-                if args.len() >= 1 {
+                if !args.is_empty() {
                     Some(Expression::First(FirstLastExpression {
                         element: Element::default(),
                         source: Box::new(self.convert_expression(&args[0].inner)),
@@ -1744,7 +1763,7 @@ impl AstToElmConverter {
                 }
             }
             "Last" => {
-                if args.len() >= 1 {
+                if !args.is_empty() {
                     Some(Expression::Last(FirstLastExpression {
                         element: Element::default(),
                         source: Box::new(self.convert_expression(&args[0].inner)),
@@ -1775,7 +1794,9 @@ impl AstToElmConverter {
                         element: Element::default(),
                         source: Box::new(self.convert_expression(&args[0].inner)),
                         start_index: Box::new(self.convert_expression(&args[1].inner)),
-                        end_index: args.get(2).map(|a| Box::new(self.convert_expression(&a.inner))),
+                        end_index: args
+                            .get(2)
+                            .map(|a| Box::new(self.convert_expression(&a.inner))),
                     }))
                 } else {
                     None
@@ -1813,7 +1834,7 @@ impl AstToElmConverter {
             }
             "Tail" => {
                 // Tail(source) -> Slice(source, 1, null) - returns all but first element
-                if args.len() >= 1 {
+                if !args.is_empty() {
                     Some(Expression::Slice(SliceExpression {
                         element: Element::default(),
                         source: Box::new(self.convert_expression(&args[0].inner)),
@@ -1869,33 +1890,43 @@ impl AstToElmConverter {
             "Contains" => binary(args).map(Expression::Contains),
             "In" => binary(args).map(Expression::In),
             "Includes" => binary(args).map(Expression::Includes),
-            "IncludedIn" => binary(args).map(|b| Expression::IncludedIn(crate::model::IncludedInExpression {
-                element: b.element,
-                operand: b.operand,
-                precision: None,
-            })),
+            "IncludedIn" => binary(args).map(|b| {
+                Expression::IncludedIn(crate::model::IncludedInExpression {
+                    element: b.element,
+                    operand: b.operand,
+                    precision: None,
+                })
+            }),
             "ProperContains" => binary(args).map(Expression::ProperContains),
             "ProperIn" => binary(args).map(Expression::ProperIn),
-            "ProperIncludes" => binary(args).map(|b| Expression::ProperIncludes(crate::model::ProperIncludesExpression {
-                element: b.element,
-                operand: b.operand,
-                precision: None,
-            })),
-            "ProperIncludedIn" => binary(args).map(|b| Expression::ProperIncludedIn(crate::model::ProperIncludedInExpression {
-                element: b.element,
-                operand: b.operand,
-                precision: None,
-            })),
-            "Before" => binary(args).map(|b| Expression::Before(BeforeExpression {
-                element: b.element,
-                operand: b.operand,
-                precision: None,
-            })),
-            "After" => binary(args).map(|b| Expression::After(AfterExpression {
-                element: b.element,
-                operand: b.operand,
-                precision: None,
-            })),
+            "ProperIncludes" => binary(args).map(|b| {
+                Expression::ProperIncludes(crate::model::ProperIncludesExpression {
+                    element: b.element,
+                    operand: b.operand,
+                    precision: None,
+                })
+            }),
+            "ProperIncludedIn" => binary(args).map(|b| {
+                Expression::ProperIncludedIn(crate::model::ProperIncludedInExpression {
+                    element: b.element,
+                    operand: b.operand,
+                    precision: None,
+                })
+            }),
+            "Before" => binary(args).map(|b| {
+                Expression::Before(BeforeExpression {
+                    element: b.element,
+                    operand: b.operand,
+                    precision: None,
+                })
+            }),
+            "After" => binary(args).map(|b| {
+                Expression::After(AfterExpression {
+                    element: b.element,
+                    operand: b.operand,
+                    precision: None,
+                })
+            }),
             "Meets" => binary(args).map(Expression::Meets),
             "MeetsBefore" => binary(args).map(Expression::MeetsBefore),
             "MeetsAfter" => binary(args).map(Expression::MeetsAfter),
@@ -1906,11 +1937,13 @@ impl AstToElmConverter {
             "Ends" => binary(args).map(Expression::Ends),
             "Collapse" => unary(args).map(Expression::Collapse),
             "Expand" => {
-                if args.len() >= 1 {
+                if !args.is_empty() {
                     Some(Expression::Expand(ExpandExpression {
                         element: Element::default(),
                         operand: Box::new(self.convert_expression(&args[0].inner)),
-                        per: args.get(1).map(|a| Box::new(self.convert_expression(&a.inner))),
+                        per: args
+                            .get(1)
+                            .map(|a| Box::new(self.convert_expression(&a.inner))),
                     }))
                 } else {
                     None
@@ -1949,42 +1982,66 @@ impl AstToElmConverter {
                 }
             }
             "Date" => {
-                if args.len() >= 1 {
+                if !args.is_empty() {
                     Some(Expression::Date(DateExpression {
                         element: Element::default(),
                         year: Box::new(self.convert_expression(&args[0].inner)),
-                        month: args.get(1).map(|a| Box::new(self.convert_expression(&a.inner))),
-                        day: args.get(2).map(|a| Box::new(self.convert_expression(&a.inner))),
+                        month: args
+                            .get(1)
+                            .map(|a| Box::new(self.convert_expression(&a.inner))),
+                        day: args
+                            .get(2)
+                            .map(|a| Box::new(self.convert_expression(&a.inner))),
                     }))
                 } else {
                     None
                 }
             }
             "DateTime" => {
-                if args.len() >= 1 {
+                if !args.is_empty() {
                     Some(Expression::DateTime(DateTimeExpression {
                         element: Element::default(),
                         year: Box::new(self.convert_expression(&args[0].inner)),
-                        month: args.get(1).map(|a| Box::new(self.convert_expression(&a.inner))),
-                        day: args.get(2).map(|a| Box::new(self.convert_expression(&a.inner))),
-                        hour: args.get(3).map(|a| Box::new(self.convert_expression(&a.inner))),
-                        minute: args.get(4).map(|a| Box::new(self.convert_expression(&a.inner))),
-                        second: args.get(5).map(|a| Box::new(self.convert_expression(&a.inner))),
-                        millisecond: args.get(6).map(|a| Box::new(self.convert_expression(&a.inner))),
-                        timezone_offset: args.get(7).map(|a| Box::new(self.convert_expression(&a.inner))),
+                        month: args
+                            .get(1)
+                            .map(|a| Box::new(self.convert_expression(&a.inner))),
+                        day: args
+                            .get(2)
+                            .map(|a| Box::new(self.convert_expression(&a.inner))),
+                        hour: args
+                            .get(3)
+                            .map(|a| Box::new(self.convert_expression(&a.inner))),
+                        minute: args
+                            .get(4)
+                            .map(|a| Box::new(self.convert_expression(&a.inner))),
+                        second: args
+                            .get(5)
+                            .map(|a| Box::new(self.convert_expression(&a.inner))),
+                        millisecond: args
+                            .get(6)
+                            .map(|a| Box::new(self.convert_expression(&a.inner))),
+                        timezone_offset: args
+                            .get(7)
+                            .map(|a| Box::new(self.convert_expression(&a.inner))),
                     }))
                 } else {
                     None
                 }
             }
             "Time" => {
-                if args.len() >= 1 {
+                if !args.is_empty() {
                     Some(Expression::Time(TimeExpression {
                         element: Element::default(),
                         hour: Box::new(self.convert_expression(&args[0].inner)),
-                        minute: args.get(1).map(|a| Box::new(self.convert_expression(&a.inner))),
-                        second: args.get(2).map(|a| Box::new(self.convert_expression(&a.inner))),
-                        millisecond: args.get(3).map(|a| Box::new(self.convert_expression(&a.inner))),
+                        minute: args
+                            .get(1)
+                            .map(|a| Box::new(self.convert_expression(&a.inner))),
+                        second: args
+                            .get(2)
+                            .map(|a| Box::new(self.convert_expression(&a.inner))),
+                        millisecond: args
+                            .get(3)
+                            .map(|a| Box::new(self.convert_expression(&a.inner))),
                     }))
                 } else {
                     None

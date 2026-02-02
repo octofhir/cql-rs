@@ -10,9 +10,17 @@ use crate::context::EvaluationContext;
 use crate::engine::CqlEngine;
 use crate::error::{EvalError, EvalResult};
 use crate::operators::comparison::{cql_compare, cql_equal};
-use octofhir_cql_elm::{AfterExpression, BeforeExpression, BinaryExpression, ExpandExpression, Expression, IncludedInExpression, IntervalExpression, ProperIncludedInExpression, ProperIncludesExpression, TypeSpecifier, UnaryExpression};
-use octofhir_cql_types::{CqlDate, CqlDateTime, CqlInterval, CqlList, CqlTime, CqlType, CqlValue, DateTimePrecision};
+use bigdecimal::BigDecimal;
+use octofhir_cql_elm::{
+    AfterExpression, BeforeExpression, BinaryExpression, ExpandExpression, Expression,
+    IncludedInExpression, IntervalExpression, ProperIncludedInExpression, ProperIncludesExpression,
+    TypeSpecifier, UnaryExpression,
+};
+use octofhir_cql_types::{
+    CqlDate, CqlDateTime, CqlInterval, CqlList, CqlType, CqlValue, DateTimePrecision,
+};
 use std::cmp::Ordering;
+use std::str::FromStr;
 
 /// Extract the result type specifier from an expression
 fn get_result_type_specifier(expr: &Expression) -> Option<TypeSpecifier> {
@@ -20,7 +28,8 @@ fn get_result_type_specifier(expr: &Expression) -> Option<TypeSpecifier> {
     match expr {
         Expression::As(e) => {
             // For As expression, check as_type_specifier first, then element's result_type_specifier
-            e.as_type_specifier.clone()
+            e.as_type_specifier
+                .clone()
                 .or_else(|| e.element.result_type_specifier.clone())
                 .or_else(|| {
                     // Try to parse as_type string like "{urn:hl7-org:elm-types:r1}Integer"
@@ -85,8 +94,14 @@ fn truncate_value(value: &CqlValue, precision: DateTimePrecision) -> CqlValue {
 /// Truncate an interval's bounds to the specified precision
 fn truncate_interval(interval: &CqlInterval, precision: DateTimePrecision) -> CqlInterval {
     CqlInterval {
-        low: interval.low.as_ref().map(|v| Box::new(truncate_value(v, precision))),
-        high: interval.high.as_ref().map(|v| Box::new(truncate_value(v, precision))),
+        low: interval
+            .low
+            .as_ref()
+            .map(|v| Box::new(truncate_value(v, precision))),
+        high: interval
+            .high
+            .as_ref()
+            .map(|v| Box::new(truncate_value(v, precision))),
         low_closed: interval.low_closed,
         high_closed: interval.high_closed,
         point_type: interval.point_type.clone(),
@@ -95,7 +110,11 @@ fn truncate_interval(interval: &CqlInterval, precision: DateTimePrecision) -> Cq
 
 impl CqlEngine {
     /// Evaluate Interval constructor
-    pub fn eval_interval_constructor(&self, expr: &IntervalExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_interval_constructor(
+        &self,
+        expr: &IntervalExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let low = if let Some(low_expr) = &expr.low {
             Some(self.evaluate(low_expr, ctx)?)
         } else {
@@ -151,23 +170,23 @@ impl CqlEngine {
         let high_closed = expr.high_closed.unwrap_or(true);
 
         // Validate interval bounds - error if low > high (invalid interval)
-        if let (Some(low_val), Some(high_val)) = (low_value, high_value) {
-            if let Some(ordering) = cql_compare(low_val, high_val)? {
-                match ordering {
-                    Ordering::Greater => {
-                        // low > high is always invalid
+        if let (Some(low_val), Some(high_val)) = (low_value, high_value)
+            && let Some(ordering) = cql_compare(low_val, high_val)?
+        {
+            match ordering {
+                Ordering::Greater => {
+                    // low > high is always invalid
+                    return Err(EvalError::InvalidInterval);
+                }
+                Ordering::Equal => {
+                    // low == high: valid only if both ends are closed [a, a]
+                    // For [a, a), (a, a], or (a, a) the interval is empty/invalid
+                    if !low_closed || !high_closed {
                         return Err(EvalError::InvalidInterval);
                     }
-                    Ordering::Equal => {
-                        // low == high: valid only if both ends are closed [a, a]
-                        // For [a, a), (a, a], or (a, a) the interval is empty/invalid
-                        if !low_closed || !high_closed {
-                            return Err(EvalError::InvalidInterval);
-                        }
-                    }
-                    Ordering::Less => {
-                        // low < high is always valid
-                    }
+                }
+                Ordering::Less => {
+                    // low < high is always valid
                 }
             }
         }
@@ -182,56 +201,80 @@ impl CqlEngine {
     }
 
     /// Evaluate Start operator - returns low bound of interval
-    pub fn eval_start(&self, expr: &UnaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_start(
+        &self,
+        expr: &UnaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let operand = self.evaluate(&expr.operand, ctx)?;
 
         match &operand {
             CqlValue::Null => Ok(CqlValue::Null),
-            CqlValue::Interval(interval) => {
-                match interval.low() {
-                    Some(low) => Ok(low.clone()),
-                    None => Ok(CqlValue::Null),
-                }
-            }
-            _ => Err(EvalError::type_mismatch("Interval", operand.get_type().name())),
+            CqlValue::Interval(interval) => match interval.low() {
+                Some(low) => Ok(low.clone()),
+                None => Ok(CqlValue::Null),
+            },
+            _ => Err(EvalError::type_mismatch(
+                "Interval",
+                operand.get_type().name(),
+            )),
         }
     }
 
     /// Evaluate End operator - returns high bound of interval
-    pub fn eval_end(&self, expr: &UnaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_end(
+        &self,
+        expr: &UnaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let operand = self.evaluate(&expr.operand, ctx)?;
 
         match &operand {
             CqlValue::Null => Ok(CqlValue::Null),
-            CqlValue::Interval(interval) => {
-                match interval.high() {
-                    Some(high) => Ok(high.clone()),
-                    None => Ok(CqlValue::Null),
-                }
-            }
-            _ => Err(EvalError::type_mismatch("Interval", operand.get_type().name())),
+            CqlValue::Interval(interval) => match interval.high() {
+                Some(high) => Ok(high.clone()),
+                None => Ok(CqlValue::Null),
+            },
+            _ => Err(EvalError::type_mismatch(
+                "Interval",
+                operand.get_type().name(),
+            )),
         }
     }
 
     /// Evaluate PointFrom - returns point if interval is a point, otherwise null
-    pub fn eval_point_from(&self, expr: &UnaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_point_from(
+        &self,
+        expr: &UnaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let operand = self.evaluate(&expr.operand, ctx)?;
 
         match &operand {
             CqlValue::Null => Ok(CqlValue::Null),
             CqlValue::Interval(interval) => {
                 if interval.is_point() {
-                    interval.low().cloned().ok_or_else(|| EvalError::internal("Point interval without low bound"))
+                    interval
+                        .low()
+                        .cloned()
+                        .ok_or_else(|| EvalError::internal("Point interval without low bound"))
                 } else {
                     Ok(CqlValue::Null)
                 }
             }
-            _ => Err(EvalError::type_mismatch("Interval", operand.get_type().name())),
+            _ => Err(EvalError::type_mismatch(
+                "Interval",
+                operand.get_type().name(),
+            )),
         }
     }
 
     /// Evaluate Width - returns distance between low and high bounds
-    pub fn eval_width(&self, expr: &UnaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_width(
+        &self,
+        expr: &UnaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let operand = self.evaluate(&expr.operand, ctx)?;
 
         match &operand {
@@ -256,16 +299,14 @@ impl CqlEngine {
                             (CqlValue::Integer(l), CqlValue::Integer(h)) => {
                                 Ok(CqlValue::Integer(h - l))
                             }
-                            (CqlValue::Long(l), CqlValue::Long(h)) => {
-                                Ok(CqlValue::Long(h - l))
-                            }
+                            (CqlValue::Long(l), CqlValue::Long(h)) => Ok(CqlValue::Long(h - l)),
                             (CqlValue::Decimal(l), CqlValue::Decimal(h)) => {
                                 Ok(CqlValue::Decimal(h - l))
                             }
                             (CqlValue::Quantity(l), CqlValue::Quantity(h)) => {
                                 // Quantities must have compatible units for subtraction
                                 if l.unit == h.unit {
-                                    let width = h.value - l.value;
+                                    let width = &h.value - &l.value;
                                     Ok(CqlValue::Quantity(octofhir_cql_types::CqlQuantity {
                                         value: width,
                                         unit: l.unit.clone(),
@@ -283,42 +324,52 @@ impl CqlEngine {
                     _ => Ok(CqlValue::Null),
                 }
             }
-            _ => Err(EvalError::type_mismatch("Interval", operand.get_type().name())),
+            _ => Err(EvalError::type_mismatch(
+                "Interval",
+                operand.get_type().name(),
+            )),
         }
     }
 
     /// Evaluate Size - returns number of points in interval (for integer/date types)
-    pub fn eval_size(&self, expr: &UnaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_size(
+        &self,
+        expr: &UnaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let operand = self.evaluate(&expr.operand, ctx)?;
 
         match &operand {
             CqlValue::Null => Ok(CqlValue::Null),
-            CqlValue::Interval(interval) => {
-                match (interval.low(), interval.high()) {
-                    (Some(low), Some(high)) => {
-                        match (low, high) {
-                            (CqlValue::Integer(l), CqlValue::Integer(h)) => {
-                                let mut size = h - l;
-                                if interval.low_closed {
-                                    size += 1;
-                                }
-                                if !interval.high_closed {
-                                    size -= 1;
-                                }
-                                Ok(CqlValue::Integer(size.max(0)))
-                            }
-                            _ => Ok(CqlValue::Null),
+            CqlValue::Interval(interval) => match (interval.low(), interval.high()) {
+                (Some(low), Some(high)) => match (low, high) {
+                    (CqlValue::Integer(l), CqlValue::Integer(h)) => {
+                        let mut size = h - l;
+                        if interval.low_closed {
+                            size += 1;
                         }
+                        if !interval.high_closed {
+                            size -= 1;
+                        }
+                        Ok(CqlValue::Integer(size.max(0)))
                     }
                     _ => Ok(CqlValue::Null),
-                }
-            }
-            _ => Err(EvalError::type_mismatch("Interval", operand.get_type().name())),
+                },
+                _ => Ok(CqlValue::Null),
+            },
+            _ => Err(EvalError::type_mismatch(
+                "Interval",
+                operand.get_type().name(),
+            )),
         }
     }
 
     /// Evaluate Contains - tests if interval contains point or other interval
-    pub fn eval_contains(&self, expr: &BinaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_contains(
+        &self,
+        expr: &BinaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let (left, right) = self.eval_binary_operands(expr, ctx)?;
 
         // If the container is null, return false (can't contain anything)
@@ -339,12 +390,19 @@ impl CqlEngine {
                     _ => interval_contains_point(interval, &right),
                 }
             }
-            _ => Err(EvalError::unsupported_operator("Contains", left.get_type().name())),
+            _ => Err(EvalError::unsupported_operator(
+                "Contains",
+                left.get_type().name(),
+            )),
         }
     }
 
     /// Evaluate In - tests if point is in interval or list
-    pub fn eval_in(&self, expr: &BinaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_in(
+        &self,
+        expr: &BinaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let (left, right) = self.eval_binary_operands(expr, ctx)?;
 
         // If the container is null, return false (can't be in a null container)
@@ -362,12 +420,19 @@ impl CqlEngine {
                 }
                 interval_contains_point(interval, &left)
             }
-            _ => Err(EvalError::unsupported_operator("In", right.get_type().name())),
+            _ => Err(EvalError::unsupported_operator(
+                "In",
+                right.get_type().name(),
+            )),
         }
     }
 
     /// Evaluate Includes - tests if first interval/list includes second
-    pub fn eval_includes(&self, expr: &BinaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_includes(
+        &self,
+        expr: &BinaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let (left, right) = self.eval_binary_operands(expr, ctx)?;
 
         // Standard CQL null propagation - if either operand is null, result is null
@@ -390,9 +455,16 @@ impl CqlEngine {
     }
 
     /// Evaluate IncludedIn - tests if first interval/element is included in second
-    pub fn eval_included_in(&self, expr: &IncludedInExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_included_in(
+        &self,
+        expr: &IncludedInExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         if expr.operand.len() != 2 {
-            return Err(EvalError::invalid_operand("IncludedIn", "requires exactly 2 operands"));
+            return Err(EvalError::invalid_operand(
+                "IncludedIn",
+                "requires exactly 2 operands",
+            ));
         }
         let left = self.evaluate(&expr.operand[0], ctx)?;
         let right = self.evaluate(&expr.operand[1], ctx)?;
@@ -428,7 +500,11 @@ impl CqlEngine {
     }
 
     /// Evaluate ProperContains
-    pub fn eval_proper_contains(&self, expr: &BinaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_proper_contains(
+        &self,
+        expr: &BinaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let (left, right) = self.eval_binary_operands(expr, ctx)?;
 
         if left.is_null() || right.is_null() {
@@ -446,12 +522,19 @@ impl CqlEngine {
                 }
             }
             CqlValue::List(list) => list_contains(list, &right), // Proper for lists not meaningful
-            _ => Err(EvalError::unsupported_operator("ProperContains", left.get_type().name())),
+            _ => Err(EvalError::unsupported_operator(
+                "ProperContains",
+                left.get_type().name(),
+            )),
         }
     }
 
     /// Evaluate ProperIn
-    pub fn eval_proper_in(&self, expr: &BinaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_proper_in(
+        &self,
+        expr: &BinaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let (left, right) = self.eval_binary_operands(expr, ctx)?;
 
         if left.is_null() || right.is_null() {
@@ -461,14 +544,24 @@ impl CqlEngine {
         match &right {
             CqlValue::Interval(interval) => interval_contains_point(interval, &left),
             CqlValue::List(list) => list_contains(list, &left),
-            _ => Err(EvalError::unsupported_operator("ProperIn", right.get_type().name())),
+            _ => Err(EvalError::unsupported_operator(
+                "ProperIn",
+                right.get_type().name(),
+            )),
         }
     }
 
     /// Evaluate ProperIncludes
-    pub fn eval_proper_includes(&self, expr: &ProperIncludesExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_proper_includes(
+        &self,
+        expr: &ProperIncludesExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         if expr.operand.len() != 2 {
-            return Err(EvalError::invalid_operand("ProperIncludes", "requires exactly 2 operands"));
+            return Err(EvalError::invalid_operand(
+                "ProperIncludes",
+                "requires exactly 2 operands",
+            ));
         }
         let left = self.evaluate(&expr.operand[0], ctx)?;
         let right = self.evaluate(&expr.operand[1], ctx)?;
@@ -498,7 +591,9 @@ impl CqlEngine {
                 list_proper_includes(a, b)
             }
             // Interval proper contains point: point is strictly inside the interval
-            (CqlValue::Interval(interval), point) if !matches!(point, CqlValue::Interval(_) | CqlValue::List(_)) => {
+            (CqlValue::Interval(interval), point)
+                if !matches!(point, CqlValue::Interval(_) | CqlValue::List(_)) =>
+            {
                 if left.is_null() || right.is_null() {
                     return Ok(CqlValue::Null);
                 }
@@ -525,9 +620,16 @@ impl CqlEngine {
     }
 
     /// Evaluate ProperIncludedIn
-    pub fn eval_proper_included_in(&self, expr: &ProperIncludedInExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_proper_included_in(
+        &self,
+        expr: &ProperIncludedInExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         if expr.operand.len() != 2 {
-            return Err(EvalError::invalid_operand("ProperIncludedIn", "requires exactly 2 operands"));
+            return Err(EvalError::invalid_operand(
+                "ProperIncludedIn",
+                "requires exactly 2 operands",
+            ));
         }
         let left = self.evaluate(&expr.operand[0], ctx)?;
         let right = self.evaluate(&expr.operand[1], ctx)?;
@@ -557,7 +659,9 @@ impl CqlEngine {
                 list_proper_includes(b, a)
             }
             // Point proper in interval: point is strictly inside the interval
-            (point, CqlValue::Interval(interval)) if !matches!(point, CqlValue::Interval(_) | CqlValue::List(_)) => {
+            (point, CqlValue::Interval(interval))
+                if !matches!(point, CqlValue::Interval(_) | CqlValue::List(_)) =>
+            {
                 if left.is_null() || right.is_null() {
                     return Ok(CqlValue::Null);
                 }
@@ -594,9 +698,16 @@ impl CqlEngine {
     }
 
     /// Evaluate Before - tests if first ends before second starts
-    pub fn eval_before(&self, expr: &BeforeExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_before(
+        &self,
+        expr: &BeforeExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         if expr.operand.len() != 2 {
-            return Err(EvalError::invalid_operand("Before", "requires exactly 2 operands"));
+            return Err(EvalError::invalid_operand(
+                "Before",
+                "requires exactly 2 operands",
+            ));
         }
         let left = self.evaluate(&expr.operand[0], ctx)?;
         let right = self.evaluate(&expr.operand[1], ctx)?;
@@ -655,9 +766,16 @@ impl CqlEngine {
     }
 
     /// Evaluate After - tests if first starts after second ends
-    pub fn eval_after(&self, expr: &AfterExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_after(
+        &self,
+        expr: &AfterExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         if expr.operand.len() != 2 {
-            return Err(EvalError::invalid_operand("After", "requires exactly 2 operands"));
+            return Err(EvalError::invalid_operand(
+                "After",
+                "requires exactly 2 operands",
+            ));
         }
         let left = self.evaluate(&expr.operand[0], ctx)?;
         let right = self.evaluate(&expr.operand[1], ctx)?;
@@ -716,7 +834,11 @@ impl CqlEngine {
     }
 
     /// Evaluate Meets - tests if first meets second (adjacent)
-    pub fn eval_meets(&self, expr: &BinaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_meets(
+        &self,
+        expr: &BinaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let (left, right) = self.eval_binary_operands(expr, ctx)?;
 
         if left.is_null() || right.is_null() {
@@ -745,7 +867,11 @@ impl CqlEngine {
     }
 
     /// Evaluate MeetsBefore - tests if first ends just before second starts
-    pub fn eval_meets_before(&self, expr: &BinaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_meets_before(
+        &self,
+        expr: &BinaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let (left, right) = self.eval_binary_operands(expr, ctx)?;
 
         if left.is_null() || right.is_null() {
@@ -762,7 +888,11 @@ impl CqlEngine {
     }
 
     /// Evaluate MeetsAfter - tests if first starts just after second ends
-    pub fn eval_meets_after(&self, expr: &BinaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_meets_after(
+        &self,
+        expr: &BinaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let (left, right) = self.eval_binary_operands(expr, ctx)?;
 
         if left.is_null() || right.is_null() {
@@ -779,7 +909,11 @@ impl CqlEngine {
     }
 
     /// Evaluate Overlaps - tests if intervals overlap
-    pub fn eval_overlaps(&self, expr: &BinaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_overlaps(
+        &self,
+        expr: &BinaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let (left, right) = self.eval_binary_operands(expr, ctx)?;
 
         if left.is_null() || right.is_null() {
@@ -796,7 +930,11 @@ impl CqlEngine {
     }
 
     /// Evaluate OverlapsBefore
-    pub fn eval_overlaps_before(&self, expr: &BinaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_overlaps_before(
+        &self,
+        expr: &BinaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let (left, right) = self.eval_binary_operands(expr, ctx)?;
 
         if left.is_null() || right.is_null() {
@@ -813,7 +951,11 @@ impl CqlEngine {
     }
 
     /// Evaluate OverlapsAfter
-    pub fn eval_overlaps_after(&self, expr: &BinaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_overlaps_after(
+        &self,
+        expr: &BinaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let (left, right) = self.eval_binary_operands(expr, ctx)?;
 
         if left.is_null() || right.is_null() {
@@ -830,7 +972,11 @@ impl CqlEngine {
     }
 
     /// Evaluate Starts - tests if first starts at same point as second
-    pub fn eval_starts(&self, expr: &BinaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_starts(
+        &self,
+        expr: &BinaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let (left, right) = self.eval_binary_operands(expr, ctx)?;
 
         if left.is_null() || right.is_null() {
@@ -859,7 +1005,11 @@ impl CqlEngine {
     }
 
     /// Evaluate Ends - tests if first ends at same point as second
-    pub fn eval_ends(&self, expr: &BinaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_ends(
+        &self,
+        expr: &BinaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let (left, right) = self.eval_binary_operands(expr, ctx)?;
 
         if left.is_null() || right.is_null() {
@@ -888,7 +1038,11 @@ impl CqlEngine {
     }
 
     /// Evaluate Collapse - merges overlapping intervals in a list
-    pub fn eval_collapse(&self, expr: &UnaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_collapse(
+        &self,
+        expr: &UnaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let source = self.evaluate(&expr.operand, ctx)?;
 
         if source.is_null() {
@@ -897,12 +1051,19 @@ impl CqlEngine {
 
         match &source {
             CqlValue::List(list) => collapse_intervals(list),
-            _ => Err(EvalError::type_mismatch("List<Interval>", source.get_type().name())),
+            _ => Err(EvalError::type_mismatch(
+                "List<Interval>",
+                source.get_type().name(),
+            )),
         }
     }
 
     /// Evaluate Expand - expands interval to list of points
-    pub fn eval_expand(&self, expr: &ExpandExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_expand(
+        &self,
+        expr: &ExpandExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let source = self.evaluate(&expr.operand, ctx)?;
 
         if source.is_null() {
@@ -918,12 +1079,19 @@ impl CqlEngine {
         match &source {
             CqlValue::Interval(interval) => expand_interval(interval, per.as_ref()),
             CqlValue::List(list) => expand_interval_list(list, per.as_ref()),
-            _ => Err(EvalError::type_mismatch("Interval", source.get_type().name())),
+            _ => Err(EvalError::type_mismatch(
+                "Interval",
+                source.get_type().name(),
+            )),
         }
     }
 
     /// Evaluate Union of intervals/lists
-    pub fn eval_union(&self, expr: &BinaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_union(
+        &self,
+        expr: &BinaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let (left, right) = self.eval_binary_operands(expr, ctx)?;
 
         match (&left, &right) {
@@ -931,7 +1099,9 @@ impl CqlEngine {
             (CqlValue::Null, CqlValue::List(b)) => Ok(CqlValue::List(b.clone())),
             (CqlValue::List(a), CqlValue::Null) => Ok(CqlValue::List(a.clone())),
             // For intervals: null operand means null result
-            (CqlValue::Null, CqlValue::Interval(_)) | (CqlValue::Interval(_), CqlValue::Null) => Ok(CqlValue::Null),
+            (CqlValue::Null, CqlValue::Interval(_)) | (CqlValue::Interval(_), CqlValue::Null) => {
+                Ok(CqlValue::Null)
+            }
             // Both null
             (CqlValue::Null, CqlValue::Null) => Ok(CqlValue::Null),
             (CqlValue::List(a), CqlValue::List(b)) => list_union(a, b),
@@ -944,7 +1114,11 @@ impl CqlEngine {
     }
 
     /// Evaluate Intersect of intervals/lists
-    pub fn eval_intersect(&self, expr: &BinaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_intersect(
+        &self,
+        expr: &BinaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let (left, right) = self.eval_binary_operands(expr, ctx)?;
 
         if left.is_null() || right.is_null() {
@@ -962,7 +1136,11 @@ impl CqlEngine {
     }
 
     /// Evaluate Except of intervals/lists
-    pub fn eval_except(&self, expr: &BinaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_except(
+        &self,
+        expr: &BinaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let (left, right) = self.eval_binary_operands(expr, ctx)?;
 
         if left.is_null() {
@@ -1039,7 +1217,7 @@ fn interval_includes(container: &CqlInterval, contained: &CqlInterval) -> EvalRe
                 None => return Ok(CqlValue::Null),
             }
         }
-        (None, _) => true, // Container unbounded low
+        (None, _) => true,  // Container unbounded low
         (_, None) => false, // Contained unbounded low but container bounded
     };
 
@@ -1057,21 +1235,25 @@ fn interval_includes(container: &CqlInterval, contained: &CqlInterval) -> EvalRe
                 None => return Ok(CqlValue::Null),
             }
         }
-        (None, _) => true, // Container unbounded high
+        (None, _) => true,  // Container unbounded high
         (_, None) => false, // Contained unbounded high but container bounded
     };
 
     Ok(CqlValue::Boolean(high_ok))
 }
 
-fn interval_proper_includes(container: &CqlInterval, contained: &CqlInterval) -> EvalResult<CqlValue> {
+fn interval_proper_includes(
+    container: &CqlInterval,
+    contained: &CqlInterval,
+) -> EvalResult<CqlValue> {
     let includes = interval_includes(container, contained)?;
     if let CqlValue::Boolean(true) = includes {
         // Check that they're not equal
         let equal = cql_equal(
             &CqlValue::Interval(container.clone()),
             &CqlValue::Interval(contained.clone()),
-        )?.unwrap_or(false);
+        )?
+        .unwrap_or(false);
         Ok(CqlValue::Boolean(!equal))
     } else {
         Ok(includes)
@@ -1079,7 +1261,10 @@ fn interval_proper_includes(container: &CqlInterval, contained: &CqlInterval) ->
 }
 
 /// Check if interval properly contains a point (point is strictly inside)
-fn interval_proper_contains_point(interval: &CqlInterval, point: &CqlValue) -> EvalResult<CqlValue> {
+fn interval_proper_contains_point(
+    interval: &CqlInterval,
+    point: &CqlValue,
+) -> EvalResult<CqlValue> {
     // Point must be strictly inside: low < point < high
     match (interval.low(), interval.high()) {
         (Some(low), Some(high)) => {
@@ -1146,19 +1331,22 @@ fn list_proper_contains(list: &CqlList, element: &CqlValue) -> EvalResult<CqlVal
     match &contains {
         CqlValue::Boolean(true) => {
             // Check if list has more than just this element
-            let count = list.iter().filter(|item| {
-                if element.is_null() && item.is_null() {
-                    true
-                } else {
-                    cql_equal(item, element).unwrap_or(None).unwrap_or(false)
-                }
-            }).count();
+            let count = list
+                .iter()
+                .filter(|item| {
+                    if element.is_null() && item.is_null() {
+                        true
+                    } else {
+                        cql_equal(item, element).unwrap_or(None).unwrap_or(false)
+                    }
+                })
+                .count();
 
             // Properly contains if list has more elements than just copies of this element
             Ok(CqlValue::Boolean(list.len() > count))
         }
         CqlValue::Null => Ok(CqlValue::Null), // Uncertain contains => uncertain proper contains
-        _ => Ok(contains), // Boolean(false) or other
+        _ => Ok(contains),                    // Boolean(false) or other
     }
 }
 
@@ -1187,10 +1375,10 @@ fn interval_before(a: &CqlInterval, b: &CqlInterval) -> EvalResult<CqlValue> {
                     // effective_a_high = 9, effective_b_low = 10, so a is before b
                     if !a.high_closed && !b.low_closed {
                         // Check if they're adjacent (successor of b.low equals a.high)
-                        if let Some(succ_bl) = successor_value(bl)? {
-                            if cql_equal(ah, &succ_bl)?.unwrap_or(false) {
-                                return Ok(CqlValue::Boolean(true)); // a is before b
-                            }
+                        if let Some(succ_bl) = successor_value(bl)?
+                            && cql_equal(ah, &succ_bl)?.unwrap_or(false)
+                        {
+                            return Ok(CqlValue::Boolean(true)); // a is before b
                         }
                     }
                     Ok(CqlValue::Boolean(false))
@@ -1242,7 +1430,7 @@ fn interval_meets_before(a: &CqlInterval, b: &CqlInterval) -> EvalResult<CqlValu
 
     // Some bounds are null - check if we can still determine false
     // If a's known high < b's known low, they can't meet
-    if let (Some(ah), Some(bl)) = (a.high(), b.low()) {
+    if let (Some(_ah), Some(_bl)) = (a.high(), b.low()) {
         // Already handled above
     } else if let (Some(ah), None) = (a.high(), b.low()) {
         // b.low is unknown, check if b.high < a.high (b ends before a ends)
@@ -1286,9 +1474,7 @@ fn interval_overlaps(a: &CqlInterval, b: &CqlInterval) -> EvalResult<CqlValue> {
     let after = interval_after(a, b)?;
 
     match (before, after) {
-        (CqlValue::Boolean(true), _) | (_, CqlValue::Boolean(true)) => {
-            Ok(CqlValue::Boolean(false))
-        }
+        (CqlValue::Boolean(true), _) | (_, CqlValue::Boolean(true)) => Ok(CqlValue::Boolean(false)),
         (CqlValue::Null, _) | (_, CqlValue::Null) => Ok(CqlValue::Null),
         _ => Ok(CqlValue::Boolean(true)),
     }
@@ -1329,7 +1515,12 @@ fn interval_overlaps_before(a: &CqlInterval, b: &CqlInterval) -> EvalResult<CqlV
 
 /// Compare interval start points, accounting for open/closed boundaries
 /// Returns true if a_start is strictly before b_start
-fn compare_interval_starts(a_low: &CqlValue, a_low_closed: bool, b_low: &CqlValue, b_low_closed: bool) -> EvalResult<bool> {
+fn compare_interval_starts(
+    a_low: &CqlValue,
+    a_low_closed: bool,
+    b_low: &CqlValue,
+    b_low_closed: bool,
+) -> EvalResult<bool> {
     // For discrete types (Integer), compute effective starts
     // Open boundary (3, ...] has effective start at successor(3) = 4
     // Closed boundary [4, ...] has effective start at 4
@@ -1390,7 +1581,8 @@ fn interval_overlaps_after(a: &CqlInterval, b: &CqlInterval) -> EvalResult<CqlVa
 
             // Also check that a starts before b ends (within b)
             // a.low must be < b.high (considering boundaries)
-            let a_starts_in_range = compare_starts_before_ends(al, a.low_closed, bh, b.high_closed)?;
+            let a_starts_in_range =
+                compare_starts_before_ends(al, a.low_closed, bh, b.high_closed)?;
             if !a_starts_in_range {
                 return Ok(CqlValue::Boolean(false));
             }
@@ -1406,7 +1598,12 @@ fn interval_overlaps_after(a: &CqlInterval, b: &CqlInterval) -> EvalResult<CqlVa
 
 /// Compare interval end points, accounting for open/closed boundaries
 /// Returns true if a_end is strictly after b_end
-fn compare_interval_ends(a_high: &CqlValue, a_high_closed: bool, b_high: &CqlValue, b_high_closed: bool) -> EvalResult<bool> {
+fn compare_interval_ends(
+    a_high: &CqlValue,
+    a_high_closed: bool,
+    b_high: &CqlValue,
+    b_high_closed: bool,
+) -> EvalResult<bool> {
     // For discrete types (Integer), compute effective ends
     // Open boundary [..., 11) has effective end at predecessor(11) = 10
     // Closed boundary [..., 10] has effective end at 10
@@ -1441,7 +1638,12 @@ fn compare_interval_ends(a_high: &CqlValue, a_high_closed: bool, b_high: &CqlVal
 }
 
 /// Check if a start point is before an end point (for checking if a starts within b)
-fn compare_starts_before_ends(a_low: &CqlValue, a_low_closed: bool, b_high: &CqlValue, b_high_closed: bool) -> EvalResult<bool> {
+fn compare_starts_before_ends(
+    a_low: &CqlValue,
+    a_low_closed: bool,
+    b_high: &CqlValue,
+    b_high_closed: bool,
+) -> EvalResult<bool> {
     let cmp = cql_compare(a_low, b_high)?;
     match cmp {
         Some(Ordering::Less) => Ok(true),
@@ -1472,16 +1674,14 @@ fn successor_value(value: &CqlValue) -> EvalResult<Option<CqlValue>> {
         }
         CqlValue::Decimal(d) => {
             // CQL Decimal has 8 decimal places precision, so step is 0.00000001
-            use rust_decimal::Decimal;
-            let step = Decimal::new(1, 8); // 0.00000001
-            Ok(Some(CqlValue::Decimal(*d + step)))
+            let step = BigDecimal::from_str("0.00000001").unwrap();
+            Ok(Some(CqlValue::Decimal(d + step)))
         }
         CqlValue::Quantity(q) => {
             // Same as Decimal, step is 0.00000001
-            use rust_decimal::Decimal;
-            let step = Decimal::new(1, 8);
+            let step = BigDecimal::from_str("0.00000001").unwrap();
             let mut new_q = q.clone();
-            new_q.value = q.value + step;
+            new_q.value += step;
             Ok(Some(CqlValue::Quantity(new_q)))
         }
         CqlValue::Date(d) => {
@@ -1678,12 +1878,10 @@ fn successor_value(value: &CqlValue) -> EvalResult<Option<CqlValue>> {
                     new_t.hour = t.hour + 1;
                     new_t.minute = Some(0);
                 }
+            } else if t.hour < 23 {
+                new_t.hour = t.hour + 1;
             } else {
-                if t.hour < 23 {
-                    new_t.hour = t.hour + 1;
-                } else {
-                    return Ok(None);
-                }
+                return Ok(None);
             }
             Ok(Some(CqlValue::Time(new_t)))
         }
@@ -1827,26 +2025,22 @@ fn interval_union(a: &CqlInterval, b: &CqlInterval) -> EvalResult<CqlValue> {
 
     // Find min low and max high
     let (new_low, new_low_closed) = match (a.low(), b.low()) {
-        (Some(al), Some(bl)) => {
-            match cql_compare(al, bl)? {
-                Some(Ordering::Less) => (Some(al.clone()), a.low_closed),
-                Some(Ordering::Greater) => (Some(bl.clone()), b.low_closed),
-                Some(Ordering::Equal) => (Some(al.clone()), a.low_closed || b.low_closed),
-                None => return Ok(CqlValue::Null),
-            }
-        }
+        (Some(al), Some(bl)) => match cql_compare(al, bl)? {
+            Some(Ordering::Less) => (Some(al.clone()), a.low_closed),
+            Some(Ordering::Greater) => (Some(bl.clone()), b.low_closed),
+            Some(Ordering::Equal) => (Some(al.clone()), a.low_closed || b.low_closed),
+            None => return Ok(CqlValue::Null),
+        },
         (None, _) | (_, None) => (None, true),
     };
 
     let (new_high, new_high_closed) = match (a.high(), b.high()) {
-        (Some(ah), Some(bh)) => {
-            match cql_compare(ah, bh)? {
-                Some(Ordering::Greater) => (Some(ah.clone()), a.high_closed),
-                Some(Ordering::Less) => (Some(bh.clone()), b.high_closed),
-                Some(Ordering::Equal) => (Some(ah.clone()), a.high_closed || b.high_closed),
-                None => return Ok(CqlValue::Null),
-            }
-        }
+        (Some(ah), Some(bh)) => match cql_compare(ah, bh)? {
+            Some(Ordering::Greater) => (Some(ah.clone()), a.high_closed),
+            Some(Ordering::Less) => (Some(bh.clone()), b.high_closed),
+            Some(Ordering::Equal) => (Some(ah.clone()), a.high_closed || b.high_closed),
+            None => return Ok(CqlValue::Null),
+        },
         (None, _) | (_, None) => (None, true),
     };
 
@@ -1863,14 +2057,12 @@ fn interval_intersect(a: &CqlInterval, b: &CqlInterval) -> EvalResult<CqlValue> 
     // Find max low and min high
     // For null boundaries: null represents "unknown", so we keep it when we can't determine
     let (new_low, new_low_closed) = match (a.low(), b.low()) {
-        (Some(al), Some(bl)) => {
-            match cql_compare(al, bl)? {
-                Some(Ordering::Greater) => (Some(al.clone()), a.low_closed),
-                Some(Ordering::Less) => (Some(bl.clone()), b.low_closed),
-                Some(Ordering::Equal) => (Some(al.clone()), a.low_closed && b.low_closed),
-                None => return Ok(CqlValue::Null),
-            }
-        }
+        (Some(al), Some(bl)) => match cql_compare(al, bl)? {
+            Some(Ordering::Greater) => (Some(al.clone()), a.low_closed),
+            Some(Ordering::Less) => (Some(bl.clone()), b.low_closed),
+            Some(Ordering::Equal) => (Some(al.clone()), a.low_closed && b.low_closed),
+            None => return Ok(CqlValue::Null),
+        },
         // If one low is null, use the other (higher is more restrictive for intersection)
         (Some(l), None) => (Some(l.clone()), a.low_closed),
         (None, Some(l)) => (Some(l.clone()), b.low_closed),
@@ -1878,14 +2070,12 @@ fn interval_intersect(a: &CqlInterval, b: &CqlInterval) -> EvalResult<CqlValue> 
     };
 
     let (new_high, new_high_closed) = match (a.high(), b.high()) {
-        (Some(ah), Some(bh)) => {
-            match cql_compare(ah, bh)? {
-                Some(Ordering::Less) => (Some(ah.clone()), a.high_closed),
-                Some(Ordering::Greater) => (Some(bh.clone()), b.high_closed),
-                Some(Ordering::Equal) => (Some(ah.clone()), a.high_closed && b.high_closed),
-                None => return Ok(CqlValue::Null),
-            }
-        }
+        (Some(ah), Some(bh)) => match cql_compare(ah, bh)? {
+            Some(Ordering::Less) => (Some(ah.clone()), a.high_closed),
+            Some(Ordering::Greater) => (Some(bh.clone()), b.high_closed),
+            Some(Ordering::Equal) => (Some(ah.clone()), a.high_closed && b.high_closed),
+            None => return Ok(CqlValue::Null),
+        },
         // If one high is null (unknown), keep null since we don't know the bound
         (Some(_), None) => (None, b.high_closed),
         (None, Some(_)) => (None, a.high_closed),
@@ -1952,7 +2142,10 @@ fn interval_except(a: &CqlInterval, b: &CqlInterval) -> EvalResult<CqlValue> {
     // Check if b ends after a starts and starts after a starts
     let b_ends_after_a_starts = match (b.high(), a.low()) {
         (Some(bh), Some(al)) => {
-            matches!(cql_compare(bh, al)?, Some(Ordering::Greater | Ordering::Equal))
+            matches!(
+                cql_compare(bh, al)?,
+                Some(Ordering::Greater | Ordering::Equal)
+            )
         }
         _ => false,
     };
@@ -2011,19 +2204,23 @@ fn interval_except(a: &CqlInterval, b: &CqlInterval) -> EvalResult<CqlValue> {
 fn predecessor(value: &CqlValue) -> CqlValue {
     match value {
         CqlValue::Integer(n) => CqlValue::Integer(n - 1),
-        CqlValue::Decimal(d) => CqlValue::Decimal(*d - rust_decimal::Decimal::new(1, 8)), // 0.00000001
+        CqlValue::Decimal(d) => CqlValue::Decimal(d - BigDecimal::from_str("0.00000001").unwrap()), // 0.00000001
         CqlValue::Date(dt) => {
-            use chrono::{Duration, Datelike};
+            use chrono::{Datelike, Duration};
             if let Some(naive) = dt.to_naive_date() {
                 let pred = naive - Duration::days(1);
-                CqlValue::Date(CqlDate::new(pred.year(), pred.month() as u8, pred.day() as u8))
+                CqlValue::Date(CqlDate::new(
+                    pred.year(),
+                    pred.month() as u8,
+                    pred.day() as u8,
+                ))
             } else {
                 value.clone()
             }
         }
         CqlValue::DateTime(dt) => {
             // Subtract based on the lowest precision present
-            use chrono::{Duration, Datelike, Timelike, NaiveDateTime, NaiveDate, NaiveTime};
+            use chrono::{Datelike, Duration, NaiveDate, NaiveDateTime, NaiveTime, Timelike};
             // Need month and day to construct a proper date
             let (Some(month), Some(day)) = (dt.month, dt.day) else {
                 return value.clone();
@@ -2052,9 +2249,21 @@ fn predecessor(value: &CqlValue) -> CqlValue {
                     year: pred.year(),
                     month: Some(pred.month() as u8),
                     day: Some(pred.day() as u8),
-                    hour: if dt.hour.is_some() { Some(pred.hour() as u8) } else { None },
-                    minute: if dt.minute.is_some() { Some(pred.minute() as u8) } else { None },
-                    second: if dt.second.is_some() { Some(pred.second() as u8) } else { None },
+                    hour: if dt.hour.is_some() {
+                        Some(pred.hour() as u8)
+                    } else {
+                        None
+                    },
+                    minute: if dt.minute.is_some() {
+                        Some(pred.minute() as u8)
+                    } else {
+                        None
+                    },
+                    second: if dt.second.is_some() {
+                        Some(pred.second() as u8)
+                    } else {
+                        None
+                    },
                     millisecond: if dt.millisecond.is_some() {
                         Some((pred.nanosecond() / 1_000_000) as u16)
                     } else {
@@ -2075,12 +2284,10 @@ fn predecessor(value: &CqlValue) -> CqlValue {
                 millisecond: t.millisecond.map(|ms| if ms > 0 { ms - 1 } else { 999 }),
             })
         }
-        CqlValue::Quantity(q) => {
-            CqlValue::Quantity(octofhir_cql_types::CqlQuantity {
-                value: q.value - rust_decimal::Decimal::new(1, 8),
-                unit: q.unit.clone(),
-            })
-        }
+        CqlValue::Quantity(q) => CqlValue::Quantity(octofhir_cql_types::CqlQuantity {
+            value: q.value.clone() - BigDecimal::from_str("0.00000001").unwrap(),
+            unit: q.unit.clone(),
+        }),
         _ => value.clone(),
     }
 }
@@ -2089,19 +2296,23 @@ fn predecessor(value: &CqlValue) -> CqlValue {
 fn successor(value: &CqlValue) -> CqlValue {
     match value {
         CqlValue::Integer(n) => CqlValue::Integer(n + 1),
-        CqlValue::Decimal(d) => CqlValue::Decimal(*d + rust_decimal::Decimal::new(1, 8)),
+        CqlValue::Decimal(d) => CqlValue::Decimal(d + BigDecimal::from_str("0.00000001").unwrap()),
         CqlValue::Date(dt) => {
-            use chrono::{Duration, Datelike};
+            use chrono::{Datelike, Duration};
             if let Some(naive) = dt.to_naive_date() {
                 let succ = naive + Duration::days(1);
-                CqlValue::Date(CqlDate::new(succ.year(), succ.month() as u8, succ.day() as u8))
+                CqlValue::Date(CqlDate::new(
+                    succ.year(),
+                    succ.month() as u8,
+                    succ.day() as u8,
+                ))
             } else {
                 value.clone()
             }
         }
         CqlValue::DateTime(dt) => {
             // Add based on the lowest precision present
-            use chrono::{Duration, Datelike, Timelike, NaiveDateTime, NaiveDate, NaiveTime};
+            use chrono::{Datelike, Duration, NaiveDate, NaiveDateTime, NaiveTime, Timelike};
             // Need month and day to construct a proper date
             let (Some(month), Some(day)) = (dt.month, dt.day) else {
                 return value.clone();
@@ -2130,9 +2341,21 @@ fn successor(value: &CqlValue) -> CqlValue {
                     year: succ.year(),
                     month: Some(succ.month() as u8),
                     day: Some(succ.day() as u8),
-                    hour: if dt.hour.is_some() { Some(succ.hour() as u8) } else { None },
-                    minute: if dt.minute.is_some() { Some(succ.minute() as u8) } else { None },
-                    second: if dt.second.is_some() { Some(succ.second() as u8) } else { None },
+                    hour: if dt.hour.is_some() {
+                        Some(succ.hour() as u8)
+                    } else {
+                        None
+                    },
+                    minute: if dt.minute.is_some() {
+                        Some(succ.minute() as u8)
+                    } else {
+                        None
+                    },
+                    second: if dt.second.is_some() {
+                        Some(succ.second() as u8)
+                    } else {
+                        None
+                    },
                     millisecond: if dt.millisecond.is_some() {
                         Some((succ.nanosecond() / 1_000_000) as u16)
                     } else {
@@ -2146,7 +2369,7 @@ fn successor(value: &CqlValue) -> CqlValue {
         }
         CqlValue::Time(t) => {
             // Add based on the lowest precision present
-            use chrono::{Duration, Timelike, NaiveTime};
+            use chrono::{Duration, NaiveTime, Timelike};
             let naive = NaiveTime::from_hms_milli_opt(
                 t.hour as u32,
                 t.minute.unwrap_or(0) as u32,
@@ -2165,8 +2388,16 @@ fn successor(value: &CqlValue) -> CqlValue {
                 };
                 CqlValue::Time(octofhir_cql_types::CqlTime {
                     hour: succ.hour() as u8,
-                    minute: if t.minute.is_some() { Some(succ.minute() as u8) } else { None },
-                    second: if t.second.is_some() { Some(succ.second() as u8) } else { None },
+                    minute: if t.minute.is_some() {
+                        Some(succ.minute() as u8)
+                    } else {
+                        None
+                    },
+                    second: if t.second.is_some() {
+                        Some(succ.second() as u8)
+                    } else {
+                        None
+                    },
                     millisecond: if t.millisecond.is_some() {
                         Some((succ.nanosecond() / 1_000_000) as u16)
                     } else {
@@ -2177,12 +2408,10 @@ fn successor(value: &CqlValue) -> CqlValue {
                 value.clone()
             }
         }
-        CqlValue::Quantity(q) => {
-            CqlValue::Quantity(octofhir_cql_types::CqlQuantity {
-                value: q.value + rust_decimal::Decimal::new(1, 8),
-                unit: q.unit.clone(),
-            })
-        }
+        CqlValue::Quantity(q) => CqlValue::Quantity(octofhir_cql_types::CqlQuantity {
+            value: q.value.clone() + BigDecimal::from_str("0.00000001").unwrap(),
+            unit: q.unit.clone(),
+        }),
         _ => value.clone(),
     }
 }
@@ -2205,7 +2434,9 @@ fn collapse_intervals(list: &CqlList) -> EvalResult<CqlValue> {
     }
 
     if intervals.is_empty() {
-        return Ok(CqlValue::List(CqlList::new(CqlType::interval(CqlType::Any))));
+        return Ok(CqlValue::List(CqlList::new(CqlType::interval(
+            CqlType::Any,
+        ))));
     }
 
     let point_type = intervals[0].point_type.clone();
@@ -2216,9 +2447,9 @@ fn collapse_intervals(list: &CqlList) -> EvalResult<CqlValue> {
             (None, None) => Ordering::Equal,
             (None, Some(_)) => Ordering::Less, // Null low = -infinity
             (Some(_), None) => Ordering::Greater,
-            (Some(al), Some(bl)) => {
-                cql_compare(al, bl).unwrap_or(None).unwrap_or(Ordering::Equal)
-            }
+            (Some(al), Some(bl)) => cql_compare(al, bl)
+                .unwrap_or(None)
+                .unwrap_or(Ordering::Equal),
         }
     });
 
@@ -2297,11 +2528,9 @@ fn is_adjacent(high: &CqlValue, low: &CqlValue, high_closed: bool, low_closed: b
     // If one boundary is open and the other is closed, they're adjacent if values differ by 1
     match (high, low) {
         (CqlValue::Integer(h), CqlValue::Integer(l)) => {
-            if high_closed && low_closed {
+            if high_closed || low_closed {
                 *h + 1 >= *l
-            } else if high_closed {
-                *h + 1 >= *l
-            } else if low_closed {
+            } else if *h + 1 == *l {
                 *h >= *l - 1
             } else {
                 *h + 1 >= *l - 1
@@ -2309,8 +2538,8 @@ fn is_adjacent(high: &CqlValue, low: &CqlValue, high_closed: bool, low_closed: b
         }
         (CqlValue::Decimal(h), CqlValue::Decimal(l)) => {
             // For decimals, consider adjacent if difference is very small
-            let diff = (*l - *h).abs();
-            diff < rust_decimal::Decimal::new(1, 7) // 0.0000001
+            let diff = (l - h).abs();
+            diff < BigDecimal::from_str("0.0000001").unwrap() // 0.0000001
         }
         (CqlValue::DateTime(h), CqlValue::DateTime(l)) => {
             // Check if DateTime values are adjacent (within 1 day or 1 millisecond)
@@ -2344,17 +2573,13 @@ fn is_adjacent(high: &CqlValue, low: &CqlValue, high_closed: bool, low_closed: b
                 if let (Some(h_day), Some(l_day)) = (h.day, l.day) {
                     if h.year == l.year && h_month == l_month {
                         high_closed && low_closed && h_day + 1 >= l_day
-                    } else if h.year == l.year && h_month + 1 == l_month && l_day == 1 {
-                        true
                     } else {
-                        false
+                        h.year == l.year && h_month + 1 == l_month && l_day == 1
                     }
+                } else if h.year == l.year {
+                    high_closed && low_closed && h_month + 1 >= l_month
                 } else {
-                    if h.year == l.year {
-                        high_closed && low_closed && h_month + 1 >= l_month
-                    } else {
-                        false
-                    }
+                    false
                 }
             } else {
                 high_closed && low_closed && h.year + 1 >= l.year
@@ -2399,7 +2624,7 @@ fn expand_interval(interval: &CqlInterval, per: Option<&CqlValue>) -> EvalResult
         Some(CqlValue::Integer(n)) => *n,
         Some(CqlValue::Decimal(d)) => {
             // For decimal step, handle separately
-            return expand_interval_decimal(interval, *d);
+            return expand_interval_decimal(interval, d.clone());
         }
         Some(CqlValue::Quantity(q)) => {
             // For quantity per, extract value and unit
@@ -2435,35 +2660,68 @@ fn expand_interval(interval: &CqlInterval, per: Option<&CqlValue>) -> EvalResult
                 }
                 (CqlValue::Date(l), CqlValue::Date(h)) => {
                     // For dates, expand to raw date values
-                    expand_date_interval_values(l, h, interval.low_closed, interval.high_closed, per)
+                    expand_date_interval_values(
+                        l,
+                        h,
+                        interval.low_closed,
+                        interval.high_closed,
+                        per,
+                    )
                 }
                 (CqlValue::DateTime(l), CqlValue::DateTime(h)) => {
                     // For datetimes, expand to raw datetime values
-                    expand_datetime_interval_values(l, h, interval.low_closed, interval.high_closed, per)
+                    expand_datetime_interval_values(
+                        l,
+                        h,
+                        interval.low_closed,
+                        interval.high_closed,
+                        per,
+                    )
                 }
                 (CqlValue::Time(l), CqlValue::Time(h)) => {
                     // For times, expand to raw time values
-                    expand_time_interval_values(l, h, interval.low_closed, interval.high_closed, per)
+                    expand_time_interval_values(
+                        l,
+                        h,
+                        interval.low_closed,
+                        interval.high_closed,
+                        per,
+                    )
                 }
                 // Handle Decimal bounds with Integer step - return Integer values
                 (CqlValue::Decimal(l), CqlValue::Decimal(h)) => {
-                    use rust_decimal::prelude::ToPrimitive;
+                    use num_traits::ToPrimitive;
+                    // Helper to calc ceil for BigDecimal
+                    let ceil_bd = |v: &BigDecimal| -> i32 {
+                        let v_i64 = v.to_i64().unwrap_or(0);
+                        if v > &BigDecimal::from(v_i64) {
+                            (v_i64 + 1) as i32
+                        } else {
+                            v_i64 as i32
+                        }
+                    };
+                    // Helper to calc floor for BigDecimal
+                    let floor_bd = |v: &BigDecimal| -> i32 {
+                        let v_i64 = v.to_i64().unwrap_or(0);
+                        if v < &BigDecimal::from(v_i64) {
+                            (v_i64 - 1) as i32
+                        } else {
+                            v_i64 as i32
+                        }
+                    };
+
                     // For Decimal intervals with Integer step, return Integer values
                     let start_int = if interval.low_closed {
-                        l.ceil().to_i32().unwrap_or(0) // Include the ceiling if closed
+                        ceil_bd(l) // Include the ceiling if closed
                     } else {
-                        l.floor().to_i32().unwrap_or(0) + 1 // Exclude the value, so floor + 1
+                        floor_bd(l) + 1 // Exclude the value, so floor + 1
                     };
                     let end_int = if interval.high_closed {
-                        h.floor().to_i32().unwrap_or(0) // Include the floor if closed
+                        floor_bd(h) // Include the floor if closed
                     } else {
                         // For open bound: if floor(h) < h, floor is valid; if floor(h) == h, exclude it
-                        let floored = h.floor();
-                        if floored < *h {
-                            floored.to_i32().unwrap_or(0)
-                        } else {
-                            floored.to_i32().unwrap_or(0) - 1
-                        }
+                        let f = floor_bd(h);
+                        if &BigDecimal::from(f) < h { f } else { f - 1 }
                     };
 
                     if start_int > end_int {
@@ -2490,10 +2748,13 @@ fn expand_interval(interval: &CqlInterval, per: Option<&CqlValue>) -> EvalResult
 
 /// Expand a single interval to a list of unit intervals (for list input)
 /// expand { Interval[1, 10] } => { Interval[1,1], Interval[2,2], ..., Interval[10,10] }
-fn expand_interval_to_unit_intervals(interval: &CqlInterval, per: Option<&CqlValue>) -> EvalResult<CqlValue> {
+fn expand_interval_to_unit_intervals(
+    interval: &CqlInterval,
+    per: Option<&CqlValue>,
+) -> EvalResult<CqlValue> {
     // Handle Decimal per parameter specially - produce Decimal intervals
     if let Some(CqlValue::Decimal(step_decimal)) = per {
-        return expand_interval_to_decimal_unit_intervals(interval, *step_decimal);
+        return expand_interval_to_decimal_unit_intervals(interval, step_decimal.clone());
     }
 
     // Get the step size from `per` parameter
@@ -2516,7 +2777,9 @@ fn expand_interval_to_unit_intervals(interval: &CqlInterval, per: Option<&CqlVal
                     let end = if interval.high_closed { *h } else { h - 1 };
 
                     if start > end {
-                        return Ok(CqlValue::List(CqlList::new(CqlType::Interval(Box::new(CqlType::Integer)))));
+                        return Ok(CqlValue::List(CqlList::new(CqlType::Interval(Box::new(
+                            CqlType::Integer,
+                        )))));
                     }
 
                     // Create list of intervals with width = step
@@ -2539,27 +2802,36 @@ fn expand_interval_to_unit_intervals(interval: &CqlInterval, per: Option<&CqlVal
                 }
                 // Handle Decimal intervals with Integer step - expand as Integer intervals
                 (CqlValue::Decimal(l), CqlValue::Decimal(h)) => {
-                    use rust_decimal::prelude::ToPrimitive;
+                    use num_traits::ToPrimitive;
+                    // Helper to calc ceil for BigDecimal
+                    let ceil_bd = |v: &BigDecimal| -> i64 {
+                        let v_i64 = v.to_i64().unwrap_or(0);
+                        if *v > v_i64 { v_i64 + 1 } else { v_i64 }
+                    };
+                    // Helper to calc floor for BigDecimal
+                    let floor_bd = |v: &BigDecimal| -> i64 {
+                        let v_i64 = v.to_i64().unwrap_or(0);
+                        if *v < v_i64 { v_i64 - 1 } else { v_i64 }
+                    };
+
                     // For Decimal intervals, produce Integer unit intervals
                     let start_int = if interval.low_closed {
-                        l.ceil().to_i64().unwrap_or(0) // Include the ceiling if closed
+                        ceil_bd(l) // Include the ceiling if closed
                     } else {
-                        l.floor().to_i64().unwrap_or(0) + 1 // Exclude the value
+                        floor_bd(l) + 1 // Exclude the value
                     };
                     let end_int = if interval.high_closed {
-                        h.floor().to_i64().unwrap_or(0) // Include the floor if closed
+                        floor_bd(h) // Include the floor if closed
                     } else {
                         // For open bound: if floor(h) < h, floor is valid; if floor(h) == h, exclude it
-                        let floored = h.floor();
-                        if floored < *h {
-                            floored.to_i64().unwrap_or(0)
-                        } else {
-                            floored.to_i64().unwrap_or(0) - 1
-                        }
+                        let f = floor_bd(h);
+                        if *h > f { f } else { f - 1 }
                     };
 
                     if start_int > end_int {
-                        return Ok(CqlValue::List(CqlList::new(CqlType::Interval(Box::new(CqlType::Integer)))));
+                        return Ok(CqlValue::List(CqlList::new(CqlType::Interval(Box::new(
+                            CqlType::Integer,
+                        )))));
                     }
 
                     let mut elements = Vec::new();
@@ -2579,14 +2851,31 @@ fn expand_interval_to_unit_intervals(interval: &CqlInterval, per: Option<&CqlVal
                     }))
                 }
                 (CqlValue::Date(l), CqlValue::Date(h)) => {
-                    expand_date_interval_unit_intervals_with_step(l, h, interval.low_closed, interval.high_closed, step, per)
+                    expand_date_interval_unit_intervals_with_step(
+                        l,
+                        h,
+                        interval.low_closed,
+                        interval.high_closed,
+                        step,
+                        per,
+                    )
                 }
                 (CqlValue::DateTime(l), CqlValue::DateTime(h)) => {
-                    expand_datetime_interval_unit_intervals(l, h, interval.low_closed, interval.high_closed, per)
+                    expand_datetime_interval_unit_intervals(
+                        l,
+                        h,
+                        interval.low_closed,
+                        interval.high_closed,
+                        per,
+                    )
                 }
-                (CqlValue::Time(l), CqlValue::Time(h)) => {
-                    expand_time_interval_unit_intervals(l, h, interval.low_closed, interval.high_closed, per)
-                }
+                (CqlValue::Time(l), CqlValue::Time(h)) => expand_time_interval_unit_intervals(
+                    l,
+                    h,
+                    interval.low_closed,
+                    interval.high_closed,
+                    per,
+                ),
                 _ => Ok(CqlValue::Null),
             }
         }
@@ -2595,8 +2884,8 @@ fn expand_interval_to_unit_intervals(interval: &CqlInterval, per: Option<&CqlVal
 }
 
 /// Expand interval with decimal step
-fn expand_interval_decimal(interval: &CqlInterval, step: rust_decimal::Decimal) -> EvalResult<CqlValue> {
-    use rust_decimal::Decimal;
+fn expand_interval_decimal(interval: &CqlInterval, step: BigDecimal) -> EvalResult<CqlValue> {
+    use num_traits::One;
 
     match (&interval.low, &interval.high) {
         (Some(low), Some(high)) => {
@@ -2604,21 +2893,29 @@ fn expand_interval_decimal(interval: &CqlInterval, step: rust_decimal::Decimal) 
             let (start_dec, end_dec) = match (low.as_ref(), high.as_ref()) {
                 (CqlValue::Integer(l), CqlValue::Integer(h)) => {
                     let start = if interval.low_closed {
-                        Decimal::from(*l)
+                        BigDecimal::from(*l)
                     } else {
-                        Decimal::from(*l) + Decimal::ONE
+                        BigDecimal::from(*l) + BigDecimal::one()
                     };
                     // For Integer high, the effective end for Decimal expansion is h + 1 - step
                     let end = if interval.high_closed {
-                        Decimal::from(*h) + Decimal::ONE - step
+                        BigDecimal::from(*h) + BigDecimal::one() - &step
                     } else {
-                        Decimal::from(*h) - step
+                        BigDecimal::from(*h) - &step
                     };
                     (start, end)
                 }
                 (CqlValue::Decimal(l), CqlValue::Decimal(h)) => {
-                    let start = if interval.low_closed { *l } else { *l + step };
-                    let end = if interval.high_closed { *h } else { *h - step };
+                    let start = if interval.low_closed {
+                        l.clone()
+                    } else {
+                        l + &step
+                    };
+                    let end = if interval.high_closed {
+                        h.clone()
+                    } else {
+                        h - &step
+                    };
                     (start, end)
                 }
                 _ => return Ok(CqlValue::Null),
@@ -2631,8 +2928,8 @@ fn expand_interval_decimal(interval: &CqlInterval, step: rust_decimal::Decimal) 
             let mut elements = Vec::new();
             let mut current = start_dec;
             while current <= end_dec {
-                elements.push(CqlValue::Decimal(current));
-                current += step;
+                elements.push(CqlValue::Decimal(current.clone()));
+                current += &step;
                 // Safety check to prevent infinite loop
                 if elements.len() > 10000 {
                     break;
@@ -2649,8 +2946,11 @@ fn expand_interval_decimal(interval: &CqlInterval, step: rust_decimal::Decimal) 
 
 /// Expand interval to decimal unit intervals (for list input with decimal step)
 /// e.g., expand { Interval[10, 10] } per 0.1 => { Interval[10.0,10.0], Interval[10.1,10.1], ... }
-fn expand_interval_to_decimal_unit_intervals(interval: &CqlInterval, step: rust_decimal::Decimal) -> EvalResult<CqlValue> {
-    use rust_decimal::Decimal;
+fn expand_interval_to_decimal_unit_intervals(
+    interval: &CqlInterval,
+    step: BigDecimal,
+) -> EvalResult<CqlValue> {
+    use num_traits::One;
 
     match (&interval.low, &interval.high) {
         (Some(low), Some(high)) => {
@@ -2660,28 +2960,38 @@ fn expand_interval_to_decimal_unit_intervals(interval: &CqlInterval, step: rust_
             let (start_dec, end_dec) = match (low.as_ref(), high.as_ref()) {
                 (CqlValue::Integer(l), CqlValue::Integer(h)) => {
                     let start = if interval.low_closed {
-                        Decimal::from(*l)
+                        BigDecimal::from(*l)
                     } else {
-                        Decimal::from(*l) + Decimal::ONE
+                        BigDecimal::from(*l) + BigDecimal::one()
                     };
                     // For Integer high, the effective end for Decimal expansion is h + 1 - step
                     let end = if interval.high_closed {
-                        Decimal::from(*h) + Decimal::ONE - step
+                        BigDecimal::from(*h) + BigDecimal::one() - &step
                     } else {
-                        Decimal::from(*h) - step
+                        BigDecimal::from(*h) - &step
                     };
                     (start, end)
                 }
                 (CqlValue::Decimal(l), CqlValue::Decimal(h)) => {
-                    let start = if interval.low_closed { *l } else { *l + step };
-                    let end = if interval.high_closed { *h } else { *h - step };
+                    let start = if interval.low_closed {
+                        l.clone()
+                    } else {
+                        l + &step
+                    };
+                    let end = if interval.high_closed {
+                        h.clone()
+                    } else {
+                        h - &step
+                    };
                     (start, end)
                 }
                 _ => return Ok(CqlValue::Null),
             };
 
             if start_dec > end_dec {
-                return Ok(CqlValue::List(CqlList::new(CqlType::Interval(Box::new(CqlType::Decimal)))));
+                return Ok(CqlValue::List(CqlList::new(CqlType::Interval(Box::new(
+                    CqlType::Decimal,
+                )))));
             }
 
             // Create list of unit intervals
@@ -2690,10 +3000,10 @@ fn expand_interval_to_decimal_unit_intervals(interval: &CqlInterval, step: rust_
             while current <= end_dec {
                 elements.push(CqlValue::Interval(CqlInterval::closed(
                     CqlType::Decimal,
-                    CqlValue::Decimal(current),
-                    CqlValue::Decimal(current), // Unit interval: start = end
+                    CqlValue::Decimal(current.clone()),
+                    CqlValue::Decimal(current.clone()), // Unit interval: start = end
                 )));
-                current += step;
+                current += step.clone();
                 // Safety check to prevent infinite loop
                 if elements.len() > 10000 {
                     break;
@@ -2709,33 +3019,56 @@ fn expand_interval_to_decimal_unit_intervals(interval: &CqlInterval, step: rust_
 }
 
 /// Expand interval with quantity step (e.g., "2 days")
-fn expand_interval_with_quantity(interval: &CqlInterval, quantity: &octofhir_cql_types::CqlQuantity) -> EvalResult<CqlValue> {
+fn expand_interval_with_quantity(
+    interval: &CqlInterval,
+    quantity: &octofhir_cql_types::CqlQuantity,
+) -> EvalResult<CqlValue> {
     // Extract unit to determine what kind of expansion
     let unit = quantity.unit.as_deref().unwrap_or("");
     let value: i64 = quantity.value.to_string().parse().unwrap_or(1);
 
     match (&interval.low, &interval.high) {
-        (Some(low), Some(high)) => {
-            match (low.as_ref(), high.as_ref()) {
-                (CqlValue::Date(l), CqlValue::Date(h)) => {
-                    expand_date_interval_values_with_step(l, h, interval.low_closed, interval.high_closed, value, unit)
-                }
-                (CqlValue::DateTime(l), CqlValue::DateTime(h)) => {
-                    expand_datetime_interval_values_with_step(l, h, interval.low_closed, interval.high_closed, value, unit)
-                }
-                (CqlValue::Time(l), CqlValue::Time(h)) => {
-                    expand_time_interval_values_with_step(l, h, interval.low_closed, interval.high_closed, value, unit)
-                }
-                _ => Ok(CqlValue::Null),
+        (Some(low), Some(high)) => match (low.as_ref(), high.as_ref()) {
+            (CqlValue::Date(l), CqlValue::Date(h)) => expand_date_interval_values_with_step(
+                l,
+                h,
+                interval.low_closed,
+                interval.high_closed,
+                value,
+                unit,
+            ),
+            (CqlValue::DateTime(l), CqlValue::DateTime(h)) => {
+                expand_datetime_interval_values_with_step(
+                    l,
+                    h,
+                    interval.low_closed,
+                    interval.high_closed,
+                    value,
+                    unit,
+                )
             }
-        }
+            (CqlValue::Time(l), CqlValue::Time(h)) => expand_time_interval_values_with_step(
+                l,
+                h,
+                interval.low_closed,
+                interval.high_closed,
+                value,
+                unit,
+            ),
+            _ => Ok(CqlValue::Null),
+        },
         _ => Ok(CqlValue::Null),
     }
 }
 
 /// Expand a date interval to a list of unit intervals
-fn expand_date_interval(low: &CqlDate, high: &CqlDate, low_closed: bool, high_closed: bool) -> EvalResult<CqlValue> {
-    use chrono::{NaiveDate, Datelike, Duration};
+fn expand_date_interval(
+    low: &CqlDate,
+    high: &CqlDate,
+    low_closed: bool,
+    high_closed: bool,
+) -> EvalResult<CqlValue> {
+    use chrono::{Datelike, Duration, NaiveDate};
 
     let start_date = low.to_naive_date();
     let end_date = high.to_naive_date();
@@ -2743,14 +3076,20 @@ fn expand_date_interval(low: &CqlDate, high: &CqlDate, low_closed: bool, high_cl
     let (start, end): (NaiveDate, NaiveDate) = match (start_date, end_date) {
         (Some(s), Some(e)) => {
             let actual_start: NaiveDate = if low_closed { s } else { s + Duration::days(1) };
-            let actual_end: NaiveDate = if high_closed { e } else { e - Duration::days(1) };
+            let actual_end: NaiveDate = if high_closed {
+                e
+            } else {
+                e - Duration::days(1)
+            };
             (actual_start, actual_end)
         }
         _ => return Ok(CqlValue::Null),
     };
 
     if start > end {
-        return Ok(CqlValue::List(CqlList::new(CqlType::Interval(Box::new(CqlType::Date)))));
+        return Ok(CqlValue::List(CqlList::new(CqlType::Interval(Box::new(
+            CqlType::Date,
+        )))));
     }
 
     let mut elements = Vec::new();
@@ -2762,7 +3101,7 @@ fn expand_date_interval(low: &CqlDate, high: &CqlDate, low_closed: bool, high_cl
             CqlValue::Date(date.clone()),
             CqlValue::Date(date),
         )));
-        current = current + Duration::days(1);
+        current += Duration::days(1);
     }
 
     Ok(CqlValue::List(CqlList {
@@ -2772,7 +3111,12 @@ fn expand_date_interval(low: &CqlDate, high: &CqlDate, low_closed: bool, high_cl
 }
 
 /// Expand a datetime interval to a list of unit intervals
-fn expand_datetime_interval(low: &CqlDateTime, high: &CqlDateTime, low_closed: bool, high_closed: bool) -> EvalResult<CqlValue> {
+fn expand_datetime_interval(
+    low: &CqlDateTime,
+    high: &CqlDateTime,
+    low_closed: bool,
+    high_closed: bool,
+) -> EvalResult<CqlValue> {
     // For datetimes, expand by the precision of the endpoints (typically day)
     // This is a simplified implementation that expands by day
 
@@ -2784,28 +3128,26 @@ fn expand_datetime_interval(low: &CqlDateTime, high: &CqlDateTime, low_closed: b
     // Convert Date intervals to DateTime intervals
     match result {
         CqlValue::List(list) => {
-            let elements: Vec<CqlValue> = list.elements.into_iter().map(|elem| {
-                match &elem {
-                    CqlValue::Interval(i) => {
-                        match (&i.low, &i.high) {
-                            (Some(low), Some(high)) => {
-                                match (low.as_ref(), high.as_ref()) {
-                                    (CqlValue::Date(d1), CqlValue::Date(d2)) => {
-                                        CqlValue::Interval(CqlInterval::closed(
-                                            CqlType::DateTime,
-                                            CqlValue::DateTime(CqlDateTime::from_date(d1.clone())),
-                                            CqlValue::DateTime(CqlDateTime::from_date(d2.clone())),
-                                        ))
-                                    }
-                                    _ => elem,
-                                }
+            let elements: Vec<CqlValue> = list
+                .elements
+                .into_iter()
+                .map(|elem| match &elem {
+                    CqlValue::Interval(i) => match (&i.low, &i.high) {
+                        (Some(low), Some(high)) => match (low.as_ref(), high.as_ref()) {
+                            (CqlValue::Date(d1), CqlValue::Date(d2)) => {
+                                CqlValue::Interval(CqlInterval::closed(
+                                    CqlType::DateTime,
+                                    CqlValue::DateTime(CqlDateTime::from_date(d1.clone())),
+                                    CqlValue::DateTime(CqlDateTime::from_date(d2.clone())),
+                                ))
                             }
                             _ => elem,
-                        }
-                    }
+                        },
+                        _ => elem,
+                    },
                     _ => elem,
-                }
-            }).collect();
+                })
+                .collect();
             Ok(CqlValue::List(CqlList {
                 element_type: CqlType::Interval(Box::new(CqlType::DateTime)),
                 elements,
@@ -2816,8 +3158,14 @@ fn expand_datetime_interval(low: &CqlDateTime, high: &CqlDateTime, low_closed: b
 }
 
 /// Expand date interval to raw date values (for single interval input)
-fn expand_date_interval_values(low: &CqlDate, high: &CqlDate, low_closed: bool, high_closed: bool, _per: Option<&CqlValue>) -> EvalResult<CqlValue> {
-    use chrono::{NaiveDate, Datelike, Duration};
+fn expand_date_interval_values(
+    low: &CqlDate,
+    high: &CqlDate,
+    low_closed: bool,
+    high_closed: bool,
+    _per: Option<&CqlValue>,
+) -> EvalResult<CqlValue> {
+    use chrono::{Datelike, Duration, NaiveDate};
 
     let start_date = low.to_naive_date();
     let end_date = high.to_naive_date();
@@ -2825,7 +3173,11 @@ fn expand_date_interval_values(low: &CqlDate, high: &CqlDate, low_closed: bool, 
     let (start, end): (NaiveDate, NaiveDate) = match (start_date, end_date) {
         (Some(s), Some(e)) => {
             let actual_start: NaiveDate = if low_closed { s } else { s + Duration::days(1) };
-            let actual_end: NaiveDate = if high_closed { e } else { e - Duration::days(1) };
+            let actual_end: NaiveDate = if high_closed {
+                e
+            } else {
+                e - Duration::days(1)
+            };
             (actual_start, actual_end)
         }
         _ => return Ok(CqlValue::Null),
@@ -2840,7 +3192,7 @@ fn expand_date_interval_values(low: &CqlDate, high: &CqlDate, low_closed: bool, 
     while current <= end {
         let date = CqlDate::new(current.year(), current.month() as u8, current.day() as u8);
         elements.push(CqlValue::Date(date));
-        current = current + Duration::days(1);
+        current += Duration::days(1);
     }
 
     Ok(CqlValue::List(CqlList {
@@ -2850,18 +3202,27 @@ fn expand_date_interval_values(low: &CqlDate, high: &CqlDate, low_closed: bool, 
 }
 
 /// Expand datetime interval to raw datetime values (for single interval input)
-fn expand_datetime_interval_values(low: &CqlDateTime, high: &CqlDateTime, low_closed: bool, high_closed: bool, per: Option<&CqlValue>) -> EvalResult<CqlValue> {
+fn expand_datetime_interval_values(
+    low: &CqlDateTime,
+    high: &CqlDateTime,
+    low_closed: bool,
+    high_closed: bool,
+    per: Option<&CqlValue>,
+) -> EvalResult<CqlValue> {
     // Expand by day and convert to datetimes
-    let result = expand_date_interval_values(&low.date(), &high.date(), low_closed, high_closed, per)?;
+    let result =
+        expand_date_interval_values(&low.date(), &high.date(), low_closed, high_closed, per)?;
 
     match result {
         CqlValue::List(list) => {
-            let elements: Vec<CqlValue> = list.elements.into_iter().map(|elem| {
-                match elem {
+            let elements: Vec<CqlValue> = list
+                .elements
+                .into_iter()
+                .map(|elem| match elem {
                     CqlValue::Date(d) => CqlValue::DateTime(CqlDateTime::from_date(d)),
                     other => other,
-                }
-            }).collect();
+                })
+                .collect();
             Ok(CqlValue::List(CqlList {
                 element_type: CqlType::DateTime,
                 elements,
@@ -2872,7 +3233,13 @@ fn expand_datetime_interval_values(low: &CqlDateTime, high: &CqlDateTime, low_cl
 }
 
 /// Expand time interval to raw time values (for single interval input)
-fn expand_time_interval_values(low: &octofhir_cql_types::CqlTime, high: &octofhir_cql_types::CqlTime, low_closed: bool, high_closed: bool, _per: Option<&CqlValue>) -> EvalResult<CqlValue> {
+fn expand_time_interval_values(
+    low: &octofhir_cql_types::CqlTime,
+    high: &octofhir_cql_types::CqlTime,
+    low_closed: bool,
+    high_closed: bool,
+    _per: Option<&CqlValue>,
+) -> EvalResult<CqlValue> {
     // For low bound: if closed, include low.hour; if open, start at low.hour + 1
     let start_hour = if low_closed { low.hour } else { low.hour + 1 };
 
@@ -2907,14 +3274,16 @@ fn expand_time_interval_values(low: &octofhir_cql_types::CqlTime, high: &octofhi
     }))
 }
 
-/// Expand date interval to unit intervals (for list input)
-fn expand_date_interval_unit_intervals(low: &CqlDate, high: &CqlDate, low_closed: bool, high_closed: bool, _per: Option<&CqlValue>) -> EvalResult<CqlValue> {
-    expand_date_interval(low, high, low_closed, high_closed)
-}
-
 /// Expand date interval to unit intervals with custom step (for `per N days`)
-fn expand_date_interval_unit_intervals_with_step(low: &CqlDate, high: &CqlDate, low_closed: bool, high_closed: bool, step: i64, per: Option<&CqlValue>) -> EvalResult<CqlValue> {
-    use chrono::{NaiveDate, Datelike, Duration};
+fn expand_date_interval_unit_intervals_with_step(
+    low: &CqlDate,
+    high: &CqlDate,
+    low_closed: bool,
+    high_closed: bool,
+    step: i64,
+    per: Option<&CqlValue>,
+) -> EvalResult<CqlValue> {
+    use chrono::{Datelike, Duration, NaiveDate};
 
     // Get the unit from per if it's a Quantity
     let unit = match per {
@@ -2926,7 +3295,7 @@ fn expand_date_interval_unit_intervals_with_step(low: &CqlDate, high: &CqlDate, 
         "day" | "days" | "d" => Duration::days(step),
         "week" | "weeks" | "wk" => Duration::weeks(step),
         "month" | "months" | "mo" => Duration::days(step * 30), // approximate
-        "year" | "years" | "a" => Duration::days(step * 365), // approximate
+        "year" | "years" | "a" => Duration::days(step * 365),   // approximate
         _ => Duration::days(step),
     };
 
@@ -2936,24 +3305,42 @@ fn expand_date_interval_unit_intervals_with_step(low: &CqlDate, high: &CqlDate, 
     let (start, end): (NaiveDate, NaiveDate) = match (start_date, end_date) {
         (Some(s), Some(e)) => {
             let actual_start: NaiveDate = if low_closed { s } else { s + Duration::days(1) };
-            let actual_end: NaiveDate = if high_closed { e } else { e - Duration::days(1) };
+            let actual_end: NaiveDate = if high_closed {
+                e
+            } else {
+                e - Duration::days(1)
+            };
             (actual_start, actual_end)
         }
         _ => return Ok(CqlValue::Null),
     };
 
     if start > end {
-        return Ok(CqlValue::List(CqlList::new(CqlType::Interval(Box::new(CqlType::Date)))));
+        return Ok(CqlValue::List(CqlList::new(CqlType::Interval(Box::new(
+            CqlType::Date,
+        )))));
     }
 
     let mut elements = Vec::new();
     let mut interval_start = start;
     while interval_start <= end {
         let interval_end_candidate = interval_start + duration - Duration::days(1);
-        let interval_end = if interval_end_candidate > end { end } else { interval_end_candidate };
+        let interval_end = if interval_end_candidate > end {
+            end
+        } else {
+            interval_end_candidate
+        };
 
-        let d1 = CqlDate::new(interval_start.year(), interval_start.month() as u8, interval_start.day() as u8);
-        let d2 = CqlDate::new(interval_end.year(), interval_end.month() as u8, interval_end.day() as u8);
+        let d1 = CqlDate::new(
+            interval_start.year(),
+            interval_start.month() as u8,
+            interval_start.day() as u8,
+        );
+        let d2 = CqlDate::new(
+            interval_end.year(),
+            interval_end.month() as u8,
+            interval_end.day() as u8,
+        );
 
         elements.push(CqlValue::Interval(CqlInterval::closed(
             CqlType::Date,
@@ -2961,7 +3348,7 @@ fn expand_date_interval_unit_intervals_with_step(low: &CqlDate, high: &CqlDate, 
             CqlValue::Date(d2),
         )));
 
-        interval_start = interval_start + duration;
+        interval_start += duration;
     }
 
     Ok(CqlValue::List(CqlList {
@@ -2971,12 +3358,24 @@ fn expand_date_interval_unit_intervals_with_step(low: &CqlDate, high: &CqlDate, 
 }
 
 /// Expand datetime interval to unit intervals (for list input)
-fn expand_datetime_interval_unit_intervals(low: &CqlDateTime, high: &CqlDateTime, low_closed: bool, high_closed: bool, _per: Option<&CqlValue>) -> EvalResult<CqlValue> {
+fn expand_datetime_interval_unit_intervals(
+    low: &CqlDateTime,
+    high: &CqlDateTime,
+    low_closed: bool,
+    high_closed: bool,
+    _per: Option<&CqlValue>,
+) -> EvalResult<CqlValue> {
     expand_datetime_interval(low, high, low_closed, high_closed)
 }
 
 /// Expand time interval to unit intervals (for list input)
-fn expand_time_interval_unit_intervals(low: &octofhir_cql_types::CqlTime, high: &octofhir_cql_types::CqlTime, low_closed: bool, high_closed: bool, per: Option<&CqlValue>) -> EvalResult<CqlValue> {
+fn expand_time_interval_unit_intervals(
+    low: &octofhir_cql_types::CqlTime,
+    high: &octofhir_cql_types::CqlTime,
+    low_closed: bool,
+    high_closed: bool,
+    per: Option<&CqlValue>,
+) -> EvalResult<CqlValue> {
     // Check if the requested expansion unit is more precise than the interval's precision
     // If expanding per minute/second/ms but interval only has hour precision, return empty
     if let Some(CqlValue::Quantity(q)) = per {
@@ -2985,19 +3384,25 @@ fn expand_time_interval_unit_intervals(low: &octofhir_cql_types::CqlTime, high: 
             "minute" | "minutes" | "min" => {
                 // If interval doesn't have minute precision, return empty
                 if low.minute.is_none() || high.minute.is_none() {
-                    return Ok(CqlValue::List(CqlList::new(CqlType::Interval(Box::new(CqlType::Time)))));
+                    return Ok(CqlValue::List(CqlList::new(CqlType::Interval(Box::new(
+                        CqlType::Time,
+                    )))));
                 }
             }
             "second" | "seconds" | "s" => {
                 // If interval doesn't have second precision, return empty
                 if low.second.is_none() || high.second.is_none() {
-                    return Ok(CqlValue::List(CqlList::new(CqlType::Interval(Box::new(CqlType::Time)))));
+                    return Ok(CqlValue::List(CqlList::new(CqlType::Interval(Box::new(
+                        CqlType::Time,
+                    )))));
                 }
             }
             "millisecond" | "milliseconds" | "ms" => {
                 // If interval doesn't have millisecond precision, return empty
                 if low.millisecond.is_none() || high.millisecond.is_none() {
-                    return Ok(CqlValue::List(CqlList::new(CqlType::Interval(Box::new(CqlType::Time)))));
+                    return Ok(CqlValue::List(CqlList::new(CqlType::Interval(Box::new(
+                        CqlType::Time,
+                    )))));
                 }
             }
             _ => {} // hour or other - proceed normally
@@ -3024,7 +3429,9 @@ fn expand_time_interval_unit_intervals(low: &octofhir_cql_types::CqlTime, high: 
     };
 
     if start_hour > end_hour {
-        return Ok(CqlValue::List(CqlList::new(CqlType::Interval(Box::new(CqlType::Time)))));
+        return Ok(CqlValue::List(CqlList::new(CqlType::Interval(Box::new(
+            CqlType::Time,
+        )))));
     }
 
     let mut elements = Vec::new();
@@ -3045,8 +3452,15 @@ fn expand_time_interval_unit_intervals(low: &octofhir_cql_types::CqlTime, high: 
 }
 
 /// Expand date interval with custom step (for quantity-based expansion)
-fn expand_date_interval_values_with_step(low: &CqlDate, high: &CqlDate, low_closed: bool, high_closed: bool, step: i64, unit: &str) -> EvalResult<CqlValue> {
-    use chrono::{NaiveDate, Datelike, Duration};
+fn expand_date_interval_values_with_step(
+    low: &CqlDate,
+    high: &CqlDate,
+    low_closed: bool,
+    high_closed: bool,
+    step: i64,
+    unit: &str,
+) -> EvalResult<CqlValue> {
+    use chrono::{Datelike, Duration, NaiveDate};
 
     let start_date = low.to_naive_date();
     let end_date = high.to_naive_date();
@@ -3054,7 +3468,11 @@ fn expand_date_interval_values_with_step(low: &CqlDate, high: &CqlDate, low_clos
     let (start, end): (NaiveDate, NaiveDate) = match (start_date, end_date) {
         (Some(s), Some(e)) => {
             let actual_start: NaiveDate = if low_closed { s } else { s + Duration::days(1) };
-            let actual_end: NaiveDate = if high_closed { e } else { e - Duration::days(1) };
+            let actual_end: NaiveDate = if high_closed {
+                e
+            } else {
+                e - Duration::days(1)
+            };
             (actual_start, actual_end)
         }
         _ => return Ok(CqlValue::Null),
@@ -3068,7 +3486,7 @@ fn expand_date_interval_values_with_step(low: &CqlDate, high: &CqlDate, low_clos
         "day" | "days" | "d" => Duration::days(step),
         "week" | "weeks" | "wk" => Duration::weeks(step),
         "month" | "months" | "mo" => Duration::days(step * 30), // approximate
-        "year" | "years" | "a" => Duration::days(step * 365), // approximate
+        "year" | "years" | "a" => Duration::days(step * 365),   // approximate
         _ => Duration::days(step),
     };
 
@@ -3077,7 +3495,7 @@ fn expand_date_interval_values_with_step(low: &CqlDate, high: &CqlDate, low_clos
     while current <= end {
         let date = CqlDate::new(current.year(), current.month() as u8, current.day() as u8);
         elements.push(CqlValue::Date(date));
-        current = current + duration;
+        current += duration;
     }
 
     Ok(CqlValue::List(CqlList {
@@ -3087,17 +3505,33 @@ fn expand_date_interval_values_with_step(low: &CqlDate, high: &CqlDate, low_clos
 }
 
 /// Expand datetime interval with custom step
-fn expand_datetime_interval_values_with_step(low: &CqlDateTime, high: &CqlDateTime, low_closed: bool, high_closed: bool, step: i64, unit: &str) -> EvalResult<CqlValue> {
-    let result = expand_date_interval_values_with_step(&low.date(), &high.date(), low_closed, high_closed, step, unit)?;
+fn expand_datetime_interval_values_with_step(
+    low: &CqlDateTime,
+    high: &CqlDateTime,
+    low_closed: bool,
+    high_closed: bool,
+    step: i64,
+    unit: &str,
+) -> EvalResult<CqlValue> {
+    let result = expand_date_interval_values_with_step(
+        &low.date(),
+        &high.date(),
+        low_closed,
+        high_closed,
+        step,
+        unit,
+    )?;
 
     match result {
         CqlValue::List(list) => {
-            let elements: Vec<CqlValue> = list.elements.into_iter().map(|elem| {
-                match elem {
+            let elements: Vec<CqlValue> = list
+                .elements
+                .into_iter()
+                .map(|elem| match elem {
                     CqlValue::Date(d) => CqlValue::DateTime(CqlDateTime::from_date(d)),
                     other => other,
-                }
-            }).collect();
+                })
+                .collect();
             Ok(CqlValue::List(CqlList {
                 element_type: CqlType::DateTime,
                 elements,
@@ -3108,7 +3542,14 @@ fn expand_datetime_interval_values_with_step(low: &CqlDateTime, high: &CqlDateTi
 }
 
 /// Expand time interval with custom step
-fn expand_time_interval_values_with_step(low: &octofhir_cql_types::CqlTime, high: &octofhir_cql_types::CqlTime, low_closed: bool, high_closed: bool, step: i64, unit: &str) -> EvalResult<CqlValue> {
+fn expand_time_interval_values_with_step(
+    low: &octofhir_cql_types::CqlTime,
+    high: &octofhir_cql_types::CqlTime,
+    low_closed: bool,
+    high_closed: bool,
+    step: i64,
+    unit: &str,
+) -> EvalResult<CqlValue> {
     let step_hours: u8 = match unit {
         "hour" | "hours" | "h" => step as u8,
         "minute" | "minutes" | "min" => 0, // not supported in hour precision
@@ -3212,11 +3653,8 @@ mod tests {
             CqlValue::Integer(1),
             CqlValue::Integer(10),
         );
-        let inner = CqlInterval::closed(
-            CqlType::Integer,
-            CqlValue::Integer(2),
-            CqlValue::Integer(8),
-        );
+        let inner =
+            CqlInterval::closed(CqlType::Integer, CqlValue::Integer(2), CqlValue::Integer(8));
 
         assert_eq!(
             interval_includes(&outer, &inner).unwrap(),
@@ -3230,16 +3668,8 @@ mod tests {
 
     #[test]
     fn test_interval_overlaps() {
-        let a = CqlInterval::closed(
-            CqlType::Integer,
-            CqlValue::Integer(1),
-            CqlValue::Integer(5),
-        );
-        let b = CqlInterval::closed(
-            CqlType::Integer,
-            CqlValue::Integer(3),
-            CqlValue::Integer(8),
-        );
+        let a = CqlInterval::closed(CqlType::Integer, CqlValue::Integer(1), CqlValue::Integer(5));
+        let b = CqlInterval::closed(CqlType::Integer, CqlValue::Integer(3), CqlValue::Integer(8));
         let c = CqlInterval::closed(
             CqlType::Integer,
             CqlValue::Integer(6),

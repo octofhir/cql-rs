@@ -11,7 +11,7 @@ repository.workspace = true
 octofhir-cql-ast = { workspace = true }
 octofhir-cql-diagnostics = { workspace = true }
 winnow = { workspace = true }
-rust_decimal = { workspace = true }
+bigdecimal = { workspace = true }
 
 [dev-dependencies]
 serde_json = { workspace = true }

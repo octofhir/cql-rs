@@ -2,11 +2,11 @@
 
 use super::{output, resolver};
 use anyhow::{Context, Result};
-use colored::*;
-use rustyline::error::ReadlineError;
+use colored::Colorize;
 use rustyline::DefaultEditor;
+use rustyline::error::ReadlineError;
 use std::collections::HashMap;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 /// Configuration for REPL
 pub struct ReplConfig {
@@ -22,9 +22,9 @@ struct ReplState {
     /// Defined expressions
     definitions: HashMap<String, String>,
     /// Data model
-    model: String,
+    _model: String,
     /// Model version
-    version: Option<String>,
+    _version: Option<String>,
 }
 
 impl ReplState {
@@ -32,8 +32,8 @@ impl ReplState {
         Self {
             resolver: resolver::LibraryResolver::new(config.library_paths),
             definitions: HashMap::new(),
-            model: config.model,
-            version: config.version,
+            _model: config.model,
+            _version: config.version,
         }
     }
 }
@@ -41,8 +41,16 @@ impl ReplState {
 /// Run the interactive REPL
 pub async fn run(config: ReplConfig) -> Result<()> {
     println!("{}", "CQL Interactive REPL".cyan().bold());
-    println!("Type {} for help, {} to quit", ":help".green(), ":quit".green());
-    println!("Model: {} {}", config.model, config.version.as_deref().unwrap_or("(default)"));
+    println!(
+        "Type {} for help, {} to quit",
+        ":help".green(),
+        ":quit".green()
+    );
+    println!(
+        "Model: {} {}",
+        config.model,
+        config.version.as_deref().unwrap_or("(default)")
+    );
     println!();
 
     let mut state = ReplState::new(config);
@@ -51,11 +59,10 @@ pub async fn run(config: ReplConfig) -> Result<()> {
     let mut rl = DefaultEditor::new()?;
 
     // Load history if it exists
-    let history_file = dirs::home_dir()
-        .map(|mut path| {
-            path.push(".cql_history");
-            path
-        });
+    let history_file = dirs::home_dir().map(|mut path| {
+        path.push(".cql_history");
+        path
+    });
 
     if let Some(ref path) = history_file {
         let _ = rl.load_history(path);
@@ -142,9 +149,7 @@ async fn handle_command(command: &str, state: &mut ReplState) -> Result<bool> {
             print_help();
             Ok(true)
         }
-        ":quit" | ":q" | ":exit" => {
-            Ok(false)
-        }
+        ":quit" | ":q" | ":exit" => Ok(false),
         ":clear" | ":c" => {
             state.definitions.clear();
             println!("{}", output::format_success("All definitions cleared"));
@@ -230,13 +235,14 @@ async fn evaluate_expression(expr: &str, _state: &ReplState) -> Result<String> {
 }
 
 /// Load a library file
-async fn handle_load(path: &PathBuf, state: &mut ReplState) -> Result<()> {
-    let content = state.resolver.resolve_path(path)
+async fn handle_load(path: &Path, state: &mut ReplState) -> Result<()> {
+    let content = state
+        .resolver
+        .resolve_path(path)
         .with_context(|| format!("Failed to load library: {}", path.display()))?;
 
     // Parse the library
-    let library = crate::parser::parse(&content)
-        .with_context(|| "Failed to parse library")?;
+    let library = crate::parser::parse(&content).with_context(|| "Failed to parse library")?;
 
     // Add all definitions to state
     use crate::ast::Statement;
@@ -245,17 +251,18 @@ async fn handle_load(path: &PathBuf, state: &mut ReplState) -> Result<()> {
             Statement::ExpressionDef(def) => def.name.name.clone(),
             Statement::FunctionDef(def) => def.name.name.clone(),
         };
-        state.definitions.insert(
-            name,
-            format!("(from {})", path.display())
-        );
+        state
+            .definitions
+            .insert(name, format!("(from {})", path.display()));
     }
 
-    let lib_name = library.definition
+    let lib_name = library
+        .definition
         .as_ref()
         .map(|d| d.name.name.name.clone())
         .unwrap_or_else(|| "(unnamed)".to_string());
-    let lib_version = library.definition
+    let lib_version = library
+        .definition
         .as_ref()
         .and_then(|d| d.version.as_ref())
         .map(|v| v.version.clone())
@@ -278,7 +285,11 @@ async fn handle_load(path: &PathBuf, state: &mut ReplState) -> Result<()> {
 fn handle_type(expr: &str, _state: &ReplState) -> Result<()> {
     // TODO: Implement type inference
     // For now, show a placeholder
-    println!("{}: {}", expr.cyan(), "(type inference not yet implemented)".yellow());
+    println!(
+        "{}: {}",
+        expr.cyan(),
+        "(type inference not yet implemented)".yellow()
+    );
     Ok(())
 }
 
@@ -302,14 +313,23 @@ fn print_help() {
     println!("  {}  Show this help message", ":help, :h".green());
     println!("  {}  Quit the REPL", ":quit, :q, :exit".green());
     println!("  {}  Clear all definitions", ":clear, :c".green());
-    println!("  {}  Load a library file", ":load <file>, :l <file>".green());
-    println!("  {}  Show type of expression", ":type <expr>, :t <expr>".green());
+    println!(
+        "  {}  Load a library file",
+        ":load <file>, :l <file>".green()
+    );
+    println!(
+        "  {}  Show type of expression",
+        ":type <expr>, :t <expr>".green()
+    );
     println!("  {}  List all definitions", ":list, :ls".green());
     println!("  {}  Show library search paths", ":paths".green());
     println!();
     println!("{}", "Expression Evaluation:".bold());
     println!();
-    println!("  {}  Define a named expression", "define Name: expression".cyan());
+    println!(
+        "  {}  Define a named expression",
+        "define Name: expression".cyan()
+    );
     println!("  {}  Evaluate an expression", "expression".cyan());
     println!();
     println!("{}", "Examples:".bold());

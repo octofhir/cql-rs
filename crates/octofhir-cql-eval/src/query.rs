@@ -43,7 +43,8 @@ impl CqlEngine {
 
         // Step 3: Apply relationship clauses (with/without)
         if let Some(relationships) = &query.relationship {
-            combinations = self.apply_relationship_clauses(combinations, relationships, query, ctx)?;
+            combinations =
+                self.apply_relationship_clauses(combinations, relationships, query, ctx)?;
         }
 
         // Step 4: Apply let clauses
@@ -70,7 +71,11 @@ impl CqlEngine {
         };
 
         // Step 8: Apply distinct if specified
-        if query.return_clause.as_ref().map_or(false, |r| r.distinct.unwrap_or(false)) {
+        if query
+            .return_clause
+            .as_ref()
+            .is_some_and(|r| r.distinct.unwrap_or(false))
+        {
             results = self.apply_distinct(results)?;
         }
 
@@ -359,7 +364,11 @@ impl CqlEngine {
             .map(|combo| {
                 if single_source {
                     // Single source: return the value directly
-                    combo.into_iter().next().map(|(_, v)| v).unwrap_or(CqlValue::Null)
+                    combo
+                        .into_iter()
+                        .next()
+                        .map(|(_, v)| v)
+                        .unwrap_or(CqlValue::Null)
                 } else {
                     // Multi-source: return a tuple of all values
                     CqlValue::Tuple(octofhir_cql_types::CqlTuple::from_elements(
@@ -432,10 +441,11 @@ impl CqlEngine {
                 if existing.len() != combo.len() {
                     return false;
                 }
-                existing
-                    .iter()
-                    .zip(combo.iter())
-                    .all(|((_, v1), (_, v2))| crate::operators::comparison::cql_equal(v1, v2).unwrap_or(Some(false)).unwrap_or(false))
+                existing.iter().zip(combo.iter()).all(|((_, v1), (_, v2))| {
+                    crate::operators::comparison::cql_equal(v1, v2)
+                        .unwrap_or(Some(false))
+                        .unwrap_or(false)
+                })
             });
 
             if !is_duplicate {
@@ -452,7 +462,9 @@ impl CqlEngine {
 
         for value in values {
             let is_duplicate = result.iter().any(|existing| {
-                crate::operators::comparison::cql_equal(existing, &value).unwrap_or(Some(false)).unwrap_or(false)
+                crate::operators::comparison::cql_equal(existing, &value)
+                    .unwrap_or(Some(false))
+                    .unwrap_or(false)
             });
 
             if !is_duplicate {
@@ -550,7 +562,11 @@ impl CqlEngine {
     /// Evaluate a Retrieve expression
     ///
     /// Retrieves data from the data provider based on the query criteria
-    pub fn eval_retrieve(&self, retrieve: &Retrieve, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_retrieve(
+        &self,
+        retrieve: &Retrieve,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         // Evaluate code path if present
         let codes = if let Some(codes_expr) = &retrieve.codes {
             Some(self.evaluate(codes_expr, ctx)?)
@@ -566,9 +582,9 @@ impl CqlEngine {
         };
 
         // Get data provider and perform retrieve
-        let provider = ctx.data_provider().ok_or_else(|| {
-            EvalError::internal("No data provider configured for retrieve")
-        })?;
+        let provider = ctx
+            .data_provider()
+            .ok_or_else(|| EvalError::internal("No data provider configured for retrieve"))?;
 
         // Perform the retrieve
         let results = provider.retrieve(
@@ -600,7 +616,9 @@ impl CqlEngine {
             }
         }
 
-        Ok(CqlValue::Tuple(octofhir_cql_types::CqlTuple::from_elements(result_elements)))
+        Ok(CqlValue::Tuple(
+            octofhir_cql_types::CqlTuple::from_elements(result_elements),
+        ))
     }
 
     /// Evaluate an Instance expression (typed tuple)
@@ -619,7 +637,8 @@ impl CqlEngine {
         }
 
         // Extract simple type name from qualified name
-        let type_name = instance.class_type
+        let type_name = instance
+            .class_type
             .rsplit('}')
             .next()
             .unwrap_or(&instance.class_type)
@@ -642,18 +661,25 @@ impl CqlEngine {
                 }))
             }
             "Concept" => {
-                let codes: Vec<octofhir_cql_types::CqlCode> = result_elements.iter()
+                let codes: Vec<octofhir_cql_types::CqlCode> = result_elements
+                    .iter()
                     .filter(|(name, _)| name == "codes")
                     .filter_map(|(_, v)| match v {
                         CqlValue::Code(c) => Some(c.clone()),
                         CqlValue::List(l) => {
-                            let codes: Vec<_> = l.elements.iter()
+                            let codes: Vec<_> = l
+                                .elements
+                                .iter()
                                 .filter_map(|e| match e {
                                     CqlValue::Code(c) => Some(c.clone()),
                                     _ => None,
                                 })
                                 .collect();
-                            if codes.is_empty() { None } else { Some(codes[0].clone()) }
+                            if codes.is_empty() {
+                                None
+                            } else {
+                                Some(codes[0].clone())
+                            }
                         }
                         _ => None,
                     })
@@ -665,21 +691,28 @@ impl CqlEngine {
                 }))
             }
             "Quantity" => {
-                let value = result_elements.iter()
+                let value = result_elements
+                    .iter()
                     .find(|(name, _)| name == "value")
                     .and_then(|(_, v)| match v {
-                        CqlValue::Decimal(d) => Some(*d),
-                        CqlValue::Integer(i) => Some(rust_decimal::Decimal::from(*i)),
+                        CqlValue::Decimal(d) => Some(d.clone()),
+                        CqlValue::Integer(i) => Some(bigdecimal::BigDecimal::from(*i)),
                         _ => None,
                     })
                     .unwrap_or_default();
                 let unit = get_string_element(&result_elements, "unit");
-                Ok(CqlValue::Quantity(octofhir_cql_types::CqlQuantity { value, unit }))
+                Ok(CqlValue::Quantity(octofhir_cql_types::CqlQuantity {
+                    value,
+                    unit,
+                }))
             }
             _ => {
                 // Default: return as Tuple with type information
-                result_elements.push(("__type".to_string(), CqlValue::string(&instance.class_type)));
-                Ok(CqlValue::Tuple(octofhir_cql_types::CqlTuple::from_elements(result_elements)))
+                result_elements
+                    .push(("__type".to_string(), CqlValue::string(&instance.class_type)));
+                Ok(CqlValue::Tuple(
+                    octofhir_cql_types::CqlTuple::from_elements(result_elements),
+                ))
             }
         }
     }
@@ -707,7 +740,8 @@ impl CqlEngine {
 
 /// Helper function to extract a string value from tuple elements
 fn get_string_element(elements: &[(String, CqlValue)], name: &str) -> Option<String> {
-    elements.iter()
+    elements
+        .iter()
         .find(|(n, _)| n == name)
         .and_then(|(_, v)| match v {
             CqlValue::String(s) => Some(s.clone()),
@@ -856,11 +890,14 @@ mod tests {
             where_clause: Some(Box::new(Expression::Greater(
                 octofhir_cql_elm::BinaryExpression {
                     element: Element::default(),
-                    operand: vec![alias_ref("X"), Box::new(Expression::Literal(Literal {
-                        element: Element::default(),
-                        value_type: "{urn:hl7-org:elm-types:r1}Integer".to_string(),
-                        value: Some("2".to_string()),
-                    }))],
+                    operand: vec![
+                        alias_ref("X"),
+                        Box::new(Expression::Literal(Literal {
+                            element: Element::default(),
+                            value_type: "{urn:hl7-org:elm-types:r1}Integer".to_string(),
+                            value: Some("2".to_string()),
+                        })),
+                    ],
                 },
             ))),
             return_clause: Some(ReturnClause {

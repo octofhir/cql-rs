@@ -15,7 +15,8 @@ async fn main() -> anyhow::Result<()> {
     // Example 1: Load embedded ModelInfo (for testing/development)
     println!("1. Loading embedded FHIR R4 ModelInfo...");
     let embedded_registry = octofhir_cql_model::fhir::fhir_r4_registry()?;
-    println!("   ✓ Embedded model loaded: {} v{}",
+    println!(
+        "   ✓ Embedded model loaded: {} v{}",
         embedded_registry.model_name(),
         embedded_registry.model_version()
     );
@@ -34,14 +35,16 @@ async fn main() -> anyhow::Result<()> {
 
     match ModelRegistry::from_xml_file(modelinfo_path) {
         Ok(registry) => {
-            println!("   ✓ Runtime model loaded: {} v{}",
+            println!(
+                "   ✓ Runtime model loaded: {} v{}",
                 registry.model_name(),
                 registry.model_version()
             );
 
             // Use the loaded model
             if let Some(patient_type) = registry.get_type("Patient").await? {
-                println!("   ✓ Found Patient type with {} properties",
+                println!(
+                    "   ✓ Found Patient type with {} properties",
                     patient_type.elements.len()
                 );
             }

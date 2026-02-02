@@ -47,7 +47,8 @@ proptest = { workspace = true }
 insta = { workspace = true }
 tempfile = { workspace = true }
 chrono = { workspace = true }
-rust_decimal = { workspace = true }
+bigdecimal = "0.4"
+num-traits = "0.2"
 indexmap = { workspace = true }
 async-trait = { workspace = true }
 quick-xml = { workspace = true }

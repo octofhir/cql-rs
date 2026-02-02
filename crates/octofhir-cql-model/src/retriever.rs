@@ -3,8 +3,8 @@
 //! This module provides utilities for implementing DataRetriever.
 
 use crate::provider::{DataRetriever, DataRetrieverError};
-use octofhir_cql_types::{CqlCode, CqlInterval, CqlValue};
 use async_trait::async_trait;
+use octofhir_cql_types::{CqlCode, CqlInterval, CqlValue};
 
 /// NoOp data retriever for testing
 pub struct NoOpDataRetriever;

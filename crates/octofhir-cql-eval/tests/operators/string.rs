@@ -3,13 +3,13 @@
 //! Tests for: Concatenate, Combine, Split, SplitOnMatches, Length, Upper, Lower,
 //! Substring, PositionOf, LastPositionOf, StartsWith, EndsWith, Matches, ReplaceMatches
 
-use octofhir_cql_eval::{CqlEngine, EvaluationContext};
 use octofhir_cql_elm::{
-    BinaryExpression, CombineExpression, Element, Expression, LastPositionOfExpression, Literal,
-    ListExpression, NaryExpression, NullLiteral, PositionOfExpression, SplitExpression,
+    BinaryExpression, CombineExpression, Element, Expression, LastPositionOfExpression,
+    ListExpression, Literal, NaryExpression, NullLiteral, PositionOfExpression, SplitExpression,
     SubstringExpression, TernaryExpression, UnaryExpression,
 };
-use octofhir_cql_types::{CqlList, CqlType, CqlValue};
+use octofhir_cql_eval::{CqlEngine, EvaluationContext};
+use octofhir_cql_types::CqlValue;
 
 // ============================================================================
 // Test Helpers
@@ -40,7 +40,9 @@ fn int_expr(i: i32) -> Box<Expression> {
 }
 
 fn null_expr() -> Box<Expression> {
-    Box::new(Expression::Null(NullLiteral { element: Element::default() }))
+    Box::new(Expression::Null(NullLiteral {
+        element: Element::default(),
+    }))
 }
 
 fn make_binary(left: Box<Expression>, right: Box<Expression>) -> BinaryExpression {
@@ -244,7 +246,9 @@ fn test_length_string() {
     let e = engine();
     let mut c = ctx();
 
-    let result = e.eval_string_length(&make_unary(string_expr("hello")), &mut c).unwrap();
+    let result = e
+        .eval_string_length(&make_unary(string_expr("hello")), &mut c)
+        .unwrap();
     assert_eq!(result, CqlValue::Integer(5));
 }
 
@@ -253,7 +257,9 @@ fn test_length_empty_string() {
     let e = engine();
     let mut c = ctx();
 
-    let result = e.eval_string_length(&make_unary(string_expr("")), &mut c).unwrap();
+    let result = e
+        .eval_string_length(&make_unary(string_expr("")), &mut c)
+        .unwrap();
     assert_eq!(result, CqlValue::Integer(0));
 }
 
@@ -263,7 +269,9 @@ fn test_length_unicode() {
     let mut c = ctx();
 
     // Unicode characters should be counted properly
-    let result = e.eval_string_length(&make_unary(string_expr("cafe")), &mut c).unwrap();
+    let result = e
+        .eval_string_length(&make_unary(string_expr("cafe")), &mut c)
+        .unwrap();
     assert_eq!(result, CqlValue::Integer(4));
 }
 
@@ -272,7 +280,9 @@ fn test_length_null() {
     let e = engine();
     let mut c = ctx();
 
-    let result = e.eval_string_length(&make_unary(null_expr()), &mut c).unwrap();
+    let result = e
+        .eval_string_length(&make_unary(null_expr()), &mut c)
+        .unwrap();
     assert!(result.is_null());
 }
 
@@ -285,7 +295,9 @@ fn test_upper() {
     let e = engine();
     let mut c = ctx();
 
-    let result = e.eval_upper(&make_unary(string_expr("hello")), &mut c).unwrap();
+    let result = e
+        .eval_upper(&make_unary(string_expr("hello")), &mut c)
+        .unwrap();
     assert_eq!(result, CqlValue::String("HELLO".to_string()));
 }
 
@@ -294,7 +306,9 @@ fn test_upper_mixed() {
     let e = engine();
     let mut c = ctx();
 
-    let result = e.eval_upper(&make_unary(string_expr("HeLLo WoRLd")), &mut c).unwrap();
+    let result = e
+        .eval_upper(&make_unary(string_expr("HeLLo WoRLd")), &mut c)
+        .unwrap();
     assert_eq!(result, CqlValue::String("HELLO WORLD".to_string()));
 }
 
@@ -316,7 +330,9 @@ fn test_lower() {
     let e = engine();
     let mut c = ctx();
 
-    let result = e.eval_lower(&make_unary(string_expr("HELLO")), &mut c).unwrap();
+    let result = e
+        .eval_lower(&make_unary(string_expr("HELLO")), &mut c)
+        .unwrap();
     assert_eq!(result, CqlValue::String("hello".to_string()));
 }
 
@@ -325,7 +341,9 @@ fn test_lower_mixed() {
     let e = engine();
     let mut c = ctx();
 
-    let result = e.eval_lower(&make_unary(string_expr("HeLLo WoRLd")), &mut c).unwrap();
+    let result = e
+        .eval_lower(&make_unary(string_expr("HeLLo WoRLd")), &mut c)
+        .unwrap();
     assert_eq!(result, CqlValue::String("hello world".to_string()));
 }
 
@@ -347,7 +365,12 @@ fn test_starts_with_true() {
     let e = engine();
     let mut c = ctx();
 
-    let result = e.eval_starts_with(&make_binary(string_expr("Hello, World!"), string_expr("Hello")), &mut c).unwrap();
+    let result = e
+        .eval_starts_with(
+            &make_binary(string_expr("Hello, World!"), string_expr("Hello")),
+            &mut c,
+        )
+        .unwrap();
     assert_eq!(result, CqlValue::Boolean(true));
 }
 
@@ -356,7 +379,12 @@ fn test_starts_with_false() {
     let e = engine();
     let mut c = ctx();
 
-    let result = e.eval_starts_with(&make_binary(string_expr("Hello, World!"), string_expr("World")), &mut c).unwrap();
+    let result = e
+        .eval_starts_with(
+            &make_binary(string_expr("Hello, World!"), string_expr("World")),
+            &mut c,
+        )
+        .unwrap();
     assert_eq!(result, CqlValue::Boolean(false));
 }
 
@@ -365,7 +393,9 @@ fn test_starts_with_empty_prefix() {
     let e = engine();
     let mut c = ctx();
 
-    let result = e.eval_starts_with(&make_binary(string_expr("Hello"), string_expr("")), &mut c).unwrap();
+    let result = e
+        .eval_starts_with(&make_binary(string_expr("Hello"), string_expr("")), &mut c)
+        .unwrap();
     assert_eq!(result, CqlValue::Boolean(true));
 }
 
@@ -374,7 +404,9 @@ fn test_starts_with_null() {
     let e = engine();
     let mut c = ctx();
 
-    let result = e.eval_starts_with(&make_binary(string_expr("Hello"), null_expr()), &mut c).unwrap();
+    let result = e
+        .eval_starts_with(&make_binary(string_expr("Hello"), null_expr()), &mut c)
+        .unwrap();
     assert!(result.is_null());
 }
 
@@ -387,7 +419,12 @@ fn test_ends_with_true() {
     let e = engine();
     let mut c = ctx();
 
-    let result = e.eval_ends_with(&make_binary(string_expr("Hello, World!"), string_expr("World!")), &mut c).unwrap();
+    let result = e
+        .eval_ends_with(
+            &make_binary(string_expr("Hello, World!"), string_expr("World!")),
+            &mut c,
+        )
+        .unwrap();
     assert_eq!(result, CqlValue::Boolean(true));
 }
 
@@ -396,7 +433,12 @@ fn test_ends_with_false() {
     let e = engine();
     let mut c = ctx();
 
-    let result = e.eval_ends_with(&make_binary(string_expr("Hello, World!"), string_expr("Hello")), &mut c).unwrap();
+    let result = e
+        .eval_ends_with(
+            &make_binary(string_expr("Hello, World!"), string_expr("Hello")),
+            &mut c,
+        )
+        .unwrap();
     assert_eq!(result, CqlValue::Boolean(false));
 }
 
@@ -405,7 +447,9 @@ fn test_ends_with_empty_suffix() {
     let e = engine();
     let mut c = ctx();
 
-    let result = e.eval_ends_with(&make_binary(string_expr("Hello"), string_expr("")), &mut c).unwrap();
+    let result = e
+        .eval_ends_with(&make_binary(string_expr("Hello"), string_expr("")), &mut c)
+        .unwrap();
     assert_eq!(result, CqlValue::Boolean(true));
 }
 
@@ -414,7 +458,9 @@ fn test_ends_with_null() {
     let e = engine();
     let mut c = ctx();
 
-    let result = e.eval_ends_with(&make_binary(null_expr(), string_expr("World")), &mut c).unwrap();
+    let result = e
+        .eval_ends_with(&make_binary(null_expr(), string_expr("World")), &mut c)
+        .unwrap();
     assert!(result.is_null());
 }
 
@@ -627,7 +673,15 @@ fn test_matches_true() {
     let e = engine();
     let mut c = ctx();
 
-    let result = e.eval_matches(&make_binary(string_expr("test@example.com"), string_expr(r"^\w+@\w+\.\w+$")), &mut c).unwrap();
+    let result = e
+        .eval_matches(
+            &make_binary(
+                string_expr("test@example.com"),
+                string_expr(r"^\w+@\w+\.\w+$"),
+            ),
+            &mut c,
+        )
+        .unwrap();
     assert_eq!(result, CqlValue::Boolean(true));
 }
 
@@ -636,7 +690,12 @@ fn test_matches_false() {
     let e = engine();
     let mut c = ctx();
 
-    let result = e.eval_matches(&make_binary(string_expr("not-an-email"), string_expr(r"^\w+@\w+\.\w+$")), &mut c).unwrap();
+    let result = e
+        .eval_matches(
+            &make_binary(string_expr("not-an-email"), string_expr(r"^\w+@\w+\.\w+$")),
+            &mut c,
+        )
+        .unwrap();
     assert_eq!(result, CqlValue::Boolean(false));
 }
 
@@ -645,7 +704,12 @@ fn test_matches_simple_pattern() {
     let e = engine();
     let mut c = ctx();
 
-    let result = e.eval_matches(&make_binary(string_expr("hello123"), string_expr(r"\d+")), &mut c).unwrap();
+    let result = e
+        .eval_matches(
+            &make_binary(string_expr("hello123"), string_expr(r"\d+")),
+            &mut c,
+        )
+        .unwrap();
     assert_eq!(result, CqlValue::Boolean(true));
 }
 
@@ -654,7 +718,9 @@ fn test_matches_null() {
     let e = engine();
     let mut c = ctx();
 
-    let result = e.eval_matches(&make_binary(null_expr(), string_expr(r"\d+")), &mut c).unwrap();
+    let result = e
+        .eval_matches(&make_binary(null_expr(), string_expr(r"\d+")), &mut c)
+        .unwrap();
     assert!(result.is_null());
 }
 
@@ -669,7 +735,11 @@ fn test_replace_matches() {
 
     let expr = TernaryExpression {
         element: Element::default(),
-        operand: vec![string_expr("abc123def456"), string_expr(r"\d+"), string_expr("X")],
+        operand: vec![
+            string_expr("abc123def456"),
+            string_expr(r"\d+"),
+            string_expr("X"),
+        ],
     };
 
     let result = e.eval_replace_matches(&expr, &mut c).unwrap();
@@ -713,7 +783,9 @@ fn test_indexer_string() {
     let e = engine();
     let mut c = ctx();
 
-    let result = e.eval_indexer(&make_binary(string_expr("Hello"), int_expr(0)), &mut c).unwrap();
+    let result = e
+        .eval_indexer(&make_binary(string_expr("Hello"), int_expr(0)), &mut c)
+        .unwrap();
     assert_eq!(result, CqlValue::String("H".to_string()));
 }
 
@@ -722,7 +794,9 @@ fn test_indexer_string_middle() {
     let e = engine();
     let mut c = ctx();
 
-    let result = e.eval_indexer(&make_binary(string_expr("Hello"), int_expr(2)), &mut c).unwrap();
+    let result = e
+        .eval_indexer(&make_binary(string_expr("Hello"), int_expr(2)), &mut c)
+        .unwrap();
     assert_eq!(result, CqlValue::String("l".to_string()));
 }
 
@@ -731,7 +805,9 @@ fn test_indexer_out_of_bounds() {
     let e = engine();
     let mut c = ctx();
 
-    let result = e.eval_indexer(&make_binary(string_expr("Hello"), int_expr(10)), &mut c).unwrap();
+    let result = e
+        .eval_indexer(&make_binary(string_expr("Hello"), int_expr(10)), &mut c)
+        .unwrap();
     assert!(result.is_null());
 }
 
@@ -740,7 +816,9 @@ fn test_indexer_negative() {
     let e = engine();
     let mut c = ctx();
 
-    let result = e.eval_indexer(&make_binary(string_expr("Hello"), int_expr(-1)), &mut c).unwrap();
+    let result = e
+        .eval_indexer(&make_binary(string_expr("Hello"), int_expr(-1)), &mut c)
+        .unwrap();
     assert!(result.is_null());
 }
 
@@ -749,6 +827,8 @@ fn test_indexer_null() {
     let e = engine();
     let mut c = ctx();
 
-    let result = e.eval_indexer(&make_binary(null_expr(), int_expr(0)), &mut c).unwrap();
+    let result = e
+        .eval_indexer(&make_binary(null_expr(), int_expr(0)), &mut c)
+        .unwrap();
     assert!(result.is_null());
 }

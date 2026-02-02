@@ -17,8 +17,6 @@ pub use operator::*;
 pub use query::*;
 pub use types::*;
 
-use octofhir_cql_diagnostics::Span;
-
 /// A node with source span information
 pub type Spanned<T> = octofhir_cql_diagnostics::Spanned<T>;
 

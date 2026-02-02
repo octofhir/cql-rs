@@ -4,8 +4,8 @@
 //! for evaluating CQL Retrieve expressions.
 
 use crate::context::DataProvider;
-use octofhir_cql_model::{DataRetriever, DataRetrieverError};
-use octofhir_cql_types::{CqlCode, CqlInterval, CqlTuple, CqlValue};
+use octofhir_cql_model::DataRetriever;
+use octofhir_cql_types::{CqlCode, CqlValue};
 use std::sync::Arc;
 
 /// Adapter that wraps a DataRetriever to implement the eval crate's DataProvider trait
@@ -107,12 +107,7 @@ pub fn extract_codes(value: &CqlValue) -> Vec<CqlCode> {
     match value {
         CqlValue::Code(code) => vec![code.clone()],
         CqlValue::Concept(concept) => concept.codes.to_vec(),
-        CqlValue::List(list) => {
-            list.elements
-                .iter()
-                .flat_map(extract_codes)
-                .collect()
-        }
+        CqlValue::List(list) => list.elements.iter().flat_map(extract_codes).collect(),
         _ => vec![],
     }
 }

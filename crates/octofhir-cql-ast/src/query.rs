@@ -1,6 +1,6 @@
 //! Query expression AST nodes for CQL
 
-use crate::{BoxExpr, Expression, Identifier, OptBoxExpr, Spanned, TypeSpecifier};
+use crate::{BoxExpr, Identifier, OptBoxExpr, Spanned, TypeSpecifier};
 
 /// A query expression
 #[derive(Debug, Clone)]

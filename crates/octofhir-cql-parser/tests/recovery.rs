@@ -15,10 +15,6 @@ fn parse_with_errors(input: &str) -> bool {
     parse_expression(input).is_err()
 }
 
-fn parse_library_with_errors(input: &str) -> bool {
-    parse(input).is_err()
-}
-
 // === Error Cases ===
 
 #[test]
@@ -155,5 +151,10 @@ fn test_long_identifier() {
 #[case("{1, 2, 3}", true)]
 fn test_various_inputs(#[case] input: &str, #[case] should_succeed: bool) {
     let result = parse_expression(input);
-    assert_eq!(result.is_ok(), should_succeed, "Unexpected result for '{}'", input);
+    assert_eq!(
+        result.is_ok(),
+        should_succeed,
+        "Unexpected result for '{}'",
+        input
+    );
 }

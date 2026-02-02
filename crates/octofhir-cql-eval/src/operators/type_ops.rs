@@ -7,18 +7,24 @@
 use crate::context::EvaluationContext;
 use crate::engine::CqlEngine;
 use crate::error::{EvalError, EvalResult};
-use octofhir_cql_elm::{AsExpression, CanConvertExpression, ConvertExpression, IsExpression, TypeSpecifier, UnaryExpression};
-use octofhir_cql_types::{
-    CqlCode, CqlConcept, CqlDate, CqlDateTime, CqlList, CqlQuantity, CqlRatio, CqlTime, CqlType,
-    CqlValue,
+use bigdecimal::BigDecimal;
+use num_traits::{One, ToPrimitive, Zero};
+use octofhir_cql_elm::{
+    AsExpression, CanConvertExpression, ConvertExpression, IsExpression, TypeSpecifier,
+    UnaryExpression,
 };
-use rust_decimal::prelude::*;
-use rust_decimal::Decimal;
+use octofhir_cql_types::{
+    CqlConcept, CqlDate, CqlDateTime, CqlList, CqlQuantity, CqlRatio, CqlTime, CqlType, CqlValue,
+};
 use std::str::FromStr;
 
 impl CqlEngine {
     /// Evaluate As operator (type cast)
-    pub fn eval_as(&self, expr: &AsExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_as(
+        &self,
+        expr: &AsExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let operand = self.evaluate(&expr.operand, ctx)?;
 
         if operand.is_null() {
@@ -42,7 +48,11 @@ impl CqlEngine {
     }
 
     /// Evaluate Is operator (type check)
-    pub fn eval_is(&self, expr: &IsExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_is(
+        &self,
+        expr: &IsExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let operand = self.evaluate(&expr.operand, ctx)?;
 
         if operand.is_null() {
@@ -69,20 +79,19 @@ impl CqlEngine {
         let mut operand_type_name = operand_type.name().to_string();
 
         // For tuples with __type field, use the __type value as the type name
-        if let CqlValue::Tuple(t) = &operand {
-            if let Some(type_val) = t.get("__type") {
-                if let CqlValue::String(type_str) = type_val {
-                    // Extract just the type name from qualified name
-                    operand_type_name = type_str
-                        .rsplit('}')
-                        .next()
-                        .unwrap_or(type_str)
-                        .rsplit('.')
-                        .next()
-                        .unwrap_or(type_str)
-                        .to_string();
-                }
-            }
+        if let CqlValue::Tuple(t) = &operand
+            && let Some(type_val) = t.get("__type")
+            && let CqlValue::String(type_str) = type_val
+        {
+            // Extract just the type name from qualified name
+            operand_type_name = type_str
+                .rsplit('}')
+                .next()
+                .unwrap_or(type_str)
+                .rsplit('.')
+                .next()
+                .unwrap_or(type_str)
+                .to_string();
         }
 
         // Normalize type names (remove various prefixes)
@@ -99,7 +108,11 @@ impl CqlEngine {
     }
 
     /// Evaluate Convert operator
-    pub fn eval_convert(&self, expr: &ConvertExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_convert(
+        &self,
+        expr: &ConvertExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let operand = self.evaluate(&expr.operand, ctx)?;
 
         if operand.is_null() {
@@ -109,16 +122,11 @@ impl CqlEngine {
         // Get the target type from to_type or to_type_specifier
         let target_type = if let Some(to_type) = &expr.to_type {
             to_type.clone()
-        } else if let Some(to_type_specifier) = &expr.to_type_specifier {
-            match to_type_specifier {
-                TypeSpecifier::Named(n) => {
-                    // Just use the name - we'll normalize later
-                    n.name.clone()
-                }
-                _ => return Ok(operand), // Complex types not fully supported
-            }
+        } else if let Some(TypeSpecifier::Named(n)) = &expr.to_type_specifier {
+            // Just use the name - we'll normalize it below
+            n.name.clone()
         } else {
-            return Ok(operand); // No type specified, return as-is
+            return Ok(operand); // Complex types not yet supported for casting or no type specified
         };
 
         // Normalize type name (remove various prefixes)
@@ -144,7 +152,11 @@ impl CqlEngine {
     }
 
     /// Evaluate CanConvert operator
-    pub fn eval_can_convert(&self, expr: &CanConvertExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_can_convert(
+        &self,
+        expr: &CanConvertExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let operand = self.evaluate(&expr.operand, ctx)?;
 
         if operand.is_null() {
@@ -156,72 +168,115 @@ impl CqlEngine {
     }
 
     /// Evaluate ToBoolean
-    pub fn eval_to_boolean(&self, expr: &UnaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_to_boolean(
+        &self,
+        expr: &UnaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let operand = self.evaluate(&expr.operand, ctx)?;
         to_boolean(&operand)
     }
 
     /// Evaluate ToChars - converts string to list of characters
-    pub fn eval_to_chars(&self, expr: &UnaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_to_chars(
+        &self,
+        expr: &UnaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let operand = self.evaluate(&expr.operand, ctx)?;
 
         match &operand {
             CqlValue::Null => Ok(CqlValue::Null),
             CqlValue::String(s) => {
-                let chars: Vec<CqlValue> = s.chars().map(|c| CqlValue::String(c.to_string())).collect();
+                let chars: Vec<CqlValue> =
+                    s.chars().map(|c| CqlValue::String(c.to_string())).collect();
                 Ok(CqlValue::List(CqlList {
                     element_type: CqlType::String,
                     elements: chars,
                 }))
             }
-            _ => Err(EvalError::conversion_error(operand.get_type().name(), "List<String>")),
+            _ => Err(EvalError::conversion_error(
+                operand.get_type().name(),
+                "List<String>",
+            )),
         }
     }
 
     /// Evaluate ToConcept
-    pub fn eval_to_concept(&self, expr: &UnaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_to_concept(
+        &self,
+        expr: &UnaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let operand = self.evaluate(&expr.operand, ctx)?;
 
         match &operand {
             CqlValue::Null => Ok(CqlValue::Null),
             CqlValue::Code(code) => Ok(CqlValue::Concept(CqlConcept::from_code(code.clone()))),
             CqlValue::Concept(c) => Ok(CqlValue::Concept(c.clone())),
-            _ => Err(EvalError::conversion_error(operand.get_type().name(), "Concept")),
+            _ => Err(EvalError::conversion_error(
+                operand.get_type().name(),
+                "Concept",
+            )),
         }
     }
 
     /// Evaluate ToDate
-    pub fn eval_to_date(&self, expr: &UnaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_to_date(
+        &self,
+        expr: &UnaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let operand = self.evaluate(&expr.operand, ctx)?;
         to_date(&operand)
     }
 
     /// Evaluate ToDateTime
-    pub fn eval_to_datetime(&self, expr: &UnaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_to_datetime(
+        &self,
+        expr: &UnaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let operand = self.evaluate(&expr.operand, ctx)?;
         to_datetime(&operand)
     }
 
     /// Evaluate ToDecimal
-    pub fn eval_to_decimal(&self, expr: &UnaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_to_decimal(
+        &self,
+        expr: &UnaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let operand = self.evaluate(&expr.operand, ctx)?;
         to_decimal(&operand)
     }
 
     /// Evaluate ToInteger
-    pub fn eval_to_integer(&self, expr: &UnaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_to_integer(
+        &self,
+        expr: &UnaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let operand = self.evaluate(&expr.operand, ctx)?;
         to_integer(&operand)
     }
 
     /// Evaluate ToLong
-    pub fn eval_to_long(&self, expr: &UnaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_to_long(
+        &self,
+        expr: &UnaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let operand = self.evaluate(&expr.operand, ctx)?;
         to_long(&operand)
     }
 
     /// Evaluate ToList
-    pub fn eval_to_list(&self, expr: &UnaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_to_list(
+        &self,
+        expr: &UnaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let operand = self.evaluate(&expr.operand, ctx)?;
 
         match &operand {
@@ -232,37 +287,60 @@ impl CqlEngine {
     }
 
     /// Evaluate ToQuantity
-    pub fn eval_to_quantity(&self, expr: &UnaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_to_quantity(
+        &self,
+        expr: &UnaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let operand = self.evaluate(&expr.operand, ctx)?;
         to_quantity(&operand)
     }
 
     /// Evaluate ToRatio
-    pub fn eval_to_ratio(&self, expr: &UnaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_to_ratio(
+        &self,
+        expr: &UnaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let operand = self.evaluate(&expr.operand, ctx)?;
 
         match &operand {
             CqlValue::Null => Ok(CqlValue::Null),
             CqlValue::Ratio(r) => Ok(CqlValue::Ratio(r.clone())),
             CqlValue::String(s) => parse_ratio_string(s),
-            _ => Err(EvalError::conversion_error(operand.get_type().name(), "Ratio")),
+            _ => Err(EvalError::conversion_error(
+                operand.get_type().name(),
+                "Ratio",
+            )),
         }
     }
 
     /// Evaluate ToString
-    pub fn eval_to_string(&self, expr: &UnaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_to_string(
+        &self,
+        expr: &UnaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let operand = self.evaluate(&expr.operand, ctx)?;
         to_string(&operand)
     }
 
     /// Evaluate ToTime
-    pub fn eval_to_time(&self, expr: &UnaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_to_time(
+        &self,
+        expr: &UnaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let operand = self.evaluate(&expr.operand, ctx)?;
         to_time(&operand)
     }
 
     /// Evaluate ConvertsToBoolean
-    pub fn eval_converts_to_boolean(&self, expr: &UnaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_converts_to_boolean(
+        &self,
+        expr: &UnaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let operand = self.evaluate(&expr.operand, ctx)?;
         if operand.is_null() {
             return Ok(CqlValue::Boolean(true));
@@ -271,61 +349,101 @@ impl CqlEngine {
     }
 
     /// Evaluate ConvertsToDate
-    pub fn eval_converts_to_date(&self, expr: &UnaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_converts_to_date(
+        &self,
+        expr: &UnaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let operand = self.evaluate(&expr.operand, ctx)?;
         if operand.is_null() {
             return Ok(CqlValue::Boolean(true));
         }
-        Ok(CqlValue::Boolean(to_date(&operand).is_ok() && !to_date(&operand)?.is_null()))
+        Ok(CqlValue::Boolean(
+            to_date(&operand).is_ok() && !to_date(&operand)?.is_null(),
+        ))
     }
 
     /// Evaluate ConvertsToDateTime
-    pub fn eval_converts_to_datetime(&self, expr: &UnaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_converts_to_datetime(
+        &self,
+        expr: &UnaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let operand = self.evaluate(&expr.operand, ctx)?;
         if operand.is_null() {
             return Ok(CqlValue::Boolean(true));
         }
-        Ok(CqlValue::Boolean(to_datetime(&operand).is_ok() && !to_datetime(&operand)?.is_null()))
+        Ok(CqlValue::Boolean(
+            to_datetime(&operand).is_ok() && !to_datetime(&operand)?.is_null(),
+        ))
     }
 
     /// Evaluate ConvertsToDecimal
-    pub fn eval_converts_to_decimal(&self, expr: &UnaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_converts_to_decimal(
+        &self,
+        expr: &UnaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let operand = self.evaluate(&expr.operand, ctx)?;
         if operand.is_null() {
             return Ok(CqlValue::Boolean(true));
         }
-        Ok(CqlValue::Boolean(to_decimal(&operand).is_ok() && !to_decimal(&operand)?.is_null()))
+        Ok(CqlValue::Boolean(
+            to_decimal(&operand).is_ok() && !to_decimal(&operand)?.is_null(),
+        ))
     }
 
     /// Evaluate ConvertsToInteger
-    pub fn eval_converts_to_integer(&self, expr: &UnaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_converts_to_integer(
+        &self,
+        expr: &UnaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let operand = self.evaluate(&expr.operand, ctx)?;
         if operand.is_null() {
             return Ok(CqlValue::Boolean(true));
         }
-        Ok(CqlValue::Boolean(to_integer(&operand).is_ok() && !to_integer(&operand)?.is_null()))
+        Ok(CqlValue::Boolean(
+            to_integer(&operand).is_ok() && !to_integer(&operand)?.is_null(),
+        ))
     }
 
     /// Evaluate ConvertsToLong
-    pub fn eval_converts_to_long(&self, expr: &UnaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_converts_to_long(
+        &self,
+        expr: &UnaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let operand = self.evaluate(&expr.operand, ctx)?;
         if operand.is_null() {
             return Ok(CqlValue::Boolean(true));
         }
-        Ok(CqlValue::Boolean(to_long(&operand).is_ok() && !to_long(&operand)?.is_null()))
+        Ok(CqlValue::Boolean(
+            to_long(&operand).is_ok() && !to_long(&operand)?.is_null(),
+        ))
     }
 
     /// Evaluate ConvertsToQuantity
-    pub fn eval_converts_to_quantity(&self, expr: &UnaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_converts_to_quantity(
+        &self,
+        expr: &UnaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let operand = self.evaluate(&expr.operand, ctx)?;
         if operand.is_null() {
             return Ok(CqlValue::Boolean(true));
         }
-        Ok(CqlValue::Boolean(to_quantity(&operand).is_ok() && !to_quantity(&operand)?.is_null()))
+        Ok(CqlValue::Boolean(
+            to_quantity(&operand).is_ok() && !to_quantity(&operand)?.is_null(),
+        ))
     }
 
     /// Evaluate ConvertsToRatio
-    pub fn eval_converts_to_ratio(&self, expr: &UnaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_converts_to_ratio(
+        &self,
+        expr: &UnaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let operand = self.evaluate(&expr.operand, ctx)?;
         if operand.is_null() {
             return Ok(CqlValue::Boolean(true));
@@ -338,7 +456,11 @@ impl CqlEngine {
     }
 
     /// Evaluate ConvertsToString
-    pub fn eval_converts_to_string(&self, expr: &UnaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_converts_to_string(
+        &self,
+        expr: &UnaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let operand = self.evaluate(&expr.operand, ctx)?;
         if operand.is_null() {
             return Ok(CqlValue::Boolean(true));
@@ -348,69 +470,24 @@ impl CqlEngine {
     }
 
     /// Evaluate ConvertsToTime
-    pub fn eval_converts_to_time(&self, expr: &UnaryExpression, ctx: &mut EvaluationContext) -> EvalResult<CqlValue> {
+    pub fn eval_converts_to_time(
+        &self,
+        expr: &UnaryExpression,
+        ctx: &mut EvaluationContext,
+    ) -> EvalResult<CqlValue> {
         let operand = self.evaluate(&expr.operand, ctx)?;
         if operand.is_null() {
             return Ok(CqlValue::Boolean(true));
         }
-        Ok(CqlValue::Boolean(to_time(&operand).is_ok() && !to_time(&operand)?.is_null()))
+        Ok(CqlValue::Boolean(
+            to_time(&operand).is_ok() && !to_time(&operand)?.is_null(),
+        ))
     }
 }
 
 // ============================================================================
 // Helper Functions
 // ============================================================================
-
-/// Check if a value is of a given type
-fn value_is_type(value: &CqlValue, target_type: &CqlType) -> bool {
-    if target_type.is_any() {
-        return true;
-    }
-
-    let value_type = value.get_type();
-    value_type.is_subtype_of(target_type)
-}
-
-/// Check if a value can be converted to a target type
-fn can_convert(value: &CqlValue, target_type: &CqlType) -> bool {
-    match target_type {
-        CqlType::Boolean => to_boolean(value).is_ok(),
-        CqlType::Integer => to_integer(value).is_ok(),
-        CqlType::Long => to_long(value).is_ok(),
-        CqlType::Decimal => to_decimal(value).is_ok(),
-        CqlType::String => true,
-        CqlType::Date => to_date(value).is_ok(),
-        CqlType::DateTime => to_datetime(value).is_ok(),
-        CqlType::Time => to_time(value).is_ok(),
-        CqlType::Quantity => to_quantity(value).is_ok(),
-        _ => value_is_type(value, target_type),
-    }
-}
-
-/// Convert a value to a target type
-fn convert_value(value: &CqlValue, target_type: &CqlType) -> EvalResult<CqlValue> {
-    match target_type {
-        CqlType::Boolean => to_boolean(value),
-        CqlType::Integer => to_integer(value),
-        CqlType::Long => to_long(value),
-        CqlType::Decimal => to_decimal(value),
-        CqlType::String => to_string(value),
-        CqlType::Date => to_date(value),
-        CqlType::DateTime => to_datetime(value),
-        CqlType::Time => to_time(value),
-        CqlType::Quantity => to_quantity(value),
-        _ => {
-            if value_is_type(value, target_type) {
-                Ok(value.clone())
-            } else {
-                Err(EvalError::conversion_error(
-                    value.get_type().name(),
-                    target_type.name(),
-                ))
-            }
-        }
-    }
-}
 
 /// Convert to Boolean
 fn to_boolean(value: &CqlValue) -> EvalResult<CqlValue> {
@@ -428,7 +505,10 @@ fn to_boolean(value: &CqlValue) -> EvalResult<CqlValue> {
                 _ => Ok(CqlValue::Null),
             }
         }
-        _ => Err(EvalError::conversion_error(value.get_type().name(), "Boolean")),
+        _ => Err(EvalError::conversion_error(
+            value.get_type().name(),
+            "Boolean",
+        )),
     }
 }
 
@@ -452,13 +532,14 @@ fn to_integer(value: &CqlValue) -> EvalResult<CqlValue> {
             }
         }
         CqlValue::Boolean(b) => Ok(CqlValue::Integer(if *b { 1 } else { 0 })),
-        CqlValue::String(s) => {
-            match s.trim().parse::<i32>() {
-                Ok(i) => Ok(CqlValue::Integer(i)),
-                Err(_) => Ok(CqlValue::Null),
-            }
-        }
-        _ => Err(EvalError::conversion_error(value.get_type().name(), "Integer")),
+        CqlValue::String(s) => match s.trim().parse::<i32>() {
+            Ok(i) => Ok(CqlValue::Integer(i)),
+            Err(_) => Ok(CqlValue::Null),
+        },
+        _ => Err(EvalError::conversion_error(
+            value.get_type().name(),
+            "Integer",
+        )),
     }
 }
 
@@ -476,12 +557,10 @@ fn to_long(value: &CqlValue) -> EvalResult<CqlValue> {
             }
         }
         CqlValue::Boolean(b) => Ok(CqlValue::Long(if *b { 1 } else { 0 })),
-        CqlValue::String(s) => {
-            match s.trim().parse::<i64>() {
-                Ok(l) => Ok(CqlValue::Long(l)),
-                Err(_) => Ok(CqlValue::Null),
-            }
-        }
+        CqlValue::String(s) => match s.trim().parse::<i64>() {
+            Ok(l) => Ok(CqlValue::Long(l)),
+            Err(_) => Ok(CqlValue::Null),
+        },
         _ => Err(EvalError::conversion_error(value.get_type().name(), "Long")),
     }
 }
@@ -490,18 +569,23 @@ fn to_long(value: &CqlValue) -> EvalResult<CqlValue> {
 fn to_decimal(value: &CqlValue) -> EvalResult<CqlValue> {
     match value {
         CqlValue::Null => Ok(CqlValue::Null),
-        CqlValue::Integer(i) => Ok(CqlValue::Decimal(Decimal::from(*i))),
-        CqlValue::Long(l) => Ok(CqlValue::Decimal(Decimal::from(*l))),
-        CqlValue::Decimal(d) => Ok(CqlValue::Decimal(*d)),
-        CqlValue::Boolean(b) => Ok(CqlValue::Decimal(if *b { Decimal::ONE } else { Decimal::ZERO })),
-        CqlValue::String(s) => {
-            match Decimal::from_str(s.trim()) {
-                Ok(d) => Ok(CqlValue::Decimal(d)),
-                Err(_) => Ok(CqlValue::Null),
-            }
-        }
-        CqlValue::Quantity(q) => Ok(CqlValue::Decimal(q.value)),
-        _ => Err(EvalError::conversion_error(value.get_type().name(), "Decimal")),
+        CqlValue::Integer(i) => Ok(CqlValue::Decimal(BigDecimal::from(*i))),
+        CqlValue::Long(l) => Ok(CqlValue::Decimal(BigDecimal::from(*l))),
+        CqlValue::Decimal(d) => Ok(CqlValue::Decimal(d.clone())),
+        CqlValue::Boolean(b) => Ok(CqlValue::Decimal(if *b {
+            BigDecimal::one()
+        } else {
+            BigDecimal::zero()
+        })),
+        CqlValue::String(s) => match BigDecimal::from_str(s.trim()) {
+            Ok(d) => Ok(CqlValue::Decimal(d)),
+            Err(_) => Ok(CqlValue::Null),
+        },
+        CqlValue::Quantity(q) => Ok(CqlValue::Decimal(q.value.clone())),
+        _ => Err(EvalError::conversion_error(
+            value.get_type().name(),
+            "Decimal",
+        )),
     }
 }
 
@@ -566,12 +650,10 @@ fn to_date(value: &CqlValue) -> EvalResult<CqlValue> {
         CqlValue::Null => Ok(CqlValue::Null),
         CqlValue::Date(d) => Ok(CqlValue::Date(d.clone())),
         CqlValue::DateTime(dt) => Ok(CqlValue::Date(dt.date())),
-        CqlValue::String(s) => {
-            match CqlDate::parse(s.trim()) {
-                Some(d) => Ok(CqlValue::Date(d)),
-                None => Ok(CqlValue::Null),
-            }
-        }
+        CqlValue::String(s) => match CqlDate::parse(s.trim()) {
+            Some(d) => Ok(CqlValue::Date(d)),
+            None => Ok(CqlValue::Null),
+        },
         _ => Err(EvalError::conversion_error(value.get_type().name(), "Date")),
     }
 }
@@ -634,7 +716,8 @@ fn to_datetime(value: &CqlValue) -> EvalResult<CqlValue> {
                             2 => ms_str.parse::<u16>().ok().map(|v| v * 10),
                             3 => ms_str.parse::<u16>().ok(),
                             _ => ms_str[..3].parse::<u16>().ok(),
-                        }.unwrap_or(0);
+                        }
+                        .unwrap_or(0);
                         Some(ms_val)
                     } else {
                         None
@@ -663,7 +746,10 @@ fn to_datetime(value: &CqlValue) -> EvalResult<CqlValue> {
             }
             Ok(CqlValue::Null)
         }
-        _ => Err(EvalError::conversion_error(value.get_type().name(), "DateTime")),
+        _ => Err(EvalError::conversion_error(
+            value.get_type().name(),
+            "DateTime",
+        )),
     }
 }
 
@@ -713,12 +799,10 @@ fn to_time(value: &CqlValue) -> EvalResult<CqlValue> {
     match value {
         CqlValue::Null => Ok(CqlValue::Null),
         CqlValue::Time(t) => Ok(CqlValue::Time(t.clone())),
-        CqlValue::DateTime(dt) => {
-            match dt.time() {
-                Some(t) => Ok(CqlValue::Time(t)),
-                None => Ok(CqlValue::Null),
-            }
-        }
+        CqlValue::DateTime(dt) => match dt.time() {
+            Some(t) => Ok(CqlValue::Time(t)),
+            None => Ok(CqlValue::Null),
+        },
         CqlValue::String(s) => {
             // Try to parse time string HH:MM:SS.mmm or THH:MM:SS.mmm with optional timezone
             let trimmed = s.trim();
@@ -808,16 +892,20 @@ fn to_quantity(value: &CqlValue) -> EvalResult<CqlValue> {
     match value {
         CqlValue::Null => Ok(CqlValue::Null),
         CqlValue::Quantity(q) => Ok(CqlValue::Quantity(q.clone())),
-        CqlValue::Integer(i) => Ok(CqlValue::Quantity(CqlQuantity::unitless(Decimal::from(*i)))),
-        CqlValue::Long(l) => Ok(CqlValue::Quantity(CqlQuantity::unitless(Decimal::from(*l)))),
-        CqlValue::Decimal(d) => Ok(CqlValue::Quantity(CqlQuantity::unitless(*d))),
+        CqlValue::Integer(i) => Ok(CqlValue::Quantity(CqlQuantity::unitless(BigDecimal::from(
+            *i,
+        )))),
+        CqlValue::Long(l) => Ok(CqlValue::Quantity(CqlQuantity::unitless(BigDecimal::from(
+            *l,
+        )))),
+        CqlValue::Decimal(d) => Ok(CqlValue::Quantity(CqlQuantity::unitless(d.clone()))),
         CqlValue::String(s) => parse_quantity_string(s),
         CqlValue::Ratio(r) => {
             // Convert ratio to decimal quantity
             if r.denominator.value.is_zero() {
                 Ok(CqlValue::Null)
             } else {
-                let value = r.numerator.value / r.denominator.value;
+                let value = &r.numerator.value / &r.denominator.value;
                 // Combine units
                 let unit = match (&r.numerator.unit, &r.denominator.unit) {
                     (Some(n), Some(d)) => Some(format!("{}/{}", n, d)),
@@ -828,7 +916,10 @@ fn to_quantity(value: &CqlValue) -> EvalResult<CqlValue> {
                 Ok(CqlValue::Quantity(CqlQuantity { value, unit }))
             }
         }
-        _ => Err(EvalError::conversion_error(value.get_type().name(), "Quantity")),
+        _ => Err(EvalError::conversion_error(
+            value.get_type().name(),
+            "Quantity",
+        )),
     }
 }
 
@@ -855,7 +946,7 @@ fn parse_quantity_string(s: &str) -> EvalResult<CqlValue> {
     let num_str = &trimmed[..num_end];
     let unit_str = trimmed[num_end..].trim();
 
-    let value = match Decimal::from_str(num_str) {
+    let value = match BigDecimal::from_str(num_str) {
         Ok(d) => d,
         Err(_) => return Ok(CqlValue::Null),
     };
@@ -864,7 +955,7 @@ fn parse_quantity_string(s: &str) -> EvalResult<CqlValue> {
     let unit = if unit_str.is_empty() {
         None
     } else if unit_str.starts_with('\'') && unit_str.ends_with('\'') && unit_str.len() > 2 {
-        Some(unit_str[1..unit_str.len()-1].to_string())
+        Some(unit_str[1..unit_str.len() - 1].to_string())
     } else {
         Some(unit_str.to_string())
     };
@@ -894,7 +985,10 @@ fn parse_ratio_string(s: &str) -> EvalResult<CqlValue> {
 
 /// Check if a type is a subtype of another type in CQL's type hierarchy
 fn is_subtype_of(subtype: &str, supertype: &str) -> bool {
-    match (subtype.to_lowercase().as_str(), supertype.to_lowercase().as_str()) {
+    match (
+        subtype.to_lowercase().as_str(),
+        supertype.to_lowercase().as_str(),
+    ) {
         // Vocabulary hierarchy
         ("valueset", "vocabulary") => true,
         ("codesystem", "vocabulary") => true,
@@ -914,37 +1008,71 @@ mod tests {
 
     #[test]
     fn test_to_boolean() {
-        assert_eq!(to_boolean(&CqlValue::Boolean(true)).unwrap(), CqlValue::Boolean(true));
-        assert_eq!(to_boolean(&CqlValue::Integer(1)).unwrap(), CqlValue::Boolean(true));
-        assert_eq!(to_boolean(&CqlValue::Integer(0)).unwrap(), CqlValue::Boolean(false));
-        assert_eq!(to_boolean(&CqlValue::String("true".to_string())).unwrap(), CqlValue::Boolean(true));
-        assert_eq!(to_boolean(&CqlValue::String("false".to_string())).unwrap(), CqlValue::Boolean(false));
+        assert_eq!(
+            to_boolean(&CqlValue::Boolean(true)).unwrap(),
+            CqlValue::Boolean(true)
+        );
+        assert_eq!(
+            to_boolean(&CqlValue::Integer(1)).unwrap(),
+            CqlValue::Boolean(true)
+        );
+        assert_eq!(
+            to_boolean(&CqlValue::Integer(0)).unwrap(),
+            CqlValue::Boolean(false)
+        );
+        assert_eq!(
+            to_boolean(&CqlValue::String("true".to_string())).unwrap(),
+            CqlValue::Boolean(true)
+        );
+        assert_eq!(
+            to_boolean(&CqlValue::String("false".to_string())).unwrap(),
+            CqlValue::Boolean(false)
+        );
     }
 
     #[test]
     fn test_to_integer() {
-        assert_eq!(to_integer(&CqlValue::Integer(42)).unwrap(), CqlValue::Integer(42));
-        assert_eq!(to_integer(&CqlValue::Long(42)).unwrap(), CqlValue::Integer(42));
-        assert_eq!(to_integer(&CqlValue::String("42".to_string())).unwrap(), CqlValue::Integer(42));
-        assert!(to_integer(&CqlValue::String("not a number".to_string())).unwrap().is_null());
+        assert_eq!(
+            to_integer(&CqlValue::Integer(42)).unwrap(),
+            CqlValue::Integer(42)
+        );
+        assert_eq!(
+            to_integer(&CqlValue::Long(42)).unwrap(),
+            CqlValue::Integer(42)
+        );
+        assert_eq!(
+            to_integer(&CqlValue::String("42".to_string())).unwrap(),
+            CqlValue::Integer(42)
+        );
+        assert!(
+            to_integer(&CqlValue::String("not a number".to_string()))
+                .unwrap()
+                .is_null()
+        );
     }
 
     #[test]
     fn test_to_decimal() {
         assert_eq!(
             to_decimal(&CqlValue::Integer(42)).unwrap(),
-            CqlValue::Decimal(Decimal::from(42))
+            CqlValue::Decimal(BigDecimal::from(42))
         );
         assert_eq!(
             to_decimal(&CqlValue::String("3.14".to_string())).unwrap(),
-            CqlValue::Decimal(Decimal::from_str("3.14").unwrap())
+            CqlValue::Decimal(BigDecimal::from_str("3.14").unwrap())
         );
     }
 
     #[test]
     fn test_to_string() {
-        assert_eq!(to_string(&CqlValue::Integer(42)).unwrap(), CqlValue::String("42".to_string()));
-        assert_eq!(to_string(&CqlValue::Boolean(true)).unwrap(), CqlValue::String("true".to_string()));
+        assert_eq!(
+            to_string(&CqlValue::Integer(42)).unwrap(),
+            CqlValue::String("42".to_string())
+        );
+        assert_eq!(
+            to_string(&CqlValue::Boolean(true)).unwrap(),
+            CqlValue::String("true".to_string())
+        );
     }
 
     #[test]
@@ -957,7 +1085,7 @@ mod tests {
     fn test_parse_quantity() {
         let result = parse_quantity_string("10 'mg'").unwrap();
         if let CqlValue::Quantity(q) = result {
-            assert_eq!(q.value, Decimal::from(10));
+            assert_eq!(q.value, BigDecimal::from(10));
             assert_eq!(q.unit, Some("mg".to_string()));
         } else {
             panic!("Expected Quantity");
