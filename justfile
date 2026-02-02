@@ -257,11 +257,11 @@ publish:
 
 # Create release PR (bump versions + changelogs) via release-plz
 release-pr:
-    release-plz release-pr
+    release-plz release-pr --git-token "$GITHUB_TOKEN"
 
 # Publish unpublished crates to crates.io via release-plz
 release-publish:
-    release-plz release
+    release-plz release --git-token "$GITHUB_TOKEN"
 
 # ============================================================================
 # Shortcuts
