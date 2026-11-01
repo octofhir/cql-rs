@@ -3,8 +3,8 @@
 //! Parses the XML test format used by cqframework/cql-tests repository.
 //! The format is shared with FHIRPath tests and defined in testSchema.xsd.
 
-use quick_xml::Reader;
 use quick_xml::events::{BytesStart, Event};
+use quick_xml::{Reader, XmlVersion};
 use std::fs;
 use std::path::Path;
 
@@ -142,7 +142,7 @@ pub fn parse_test_xml(xml: &str) -> Result<TestSuite, ParseError> {
 
     loop {
         match reader.read_event_into(&mut buf) {
-            Ok(Event::Start(ref e)) if e.name().as_ref() == b"tests" => {
+            Ok(Event::Start(ref e)) if e.name().as_ref() == "tests" => {
                 parse_tests_attributes(e, &mut suite)?;
                 parse_tests_content(&mut reader, &mut suite)?;
             }
@@ -158,10 +158,9 @@ pub fn parse_test_xml(xml: &str) -> Result<TestSuite, ParseError> {
 
 fn parse_tests_attributes(e: &BytesStart, suite: &mut TestSuite) -> Result<(), ParseError> {
     for attr in e.attributes().flatten() {
-        let key =
-            std::str::from_utf8(attr.key.as_ref()).map_err(|e| ParseError::Utf8(e.to_string()))?;
+        let key = attr.key.as_ref();
         let value = attr
-            .unescape_value()
+            .normalized_value(XmlVersion::Implicit1_0)
             .map_err(|e| ParseError::Xml(e.to_string()))?
             .to_string();
 
@@ -185,18 +184,18 @@ fn parse_tests_content(
     loop {
         match reader.read_event_into(&mut buf) {
             Ok(Event::Start(ref e)) => match e.name().as_ref() {
-                b"capability" => {
+                "capability" => {
                     suite.capabilities.push(parse_capability(e)?);
                 }
-                b"notes" => {
+                "notes" => {
                     suite.notes = Some(read_text_content(reader)?);
                 }
-                b"group" => {
+                "group" => {
                     suite.groups.push(parse_group(e, reader)?);
                 }
                 _ => {}
             },
-            Ok(Event::End(ref e)) if e.name().as_ref() == b"tests" => break,
+            Ok(Event::End(ref e)) if e.name().as_ref() == "tests" => break,
             Ok(Event::Eof) => break,
             Ok(_) => {}
             Err(e) => return Err(ParseError::Xml(e.to_string())),
@@ -214,10 +213,9 @@ fn parse_capability(e: &BytesStart) -> Result<Capability, ParseError> {
     };
 
     for attr in e.attributes().flatten() {
-        let key =
-            std::str::from_utf8(attr.key.as_ref()).map_err(|e| ParseError::Utf8(e.to_string()))?;
+        let key = attr.key.as_ref();
         let value = attr
-            .unescape_value()
+            .normalized_value(XmlVersion::Implicit1_0)
             .map_err(|e| ParseError::Xml(e.to_string()))?
             .to_string();
 
@@ -244,10 +242,9 @@ fn parse_group(e: &BytesStart, reader: &mut Reader<&[u8]>) -> Result<TestGroup, 
 
     // Parse attributes
     for attr in e.attributes().flatten() {
-        let key =
-            std::str::from_utf8(attr.key.as_ref()).map_err(|e| ParseError::Utf8(e.to_string()))?;
+        let key = attr.key.as_ref();
         let value = attr
-            .unescape_value()
+            .normalized_value(XmlVersion::Implicit1_0)
             .map_err(|e| ParseError::Xml(e.to_string()))?
             .to_string();
 
@@ -265,21 +262,21 @@ fn parse_group(e: &BytesStart, reader: &mut Reader<&[u8]>) -> Result<TestGroup, 
     loop {
         match reader.read_event_into(&mut buf) {
             Ok(Event::Start(ref e)) => match e.name().as_ref() {
-                b"capability" => {
+                "capability" => {
                     group.capabilities.push(parse_capability(e)?);
                 }
-                b"notes" => {
+                "notes" => {
                     group.notes = Some(read_text_content(reader)?);
                 }
-                b"test" => {
+                "test" => {
                     group.tests.push(parse_test(e, reader)?);
                 }
                 _ => {}
             },
-            Ok(Event::Empty(ref e)) if e.name().as_ref() == b"capability" => {
+            Ok(Event::Empty(ref e)) if e.name().as_ref() == "capability" => {
                 group.capabilities.push(parse_capability(e)?);
             }
-            Ok(Event::End(ref e)) if e.name().as_ref() == b"group" => break,
+            Ok(Event::End(ref e)) if e.name().as_ref() == "group" => break,
             Ok(Event::Eof) => break,
             Ok(_) => {}
             Err(e) => return Err(ParseError::Xml(e.to_string())),
@@ -308,10 +305,9 @@ fn parse_test(e: &BytesStart, reader: &mut Reader<&[u8]>) -> Result<TestCase, Pa
 
     // Parse attributes
     for attr in e.attributes().flatten() {
-        let key =
-            std::str::from_utf8(attr.key.as_ref()).map_err(|e| ParseError::Utf8(e.to_string()))?;
+        let key = attr.key.as_ref();
         let value = attr
-            .unescape_value()
+            .normalized_value(XmlVersion::Implicit1_0)
             .map_err(|e| ParseError::Xml(e.to_string()))?
             .to_string();
 
@@ -333,17 +329,16 @@ fn parse_test(e: &BytesStart, reader: &mut Reader<&[u8]>) -> Result<TestCase, Pa
         match reader.read_event_into(&mut buf) {
             Ok(Event::Start(ref e)) => {
                 match e.name().as_ref() {
-                    b"capability" => {
+                    "capability" => {
                         test.capabilities.push(parse_capability(e)?);
                     }
-                    b"expression" => {
+                    "expression" => {
                         // Check for invalid attribute
                         for attr in e.attributes().flatten() {
-                            let key = std::str::from_utf8(attr.key.as_ref())
-                                .map_err(|e| ParseError::Utf8(e.to_string()))?;
+                            let key = attr.key.as_ref();
                             if key == "invalid" {
                                 let value = attr
-                                    .unescape_value()
+                                    .normalized_value(XmlVersion::Implicit1_0)
                                     .map_err(|e| ParseError::Xml(e.to_string()))?
                                     .to_string();
                                 test.invalid = InvalidType::from_str(&value);
@@ -351,11 +346,11 @@ fn parse_test(e: &BytesStart, reader: &mut Reader<&[u8]>) -> Result<TestCase, Pa
                         }
                         test.expression = read_text_content(reader)?;
                     }
-                    b"output" => {
+                    "output" => {
                         let output = parse_output(e, reader)?;
                         test.outputs.push(output);
                     }
-                    b"notes" => {
+                    "notes" => {
                         test.notes = Some(read_text_content(reader)?);
                     }
                     _ => {}
@@ -363,10 +358,10 @@ fn parse_test(e: &BytesStart, reader: &mut Reader<&[u8]>) -> Result<TestCase, Pa
             }
             Ok(Event::Empty(ref e)) => {
                 match e.name().as_ref() {
-                    b"capability" => {
+                    "capability" => {
                         test.capabilities.push(parse_capability(e)?);
                     }
-                    b"output" => {
+                    "output" => {
                         // Empty output means null/empty result
                         test.outputs.push(ExpectedOutput {
                             value: String::new(),
@@ -376,7 +371,7 @@ fn parse_test(e: &BytesStart, reader: &mut Reader<&[u8]>) -> Result<TestCase, Pa
                     _ => {}
                 }
             }
-            Ok(Event::End(ref e)) if e.name().as_ref() == b"test" => break,
+            Ok(Event::End(ref e)) if e.name().as_ref() == "test" => break,
             Ok(Event::Eof) => break,
             Ok(_) => {}
             Err(e) => return Err(ParseError::Xml(e.to_string())),
@@ -395,11 +390,10 @@ fn parse_output(e: &BytesStart, reader: &mut Reader<&[u8]>) -> Result<ExpectedOu
 
     // Parse type attribute
     for attr in e.attributes().flatten() {
-        let key =
-            std::str::from_utf8(attr.key.as_ref()).map_err(|e| ParseError::Utf8(e.to_string()))?;
+        let key = attr.key.as_ref();
         if key == "type" {
             let value = attr
-                .unescape_value()
+                .normalized_value(XmlVersion::Implicit1_0)
                 .map_err(|e| ParseError::Xml(e.to_string()))?
                 .to_string();
             output.output_type = OutputType::from_str(&value);
@@ -417,15 +411,12 @@ fn read_text_content(reader: &mut Reader<&[u8]>) -> Result<String, ParseError> {
     loop {
         match reader.read_event_into(&mut buf) {
             Ok(Event::Text(e)) => {
-                // In quick_xml 0.38+, text events don't include entity refs
-                let decoded =
-                    std::str::from_utf8(&e).map_err(|e| ParseError::Utf8(e.to_string()))?;
-                text.push_str(decoded);
+                // Text events do not include entity references
+                text.push_str(&e);
             }
             Ok(Event::GeneralRef(e)) => {
                 // Handle XML entity references like &lt; &gt; &amp; etc.
-                let entity_name =
-                    std::str::from_utf8(&e).map_err(|e| ParseError::Utf8(e.to_string()))?;
+                let entity_name: &str = &e;
                 let resolved = match entity_name {
                     "lt" => "<",
                     "gt" => ">",
@@ -443,9 +434,7 @@ fn read_text_content(reader: &mut Reader<&[u8]>) -> Result<String, ParseError> {
                 text.push_str(resolved);
             }
             Ok(Event::CData(e)) => {
-                let cdata = String::from_utf8(e.into_inner().to_vec())
-                    .map_err(|e| ParseError::Utf8(e.to_string()))?;
-                text.push_str(&cdata);
+                text.push_str(&e.into_inner());
             }
             Ok(Event::End(_)) => break,
             Ok(Event::Eof) => break,
@@ -463,7 +452,6 @@ fn read_text_content(reader: &mut Reader<&[u8]>) -> Result<String, ParseError> {
 pub enum ParseError {
     Io(String),
     Xml(String),
-    Utf8(String),
 }
 
 impl std::fmt::Display for ParseError {
@@ -471,7 +459,6 @@ impl std::fmt::Display for ParseError {
         match self {
             ParseError::Io(e) => write!(f, "IO error: {}", e),
             ParseError::Xml(e) => write!(f, "XML error: {}", e),
-            ParseError::Utf8(e) => write!(f, "UTF-8 error: {}", e),
         }
     }
 }

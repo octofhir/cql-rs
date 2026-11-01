@@ -41,17 +41,17 @@ pub fn parse_xml(xml_content: &str) -> Result<ModelInfo, ParseError> {
     loop {
         match reader.read_event_into(&mut buf) {
             Ok(Event::Start(e)) => {
-                _current_element = String::from_utf8_lossy(e.name().as_ref()).to_string();
+                _current_element = e.name().as_ref().to_owned();
 
                 match _current_element.as_str() {
                     "modelInfo" => {
                         // Parse modelInfo attributes
                         for attr in e.attributes() {
                             let attr = attr?;
-                            let key = String::from_utf8_lossy(attr.key.as_ref());
-                            let value = String::from_utf8_lossy(&attr.value);
+                            let key: &str = attr.key.as_ref();
+                            let value = attr.value.clone();
 
-                            match key.as_ref() {
+                            match key {
                                 "name" => model_info.name = value.to_string(),
                                 "version" => model_info.version = value.to_string(),
                                 "url" => model_info.url = value.to_string(),
@@ -74,10 +74,10 @@ pub fn parse_xml(xml_content: &str) -> Result<ModelInfo, ParseError> {
 
                         for attr in e.attributes() {
                             let attr = attr?;
-                            let key = String::from_utf8_lossy(attr.key.as_ref());
-                            let value = String::from_utf8_lossy(&attr.value);
+                            let key: &str = attr.key.as_ref();
+                            let value = attr.value.clone();
 
-                            match key.as_ref() {
+                            match key {
                                 "name" => type_info.name = value.to_string(),
                                 "namespace" => type_info.namespace = Some(value.to_string()),
                                 "baseType" => type_info.base_type = Some(value.to_string()),
@@ -96,10 +96,10 @@ pub fn parse_xml(xml_content: &str) -> Result<ModelInfo, ParseError> {
 
                         for attr in e.attributes() {
                             let attr = attr?;
-                            let key = String::from_utf8_lossy(attr.key.as_ref());
-                            let value = String::from_utf8_lossy(&attr.value);
+                            let key: &str = attr.key.as_ref();
+                            let value = attr.value.clone();
 
-                            match key.as_ref() {
+                            match key {
                                 "name" => property.name = value.to_string(),
                                 "type" | "elementType" => property.element_type = value.to_string(),
                                 "target" => property.target = Some(value.to_string()),
@@ -130,17 +130,17 @@ pub fn parse_xml(xml_content: &str) -> Result<ModelInfo, ParseError> {
             }
             Ok(Event::Empty(e)) => {
                 // Handle self-closing tags like <element name="id" type="String"/>
-                let tag_name = String::from_utf8_lossy(e.name().as_ref()).to_string();
+                let tag_name = e.name().as_ref().to_owned();
 
                 if tag_name.as_str() == "element" && current_type.is_some() {
                     let mut property = PropertyInfo::new("", "");
 
                     for attr in e.attributes() {
                         let attr = attr?;
-                        let key = String::from_utf8_lossy(attr.key.as_ref());
-                        let value = String::from_utf8_lossy(&attr.value);
+                        let key: &str = attr.key.as_ref();
+                        let value = attr.value.clone();
 
-                        match key.as_ref() {
+                        match key {
                             "name" => property.name = value.to_string(),
                             "type" | "elementType" => property.element_type = value.to_string(),
                             "target" => property.target = Some(value.to_string()),
@@ -171,7 +171,7 @@ pub fn parse_xml(xml_content: &str) -> Result<ModelInfo, ParseError> {
                 }
             }
             Ok(Event::End(e)) => {
-                let tag_name = String::from_utf8_lossy(e.name().as_ref()).to_string();
+                let tag_name = e.name().as_ref().to_owned();
 
                 match tag_name.as_str() {
                     "typeInfo" | "classInfo" | "simpleTypeInfo" | "profileInfo" => {
