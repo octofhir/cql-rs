@@ -29,7 +29,8 @@ smallvec = { workspace = true }
 num-traits = "0.2"
 
 [dev-dependencies]
-octofhir-cql-parser = { workspace = true }
+# Path only: cargo publish drops it, so publishing does not wait on the parser
+octofhir-cql-parser = { path = "../octofhir-cql-parser" }
 tokio = { workspace = true, features = ["rt", "macros"] }
 
 [lints]

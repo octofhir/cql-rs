@@ -17,7 +17,8 @@ bigdecimal = { workspace = true }
 thiserror = { workspace = true }
 
 [dev-dependencies]
-octofhir-cql-parser = { workspace = true }
+# Path only: cargo publish drops it, so publishing does not wait on the parser
+octofhir-cql-parser = { path = "../octofhir-cql-parser" }
 
 [lints]
 workspace = true
