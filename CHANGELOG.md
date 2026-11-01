@@ -40,3 +40,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - The official cqframework/cql-tests pass 1693/1693 and gate CI.
 - Async adapters no longer panic inside a Tokio runtime.
+
+## [0.2.1] - 2026-11-01
+
+### Security
+
+- quick-xml 0.42 (RUSTSEC-2026-0194, RUSTSEC-2026-0195) and patched releases of the
+  other dependencies; `cargo audit` is clean.
