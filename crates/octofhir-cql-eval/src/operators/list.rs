@@ -13,7 +13,7 @@ use num_traits::ToPrimitive;
 use octofhir_cql_elm::{
     AggregateExpression, BinaryExpression, FilterExpression, FirstLastExpression,
     ForEachExpression, IndexOfExpression, ListExpression, RepeatExpression, SliceExpression,
-    SortExpression, UnaryExpression,
+    SortExpression, TypeSpecifier, UnaryExpression,
 };
 use octofhir_cql_types::{CqlDate, CqlDateTime, CqlList, CqlQuantity, CqlType, CqlValue};
 use std::cmp::Ordering;
@@ -34,11 +34,13 @@ impl CqlEngine {
         }
 
         // Determine element type
-        let element_type = if let Some(first) = elements.first() {
-            first.get_type()
-        } else {
-            // TODO: Parse type_specifier when type conversion is implemented
-            CqlType::Any
+        let element_type = match (elements.first(), &expr.type_specifier) {
+            (Some(first), _) => first.get_type(),
+            (None, Some(TypeSpecifier::List(list))) => {
+                super::interval::type_specifier_to_cql_type(&list.element_type)
+            }
+            (None, Some(element)) => super::interval::type_specifier_to_cql_type(element),
+            (None, None) => CqlType::Any,
         };
 
         Ok(CqlValue::List(CqlList {

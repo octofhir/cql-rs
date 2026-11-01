@@ -1,15 +1,16 @@
 //! Type specifier AST nodes for CQL
 
 use crate::Identifier;
+use serde::Serialize;
 
 /// Type specifier in CQL
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub enum TypeSpecifier {
     /// Named type (e.g., "Integer", "FHIR.Patient")
     Named(NamedTypeSpecifier),
-    /// List type (e.g., "List<Integer>")
+    /// List type (e.g., `List<Integer>`)
     List(ListTypeSpecifier),
-    /// Interval type (e.g., "Interval<Integer>")
+    /// Interval type (e.g., `Interval<Integer>`)
     Interval(IntervalTypeSpecifier),
     /// Tuple type (e.g., "Tuple { name String, age Integer }")
     Tuple(TupleTypeSpecifier),
@@ -40,7 +41,7 @@ impl TypeSpecifier {
 }
 
 /// Named type specifier
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct NamedTypeSpecifier {
     /// Optional namespace/model qualifier
     pub namespace: Option<String>,
@@ -86,7 +87,7 @@ impl From<&str> for NamedTypeSpecifier {
 }
 
 /// List type specifier
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct ListTypeSpecifier {
     /// Element type
     pub element_type: Box<TypeSpecifier>,
@@ -101,7 +102,7 @@ impl ListTypeSpecifier {
 }
 
 /// Interval type specifier
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct IntervalTypeSpecifier {
     /// Point type (must be ordered)
     pub point_type: Box<TypeSpecifier>,
@@ -116,7 +117,7 @@ impl IntervalTypeSpecifier {
 }
 
 /// Tuple type specifier
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct TupleTypeSpecifier {
     /// Tuple elements
     pub elements: Vec<TupleElementDefinition>,
@@ -129,7 +130,7 @@ impl TupleTypeSpecifier {
 }
 
 /// Tuple element definition
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct TupleElementDefinition {
     /// Element name
     pub name: Identifier,
@@ -147,7 +148,7 @@ impl TupleElementDefinition {
 }
 
 /// Choice type specifier (union of types)
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct ChoiceTypeSpecifier {
     /// Choice types
     pub types: Vec<TypeSpecifier>,

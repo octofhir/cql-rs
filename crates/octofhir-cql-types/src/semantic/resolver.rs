@@ -289,11 +289,7 @@ impl<'a> Resolver<'a> {
 
         let mut total_cost = 0u32;
         for (param, arg) in sig.parameters.iter().zip(arg_types.iter()) {
-            if let Some(cost) = self.coercer.conversion_cost(arg, &param.param_type) {
-                total_cost += cost;
-            } else {
-                return None;
-            }
+            total_cost += self.coercer.conversion_cost(arg, &param.param_type)?;
         }
 
         Some(total_cost)

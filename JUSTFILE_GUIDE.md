@@ -54,7 +54,7 @@ just fix                      # Auto-fix issues
 just cli-help                 # Show CLI help
 just validate FILE            # Validate a CQL file
 just translate FILE           # Translate CQL to ELM
-just execute FILE [ARGS]      # Execute a CQL file
+just eval FILE [ARGS]         # Evaluate a CQL file
 just repl                     # Start REPL
 
 # Development Shortcuts
@@ -104,10 +104,10 @@ just commit "your message"
 # Build and run in one command
 just br --help
 just br validate test.cql
-just br execute test.cql --param Age=65
+just br eval test.cql --param Age=65
 
 # Or with release build (faster)
-just brr execute large-file.cql
+just brr eval large-file.cql
 ```
 
 ### Full Development Workflow
@@ -127,10 +127,10 @@ just dev
 
 ```bash
 # Execute with custom arguments
-just execute measure.cql --param Age=65 --data patient.json
+just eval measure.cql --param Age=65 --data patient.json
 
 # Run CLI with any arguments
-just run-cli translate measure.cql --pretty
+just run-cli translate measure.cql
 ```
 
 ### Watching for Changes

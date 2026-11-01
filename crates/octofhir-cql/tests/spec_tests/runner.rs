@@ -56,9 +56,7 @@ impl ImplementationCapabilities {
         caps.insert("interval".to_string(), true);
         caps.insert("list".to_string(), true);
         caps.insert("aggregate".to_string(), true);
-
-        // Capabilities we don't yet support
-        caps.insert("ucum-unit-conversion-support".to_string(), false);
+        caps.insert("ucum-unit-conversion-support".to_string(), true);
         caps.insert(
             "precision-operators-for-decimal-and-date-time-types".to_string(),
             true,
@@ -69,8 +67,9 @@ impl ImplementationCapabilities {
         }
     }
 
-    pub fn supports(&self, _code: &str) -> bool {
-        true
+    /// Whether a capability a test requires is supported; one not listed is assumed to be
+    pub fn supports(&self, code: &str) -> bool {
+        self._capabilities.get(code).copied().unwrap_or(true)
     }
 
     pub fn _add_capability(&mut self, code: &str, supported: bool) {
@@ -627,6 +626,9 @@ mod tests {
     fn test_capability_check() {
         let caps = ImplementationCapabilities::new();
         assert!(caps.supports("arithmetic"));
-        assert!(!caps.supports("ucum-unit-conversion-support"));
+        assert!(caps.supports("ucum-unit-conversion-support"));
+        let mut caps = ImplementationCapabilities::new();
+        caps._add_capability("arithmetic", false);
+        assert!(!caps.supports("arithmetic"));
     }
 }

@@ -228,4 +228,22 @@ fn generate_compliance_report() {
     let report_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("compliance_report.md");
     std::fs::write(&report_path, &report).expect("Failed to write report");
     println!("Report written to: {:?}", report_path);
+
+    // Conformance gate: every vendored cql-tests case must pass.
+    assert_eq!(all_results.len(), 14, "expected the 14 cqframework suites");
+    let incomplete: Vec<String> = all_results
+        .iter()
+        .filter(|r| r.failed > 0 || r.skipped > 0)
+        .map(|r| {
+            format!(
+                "{}: {} failed, {} skipped",
+                r.suite_name, r.failed, r.skipped
+            )
+        })
+        .collect();
+    assert!(
+        incomplete.is_empty(),
+        "cql-tests regressions:\n{}",
+        incomplete.join("\n")
+    );
 }

@@ -24,21 +24,30 @@ octofhir-cql-types = { workspace = true }
 octofhir-cql-eval = { workspace = true }
 octofhir-cql-model = { workspace = true }
 octofhir-cql-diagnostics = { workspace = true }
+indexmap = { workspace = true }
 
-# CLI dependencies
-clap = { workspace = true }
-human-panic = { workspace = true }
-colored = { workspace = true }
-anyhow = { workspace = true }
-tokio = { workspace = true }
-serde_json = { workspace = true }
-parking_lot = { workspace = true }
+# CLI dependencies (feature `cli`)
+anyhow = { workspace = true, optional = true }
+chrono = { workspace = true, optional = true }
+clap = { workspace = true, optional = true }
+colored = { workspace = true, optional = true }
+human-panic = { workspace = true, optional = true }
 rustyline = { version = "13", optional = true }
-tabled = { version = "0.15", optional = true }
+serde = { workspace = true, optional = true }
+serde_json = { workspace = true, optional = true }
 
 [features]
 default = ["cli"]
-cli = ["rustyline", "tabled"]
+cli = [
+    "anyhow",
+    "chrono",
+    "clap",
+    "colored",
+    "human-panic",
+    "rustyline",
+    "serde",
+    "serde_json",
+]
 
 [dev-dependencies]
 rstest = { workspace = true }

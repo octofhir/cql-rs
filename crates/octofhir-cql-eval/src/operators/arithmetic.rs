@@ -316,9 +316,13 @@ impl CqlEngine {
                         unit: Some("1".to_string()),
                     }))
                 } else {
-                    // Different units - return quantity with combined unit
-                    // Simplified: just concatenate units for now
+                    // Different units: the UCUM quotient `u1/u2`, with a
+                    // compound divisor parenthesised (`mg/(m2.d)`), since UCUM
+                    // division is left-associative.
                     let unit = match (&a.unit, &b.unit) {
+                        (Some(u1), Some(u2)) if u2.contains(['/', '.']) => {
+                            Some(format!("{u1}/({u2})"))
+                        }
                         (Some(u1), Some(u2)) => Some(format!("{}/{}", u1, u2)),
                         (Some(u1), None) => Some(u1.clone()),
                         (None, Some(u2)) => Some(format!("1/{}", u2)),

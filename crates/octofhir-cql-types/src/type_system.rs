@@ -310,8 +310,8 @@ impl CqlType {
     /// - Any is the supertype of all types
     /// - Integer is a subtype of Long
     /// - Integer and Long are subtypes of Decimal
-    /// - List<A> is a subtype of List<B> if A is a subtype of B
-    /// - Interval<A> is a subtype of Interval<B> if A is a subtype of B
+    /// - `List<A>` is a subtype of `List<B>` if A is a subtype of B
+    /// - `Interval<A>` is a subtype of `Interval<B>` if A is a subtype of B
     pub fn is_subtype_of(&self, other: &CqlType) -> bool {
         // Any is supertype of everything
         if matches!(other, CqlType::Any) {

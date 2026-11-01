@@ -1,7 +1,7 @@
 //! ModelInfo parser for XML and JSON formats
 //!
 //! Parses HL7 ModelInfo files (XML and JSON) into ModelInfo structures.
-//! Reference: http://cql.hl7.org/07-physicalrepresentation.html#modelinfo
+//! Reference: <http://cql.hl7.org/07-physicalrepresentation.html#modelinfo>
 
 use super::types::{ModelInfo, PropertyInfo, TypeInfo};
 use quick_xml::Reader;
@@ -91,43 +91,39 @@ pub fn parse_xml(xml_content: &str) -> Result<ModelInfo, ParseError> {
 
                         current_type = Some(type_info);
                     }
-                    "element" => {
-                        if current_type.is_some() {
-                            let mut property = PropertyInfo::new("", "");
+                    "element" if current_type.is_some() => {
+                        let mut property = PropertyInfo::new("", "");
 
-                            for attr in e.attributes() {
-                                let attr = attr?;
-                                let key = String::from_utf8_lossy(attr.key.as_ref());
-                                let value = String::from_utf8_lossy(&attr.value);
+                        for attr in e.attributes() {
+                            let attr = attr?;
+                            let key = String::from_utf8_lossy(attr.key.as_ref());
+                            let value = String::from_utf8_lossy(&attr.value);
 
-                                match key.as_ref() {
-                                    "name" => property.name = value.to_string(),
-                                    "type" | "elementType" => {
-                                        property.element_type = value.to_string()
-                                    }
-                                    "target" => property.target = Some(value.to_string()),
-                                    _ => {}
-                                }
+                            match key.as_ref() {
+                                "name" => property.name = value.to_string(),
+                                "type" | "elementType" => property.element_type = value.to_string(),
+                                "target" => property.target = Some(value.to_string()),
+                                _ => {}
                             }
-
-                            // Check if it's a list type
-                            if property.element_type.starts_with("list<")
-                                || property.element_type.starts_with("List<")
-                            {
-                                property.is_list = true;
-                                // Extract inner type from list<T>
-                                if let Some(inner) = property
-                                    .element_type
-                                    .strip_prefix("list<")
-                                    .or_else(|| property.element_type.strip_prefix("List<"))
-                                    && let Some(inner) = inner.strip_suffix('>')
-                                {
-                                    property.element_type = inner.to_string();
-                                }
-                            }
-
-                            current_property = Some(property);
                         }
+
+                        // Check if it's a list type
+                        if property.element_type.starts_with("list<")
+                            || property.element_type.starts_with("List<")
+                        {
+                            property.is_list = true;
+                            // Extract inner type from list<T>
+                            if let Some(inner) = property
+                                .element_type
+                                .strip_prefix("list<")
+                                .or_else(|| property.element_type.strip_prefix("List<"))
+                                && let Some(inner) = inner.strip_suffix('>')
+                            {
+                                property.element_type = inner.to_string();
+                            }
+                        }
+
+                        current_property = Some(property);
                     }
                     _ => {}
                 }

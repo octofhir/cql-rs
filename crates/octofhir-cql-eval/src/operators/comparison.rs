@@ -487,98 +487,52 @@ pub fn cql_compare(left: &CqlValue, right: &CqlValue) -> EvalResult<Option<Order
     }
 }
 
+/// The values of two quantities in the unit of the first one: `b` converted through UCUM,
+/// offsets of temperatures included (`0 'Cel'` is `32 '[degF]'`)
+fn quantity_values_in_unit_of_a(a: &CqlQuantity, b: &CqlQuantity) -> EvalResult<(f64, f64)> {
+    let unit_a = a.unit.as_deref().unwrap_or("1");
+    let unit_b = b.unit.as_deref().unwrap_or("1");
+    let incompatible = || EvalError::IncompatibleUnits {
+        unit1: unit_a.to_string(),
+        unit2: unit_b.to_string(),
+    };
+    if !octofhir_ucum::is_comparable(unit_a, unit_b).map_err(|_| incompatible())? {
+        return Err(incompatible());
+    }
+    let value_a = a.value.to_f64().ok_or_else(incompatible)?;
+    let value_b = b.value.to_f64().ok_or_else(incompatible)?;
+    let converted = octofhir_ucum::convert(value_b, unit_b, unit_a).map_err(|_| incompatible())?;
+    Ok((value_a, converted))
+}
+
+/// Whether two values of the same unit are equal, up to the rounding of the conversion
+fn approximately_equal(a: f64, b: f64) -> bool {
+    let epsilon = 1e-10 * (a.abs() + b.abs()).max(1.0);
+    (a - b).abs() < epsilon
+}
+
 /// Compare two quantities for equality, with UCUM unit conversion if needed
 fn compare_quantities_equal(a: &CqlQuantity, b: &CqlQuantity) -> EvalResult<Option<bool>> {
-    // Same unit - direct comparison
     if a.unit == b.unit {
         return Ok(Some(a.value == b.value));
     }
-
-    // Different units - try UCUM conversion
-    let unit_a = a.unit.as_deref().unwrap_or("1");
-    let unit_b = b.unit.as_deref().unwrap_or("1");
-
-    // Check if units are comparable (same dimension)
-    match octofhir_ucum::is_comparable(unit_a, unit_b) {
-        Ok(true) => {
-            // Convert both to canonical form and compare
-            match (
-                octofhir_ucum::get_canonical_units(unit_a),
-                octofhir_ucum::get_canonical_units(unit_b),
-            ) {
-                (Ok(canon_a), Ok(canon_b)) => {
-                    // Convert values to canonical units
-                    let val_a = a.value.to_f64().unwrap_or(0.0) * canon_a.factor;
-                    let val_b = b.value.to_f64().unwrap_or(0.0) * canon_b.factor;
-                    // Compare with small epsilon for floating point
-                    let epsilon = 1e-10 * (val_a.abs() + val_b.abs()).max(1.0);
-                    Ok(Some((val_a - val_b).abs() < epsilon))
-                }
-                _ => Err(EvalError::IncompatibleUnits {
-                    unit1: unit_a.to_string(),
-                    unit2: unit_b.to_string(),
-                }),
-            }
-        }
-        Ok(false) => Err(EvalError::IncompatibleUnits {
-            unit1: unit_a.to_string(),
-            unit2: unit_b.to_string(),
-        }),
-        Err(_) => Err(EvalError::IncompatibleUnits {
-            unit1: unit_a.to_string(),
-            unit2: unit_b.to_string(),
-        }),
-    }
+    let (value_a, value_b) = quantity_values_in_unit_of_a(a, b)?;
+    Ok(Some(approximately_equal(value_a, value_b)))
 }
 
 /// Compare two quantities for ordering, with UCUM unit conversion if needed
 fn compare_quantities(a: &CqlQuantity, b: &CqlQuantity) -> EvalResult<Option<Ordering>> {
-    // Same unit - direct comparison
     if a.unit == b.unit {
         return Ok(Some(a.value.cmp(&b.value)));
     }
-
-    // Different units - try UCUM conversion
-    let unit_a = a.unit.as_deref().unwrap_or("1");
-    let unit_b = b.unit.as_deref().unwrap_or("1");
-
-    // Check if units are comparable (same dimension)
-    match octofhir_ucum::is_comparable(unit_a, unit_b) {
-        Ok(true) => {
-            // Convert both to canonical form and compare
-            match (
-                octofhir_ucum::get_canonical_units(unit_a),
-                octofhir_ucum::get_canonical_units(unit_b),
-            ) {
-                (Ok(canon_a), Ok(canon_b)) => {
-                    // Convert values to canonical units
-                    let val_a = a.value.to_f64().unwrap_or(0.0) * canon_a.factor;
-                    let val_b = b.value.to_f64().unwrap_or(0.0) * canon_b.factor;
-                    // Compare with small epsilon for floating point
-                    let epsilon = 1e-10 * (val_a.abs() + val_b.abs()).max(1.0);
-                    if (val_a - val_b).abs() < epsilon {
-                        Ok(Some(Ordering::Equal))
-                    } else if val_a < val_b {
-                        Ok(Some(Ordering::Less))
-                    } else {
-                        Ok(Some(Ordering::Greater))
-                    }
-                }
-                _ => Err(EvalError::IncompatibleUnits {
-                    unit1: unit_a.to_string(),
-                    unit2: unit_b.to_string(),
-                }),
-            }
-        }
-        Ok(false) => Err(EvalError::IncompatibleUnits {
-            unit1: unit_a.to_string(),
-            unit2: unit_b.to_string(),
-        }),
-        Err(_) => Err(EvalError::IncompatibleUnits {
-            unit1: unit_a.to_string(),
-            unit2: unit_b.to_string(),
-        }),
-    }
+    let (value_a, value_b) = quantity_values_in_unit_of_a(a, b)?;
+    Ok(Some(if approximately_equal(value_a, value_b) {
+        Ordering::Equal
+    } else if value_a < value_b {
+        Ordering::Less
+    } else {
+        Ordering::Greater
+    }))
 }
 
 /// Compare two intervals for equality
@@ -976,5 +930,32 @@ mod tests {
             cql_equal(&CqlValue::Tuple(t1), &CqlValue::Tuple(t2)).unwrap(),
             None
         );
+    }
+
+    fn quantity(value: i64, unit: &str) -> CqlValue {
+        CqlValue::Quantity(CqlQuantity::new(BigDecimal::from(value), unit))
+    }
+
+    #[test]
+    fn quantities_of_different_units_compare_through_ucum() {
+        assert_eq!(
+            cql_equal(&quantity(1000, "mg"), &quantity(1, "g")).unwrap(),
+            Some(true)
+        );
+        assert_eq!(
+            cql_compare(&quantity(1, "kg"), &quantity(999, "g")).unwrap(),
+            Some(Ordering::Greater)
+        );
+        // A temperature converts with its offset, not only its factor
+        assert_eq!(
+            cql_equal(&quantity(100, "Cel"), &quantity(212, "[degF]")).unwrap(),
+            Some(true)
+        );
+        assert_eq!(
+            cql_compare(&quantity(0, "Cel"), &quantity(273, "K")).unwrap(),
+            Some(Ordering::Greater)
+        );
+        assert!(cql_equal(&quantity(1, "m"), &quantity(1, "s")).is_err());
+        assert!(cql_equal(&quantity(1, "m"), &quantity(1, "notaunit")).is_err());
     }
 }

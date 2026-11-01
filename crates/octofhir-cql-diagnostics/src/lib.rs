@@ -1,7 +1,4 @@
-//! CQL diagnostics and error handling
-//!
-//! This crate provides the error handling infrastructure for the CQL implementation,
-//! including error codes, source locations, and diagnostic reporting.
+#![doc = include_str!("../README.md")]
 
 mod error;
 mod error_code;

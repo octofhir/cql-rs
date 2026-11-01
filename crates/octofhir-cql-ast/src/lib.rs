@@ -1,7 +1,6 @@
-//! CQL Abstract Syntax Tree definitions
-//!
-//! This crate defines the AST nodes for CQL (Clinical Quality Language) 1.5.
-//! The AST closely mirrors the CQL grammar while providing a clean Rust API.
+#![doc = include_str!("../README.md")]
+
+use serde::Serialize;
 
 mod expression;
 mod library;
@@ -27,7 +26,7 @@ pub type BoxExpr = Box<Spanned<Expression>>;
 pub type OptBoxExpr = Option<Box<Spanned<Expression>>>;
 
 /// An identifier with optional qualifier
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct Identifier {
     /// The identifier text
     pub name: String,
@@ -66,7 +65,7 @@ impl From<String> for Identifier {
 }
 
 /// A qualified identifier (e.g., "Library.Identifier")
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct QualifiedIdentifier {
     /// Optional library qualifier
     pub qualifier: Option<String>,
@@ -93,7 +92,7 @@ impl QualifiedIdentifier {
 }
 
 /// Version specifier for libraries
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct VersionSpecifier {
     /// The version string (e.g., "1.0.0")
     pub version: String,
@@ -108,7 +107,7 @@ impl VersionSpecifier {
 }
 
 /// Access modifier for definitions
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize)]
 pub enum AccessModifier {
     /// Public access (default)
     #[default]

@@ -1,352 +1,154 @@
-//! REPL implementation
+//! `cql repl`: evaluate CQL expressions interactively.
+//!
+//! Each input is either a `define` (kept for the rest of the session) or an
+//! expression, which is evaluated together with the definitions entered so
+//! far. With `--data` and `--patient` the session runs in `Patient` context.
 
-use super::{output, resolver};
-use anyhow::{Context, Result};
+use super::load_data;
+use crate::eval::fhir::InMemoryFhirData;
+use crate::eval::{DataProvider, TerminologyProvider};
+use crate::model::fhir::json::cql_to_json;
+use crate::types::CqlValue;
+use crate::{CompiledLibrary, DirectoryLibrarySource};
+use anyhow::{Result, anyhow};
 use colored::Colorize;
 use rustyline::DefaultEditor;
 use rustyline::error::ReadlineError;
-use std::collections::HashMap;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
+use std::sync::Arc;
 
-/// Configuration for REPL
-pub struct ReplConfig {
-    pub model: String,
-    pub version: Option<String>,
+/// Name of the definition that holds the expression being evaluated.
+const RESULT: &str = "__repl_result";
+
+/// Options of `cql repl`.
+pub struct ReplOptions {
+    pub data: Vec<PathBuf>,
+    pub patient: Option<String>,
     pub library_paths: Vec<PathBuf>,
 }
 
-/// REPL state
-struct ReplState {
-    /// Library resolver
-    resolver: resolver::LibraryResolver,
-    /// Defined expressions
-    definitions: HashMap<String, String>,
-    /// Data model
-    _model: String,
-    /// Model version
-    _version: Option<String>,
+/// An interactive session: accumulated definitions plus the data context.
+pub struct Session {
+    definitions: Vec<String>,
+    data: Arc<InMemoryFhirData>,
+    patient: Option<CqlValue>,
+    libraries: DirectoryLibrarySource,
 }
 
-impl ReplState {
-    fn new(config: ReplConfig) -> Self {
-        Self {
-            resolver: resolver::LibraryResolver::new(config.library_paths),
-            definitions: HashMap::new(),
-            _model: config.model,
-            _version: config.version,
+impl Session {
+    /// Create a session.
+    pub fn new(options: &ReplOptions) -> Result<Self> {
+        let data = Arc::new(load_data(&options.data)?);
+        let patient = match &options.patient {
+            Some(id) => Some(
+                data.resources("Patient")
+                    .iter()
+                    .find(|p| matches!(p, CqlValue::Tuple(t) if t.get("id").and_then(CqlValue::as_string) == Some(id)))
+                    .cloned()
+                    .ok_or_else(|| anyhow!("no Patient with id `{id}` in --data"))?,
+            ),
+            None => None,
+        };
+        Ok(Self {
+            definitions: Vec::new(),
+            data,
+            patient,
+            libraries: DirectoryLibrarySource::new(options.library_paths.clone()),
+        })
+    }
+
+    fn source(&self, extra: Option<&str>) -> String {
+        let mut source = String::from("library Repl\nusing FHIR version '4.0.1'\n");
+        if self.patient.is_some() {
+            source.push_str("context Patient\n");
         }
+        for definition in self.definitions.iter().map(String::as_str).chain(extra) {
+            source.push_str(definition);
+            source.push('\n');
+        }
+        source
+    }
+
+    fn compile(&self, extra: Option<&str>) -> Result<CompiledLibrary> {
+        let library = CompiledLibrary::compile_with(&self.source(extra), &self.libraries)
+            .map_err(|e| anyhow!("{e}"))?;
+        if let Some(diagnostic) = library.diagnostics().first() {
+            return Err(anyhow!("{diagnostic}"));
+        }
+        Ok(library)
+    }
+
+    /// Handle one line of input; returns the text to print.
+    pub fn eval_line(&mut self, line: &str) -> Result<String> {
+        let line = line.trim();
+        if line.starts_with("define ") || line.starts_with("include ") {
+            let statement = line.to_string();
+            self.definitions.push(statement);
+            if let Err(e) = self.compile(None) {
+                self.definitions.pop();
+                return Err(e);
+            }
+            return Ok("ok".to_string());
+        }
+
+        let library = self.compile(Some(&format!("define \"{RESULT}\": {line}")))?;
+        let mut ctx = library
+            .context()
+            .with_data_provider(self.data.clone() as Arc<dyn DataProvider>)
+            .with_terminology_provider(self.data.clone() as Arc<dyn TerminologyProvider>);
+        if let Some(patient) = &self.patient {
+            ctx = ctx.with_context("Patient", patient.clone());
+        }
+        library.register(&mut ctx);
+        let value = library
+            .evaluate_definition(RESULT, &mut ctx)
+            .map_err(|e| anyhow!("{e}"))?;
+        Ok(serde_json::to_string(&cql_to_json(&value))?)
     }
 }
 
-/// Run the interactive REPL
-pub async fn run(config: ReplConfig) -> Result<()> {
-    println!("{}", "CQL Interactive REPL".cyan().bold());
+/// Run the interactive loop on the terminal.
+pub fn run(options: &ReplOptions) -> Result<()> {
+    let mut session = Session::new(options)?;
+    let mut editor = DefaultEditor::new()?;
     println!(
-        "Type {} for help, {} to quit",
+        "CQL REPL. Enter an expression or a `define`; {} for help, {} to quit.",
         ":help".green(),
         ":quit".green()
     );
-    println!(
-        "Model: {} {}",
-        config.model,
-        config.version.as_deref().unwrap_or("(default)")
-    );
-    println!();
-
-    let mut state = ReplState::new(config);
-
-    // Set up rustyline editor
-    let mut rl = DefaultEditor::new()?;
-
-    // Load history if it exists
-    let history_file = dirs::home_dir().map(|mut path| {
-        path.push(".cql_history");
-        path
-    });
-
-    if let Some(ref path) = history_file {
-        let _ = rl.load_history(path);
-    }
-
     loop {
-        let readline = rl.readline("cql> ");
-
-        match readline {
+        match editor.readline("cql> ") {
             Ok(line) => {
                 let line = line.trim();
-
                 if line.is_empty() {
                     continue;
                 }
-
-                rl.add_history_entry(line)?;
-
-                // Handle commands
-                if line.starts_with(':') {
-                    match handle_command(line, &mut state).await {
-                        Ok(false) => break, // :quit
-                        Ok(true) => continue,
-                        Err(e) => {
-                            eprintln!("{}", output::format_error(&e));
-                            continue;
+                let _ = editor.add_history_entry(line);
+                match line {
+                    ":quit" | ":q" | ":exit" => break,
+                    ":help" | ":h" => {
+                        println!("  <expression>          evaluate an expression");
+                        println!("  define Name: <expr>   add a definition to the session");
+                        println!("  :defs                 list the session definitions");
+                        println!("  :clear                remove all definitions");
+                        println!("  :quit                 leave");
+                    }
+                    ":defs" => {
+                        for definition in &session.definitions {
+                            println!("  {definition}");
                         }
                     }
-                }
-
-                // Handle define statements
-                if line.starts_with("define ") {
-                    match handle_define(line, &mut state) {
-                        Ok(_) => {
-                            println!("{}", output::format_success("Definition added"));
-                        }
-                        Err(e) => {
-                            eprintln!("{}", output::format_error(&e));
-                        }
-                    }
-                    continue;
-                }
-
-                // Evaluate expression
-                match evaluate_expression(line, &state).await {
-                    Ok(result) => {
-                        println!("{}", result.green());
-                    }
-                    Err(e) => {
-                        eprintln!("{}", output::format_error(&e));
-                    }
+                    ":clear" => session.definitions.clear(),
+                    _ => match session.eval_line(line) {
+                        Ok(output) => println!("{output}"),
+                        Err(e) => eprintln!("{} {e}", "error:".red().bold()),
+                    },
                 }
             }
-            Err(ReadlineError::Interrupted) => {
-                println!("^C");
-                continue;
-            }
-            Err(ReadlineError::Eof) => {
-                println!("^D");
-                break;
-            }
-            Err(err) => {
-                eprintln!("Error: {:?}", err);
-                break;
-            }
+            Err(ReadlineError::Interrupted) => continue,
+            Err(ReadlineError::Eof) => break,
+            Err(e) => return Err(e.into()),
         }
     }
-
-    // Save history
-    if let Some(ref path) = history_file {
-        let _ = rl.save_history(path);
-    }
-
-    println!("Goodbye!");
     Ok(())
-}
-
-/// Handle REPL commands (starting with :)
-async fn handle_command(command: &str, state: &mut ReplState) -> Result<bool> {
-    let parts: Vec<&str> = command.split_whitespace().collect();
-
-    match parts[0] {
-        ":help" | ":h" => {
-            print_help();
-            Ok(true)
-        }
-        ":quit" | ":q" | ":exit" => Ok(false),
-        ":clear" | ":c" => {
-            state.definitions.clear();
-            println!("{}", output::format_success("All definitions cleared"));
-            Ok(true)
-        }
-        ":load" | ":l" => {
-            if parts.len() < 2 {
-                anyhow::bail!("Usage: :load <file.cql>");
-            }
-            let path = PathBuf::from(parts[1]);
-            handle_load(&path, state).await?;
-            Ok(true)
-        }
-        ":type" | ":t" => {
-            if parts.len() < 2 {
-                anyhow::bail!("Usage: :type <expression>");
-            }
-            let expr = parts[1..].join(" ");
-            handle_type(&expr, state)?;
-            Ok(true)
-        }
-        ":list" | ":ls" => {
-            handle_list(state);
-            Ok(true)
-        }
-        ":paths" => {
-            println!("Library search paths:");
-            for path in state.resolver.search_paths() {
-                println!("  {}", path.display());
-            }
-            Ok(true)
-        }
-        other => {
-            anyhow::bail!("Unknown command: {}. Type :help for help", other);
-        }
-    }
-}
-
-/// Handle define statements
-fn handle_define(line: &str, state: &mut ReplState) -> Result<()> {
-    // Parse: define Name: expression
-    let without_define = line.strip_prefix("define ").unwrap();
-
-    let parts: Vec<&str> = without_define.splitn(2, ':').collect();
-    if parts.len() != 2 {
-        anyhow::bail!("Invalid define syntax. Expected: define Name: expression");
-    }
-
-    let name = parts[0].trim().to_string();
-    let expr = parts[1].trim().to_string();
-
-    // TODO: Validate the expression
-    // For now, just store it
-    state.definitions.insert(name.clone(), expr);
-
-    Ok(())
-}
-
-/// Evaluate an expression
-async fn evaluate_expression(expr: &str, _state: &ReplState) -> Result<String> {
-    // TODO: Implement actual evaluation
-    // For now, just parse and return a placeholder
-
-    // Try to parse as a simple literal
-    if let Ok(num) = expr.parse::<i64>() {
-        return Ok(num.to_string());
-    }
-
-    if let Ok(num) = expr.parse::<f64>() {
-        return Ok(num.to_string());
-    }
-
-    if expr == "true" || expr == "false" {
-        return Ok(expr.to_string());
-    }
-
-    if expr == "null" {
-        return Ok("null".to_string());
-    }
-
-    // For complex expressions, show that evaluation is not yet implemented
-    Ok(format!("(evaluation not yet implemented: {})", expr))
-}
-
-/// Load a library file
-async fn handle_load(path: &Path, state: &mut ReplState) -> Result<()> {
-    let content = state
-        .resolver
-        .resolve_path(path)
-        .with_context(|| format!("Failed to load library: {}", path.display()))?;
-
-    // Parse the library
-    let library = crate::parser::parse(&content).with_context(|| "Failed to parse library")?;
-
-    // Add all definitions to state
-    use crate::ast::Statement;
-    for stmt in &library.statements {
-        let name = match &stmt.inner {
-            Statement::ExpressionDef(def) => def.name.name.clone(),
-            Statement::FunctionDef(def) => def.name.name.clone(),
-        };
-        state
-            .definitions
-            .insert(name, format!("(from {})", path.display()));
-    }
-
-    let lib_name = library
-        .definition
-        .as_ref()
-        .map(|d| d.name.name.name.clone())
-        .unwrap_or_else(|| "(unnamed)".to_string());
-    let lib_version = library
-        .definition
-        .as_ref()
-        .and_then(|d| d.version.as_ref())
-        .map(|v| v.version.clone())
-        .unwrap_or_else(|| "(no version)".to_string());
-
-    println!(
-        "{}",
-        output::format_success(&format!(
-            "Loaded library: {} version {} ({} definitions)",
-            lib_name,
-            lib_version,
-            library.statements.len()
-        ))
-    );
-
-    Ok(())
-}
-
-/// Show type of an expression
-fn handle_type(expr: &str, _state: &ReplState) -> Result<()> {
-    // TODO: Implement type inference
-    // For now, show a placeholder
-    println!(
-        "{}: {}",
-        expr.cyan(),
-        "(type inference not yet implemented)".yellow()
-    );
-    Ok(())
-}
-
-/// List all definitions
-fn handle_list(state: &ReplState) {
-    if state.definitions.is_empty() {
-        println!("No definitions");
-        return;
-    }
-
-    println!("Definitions:");
-    for (name, expr) in &state.definitions {
-        println!("  {} = {}", name.cyan(), expr);
-    }
-}
-
-/// Print help message
-fn print_help() {
-    println!("{}", "CQL REPL Commands:".bold());
-    println!();
-    println!("  {}  Show this help message", ":help, :h".green());
-    println!("  {}  Quit the REPL", ":quit, :q, :exit".green());
-    println!("  {}  Clear all definitions", ":clear, :c".green());
-    println!(
-        "  {}  Load a library file",
-        ":load <file>, :l <file>".green()
-    );
-    println!(
-        "  {}  Show type of expression",
-        ":type <expr>, :t <expr>".green()
-    );
-    println!("  {}  List all definitions", ":list, :ls".green());
-    println!("  {}  Show library search paths", ":paths".green());
-    println!();
-    println!("{}", "Expression Evaluation:".bold());
-    println!();
-    println!(
-        "  {}  Define a named expression",
-        "define Name: expression".cyan()
-    );
-    println!("  {}  Evaluate an expression", "expression".cyan());
-    println!();
-    println!("{}", "Examples:".bold());
-    println!();
-    println!("  {}", "define X: 1 + 2".cyan());
-    println!("  {}", "X * 3".cyan());
-    println!("  {}", ":type [1, 2, 3]".cyan());
-    println!("  {}", ":load MyLibrary.cql".cyan());
-}
-
-// Helper to get home directory
-mod dirs {
-    use std::path::PathBuf;
-
-    pub fn home_dir() -> Option<PathBuf> {
-        std::env::var_os("HOME")
-            .or_else(|| std::env::var_os("USERPROFILE"))
-            .map(PathBuf::from)
-    }
 }

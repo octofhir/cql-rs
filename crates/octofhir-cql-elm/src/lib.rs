@@ -1,14 +1,12 @@
-//! CQL ELM (Expression Logical Model) representation and serialization
-//!
-//! This crate provides:
-//! - ELM data structures for CQL compilation output
-//! - JSON and XML serialization (compatible with HL7 ELM spec)
-//! - AST to ELM translation
+#![doc = include_str!("../README.md")]
 
 pub mod converter;
 pub mod model;
 pub mod serialize;
 
-pub use converter::AstToElmConverter;
+pub use converter::{
+    AstToElmConverter, FHIR_MODEL_URI, FunctionSignature, LibrarySymbols, SORT_ELEMENT_ALIAS,
+    fhir_primary_code_path,
+};
 pub use model::*;
-pub use serialize::{ElmSerializer, JsonSerializer, XmlSerializer};
+pub use serialize::{ElmSerializer, JsonSerializer, SerializeError};

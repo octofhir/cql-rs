@@ -11,6 +11,7 @@ repository.workspace = true
 octofhir-cql-types = { workspace = true }
 octofhir-cql-diagnostics = { workspace = true }
 octofhir-fhir-model = { workspace = true }
+bigdecimal = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 async-trait = { workspace = true }

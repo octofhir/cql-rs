@@ -1,11 +1,4 @@
-//! CQL data model abstraction
-//!
-//! This crate provides:
-//! - ModelInfo abstraction for FHIR and other data models
-//! - Version-agnostic FHIR support
-//! - Data provider traits
-//! - Model provider implementation
-//! - Data retriever abstraction
+#![doc = include_str!("../README.md")]
 
 pub mod fhir;
 pub mod model_info;

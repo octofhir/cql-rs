@@ -221,7 +221,7 @@ fn test_query_single_value_source() {
     let e = engine();
     let mut c = ctx();
 
-    // from 42 X return X (single value treated as singleton list)
+    // from 42 X: a query over a single value is a single value, not a list (CQL §5.1)
     let query = Query {
         element: Element::default(),
         source: vec![make_source("X", int_expr(42))],
@@ -234,7 +234,7 @@ fn test_query_single_value_source() {
     };
 
     let result = e.eval_query(&query, &mut c).unwrap();
-    assert_list_values(&result, &[42]);
+    assert_eq!(result, CqlValue::Integer(42));
 }
 
 // ============================================================================
@@ -547,6 +547,7 @@ fn test_query_sort_ascending() {
             by: vec![SortByItem {
                 direction: SortDirection::Asc,
                 path: None,
+                expression: None,
             }],
         }),
     };
@@ -576,6 +577,7 @@ fn test_query_sort_descending() {
             by: vec![SortByItem {
                 direction: SortDirection::Desc,
                 path: None,
+                expression: None,
             }],
         }),
     };
@@ -605,6 +607,7 @@ fn test_query_sort_ascending_spelled_out() {
             by: vec![SortByItem {
                 direction: SortDirection::Ascending,
                 path: None,
+                expression: None,
             }],
         }),
     };
@@ -631,6 +634,7 @@ fn test_query_sort_already_sorted() {
             by: vec![SortByItem {
                 direction: SortDirection::Asc,
                 path: None,
+                expression: None,
             }],
         }),
     };
@@ -689,6 +693,7 @@ fn test_query_sort_by_path() {
             by: vec![SortByItem {
                 direction: SortDirection::Asc,
                 path: Some("value".to_string()),
+                expression: None,
             }],
         }),
     };
@@ -1156,6 +1161,7 @@ fn test_query_where_return_sort() {
             by: vec![SortByItem {
                 direction: SortDirection::Asc,
                 path: None,
+                expression: None,
             }],
         }),
     };
@@ -1217,6 +1223,7 @@ fn test_query_distinct_and_sort() {
             by: vec![SortByItem {
                 direction: SortDirection::Desc,
                 path: None,
+                expression: None,
             }],
         }),
     };

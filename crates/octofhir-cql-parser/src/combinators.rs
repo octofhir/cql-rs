@@ -2,8 +2,8 @@
 
 use bigdecimal::BigDecimal;
 use octofhir_cql_ast::{
-    DateLiteral, DateTimeLiteral, Identifier, Literal, QualifiedIdentifier, QuantityLiteral,
-    RatioLiteral, TimeLiteral, VersionSpecifier,
+    DateLiteral, DateTimeLiteral, Identifier, Literal, QuantityLiteral, RatioLiteral, TimeLiteral,
+    VersionSpecifier,
 };
 use std::str::FromStr;
 use winnow::ascii::{digit1, multispace0};
@@ -133,17 +133,6 @@ pub fn identifier_or_keyword_parser<'a>(input: &mut Input<'a>) -> PResult<Identi
             .map(|s: &str| Identifier::new(s)),
     ))
     .parse_next(input)
-}
-
-/// Parse a qualified identifier (e.g., "Library.Definition")
-pub fn qualified_identifier_parser<'a>(input: &mut Input<'a>) -> PResult<QualifiedIdentifier> {
-    let first = identifier_parser.parse_next(input)?;
-    let second = opt(preceded('.', identifier_parser)).parse_next(input)?;
-
-    Ok(match second {
-        Some(name) => QualifiedIdentifier::qualified(first.name, name),
-        None => QualifiedIdentifier::simple(first),
-    })
 }
 
 /// Parse a version specifier (a string literal)
@@ -652,62 +641,81 @@ pub fn is_keyword(s: &str) -> bool {
     )
 }
 
-/// Preprocess input: strip comments and normalize whitespace
+/// Preprocess input: blank out comments and normalize whitespace.
+///
+/// The output has exactly the same byte length as the input and every
+/// non-comment character keeps its byte offset, so offsets into the cleaned
+/// text are valid offsets into the original source (used for spans and
+/// line/column diagnostics). Comment characters and line breaks/tabs outside
+/// quoted text become ASCII spaces (one per source byte).
 pub fn preprocess(input: &str) -> String {
-    let mut result = String::new();
+    #[derive(Clone, Copy, PartialEq, Eq)]
+    enum State {
+        Code,
+        Quoted(char),
+        LineComment,
+        BlockComment,
+    }
+
+    fn blank(out: &mut String, ch: char) {
+        out.extend(std::iter::repeat_n(' ', ch.len_utf8()));
+    }
+
+    let mut out = String::with_capacity(input.len());
+    let mut state = State::Code;
     let mut chars = input.chars().peekable();
-    let mut in_string = false;
 
     while let Some(ch) = chars.next() {
-        match ch {
-            '\'' if !in_string => {
-                in_string = true;
-                result.push(ch);
+        match state {
+            State::Code => match ch {
+                '\'' | '"' | '`' => {
+                    state = State::Quoted(ch);
+                    out.push(ch);
+                }
+                '/' if chars.peek() == Some(&'/') => {
+                    chars.next();
+                    out.push_str("  ");
+                    state = State::LineComment;
+                }
+                '/' if chars.peek() == Some(&'*') => {
+                    chars.next();
+                    out.push_str("  ");
+                    state = State::BlockComment;
+                }
+                '\n' | '\r' | '\t' => out.push(' '),
+                _ => out.push(ch),
+            },
+            State::Quoted(quote) => {
+                out.push(ch);
+                if ch == '\\' {
+                    // Keep escape sequences verbatim (including an escaped quote).
+                    if let Some(next) = chars.next() {
+                        out.push(next);
+                    }
+                } else if ch == quote {
+                    state = State::Code;
+                }
             }
-            '\'' if in_string => {
-                // Check for escaped quote
-                if chars.peek() == Some(&'\'') {
-                    result.push(ch);
-                    result.push(chars.next().unwrap());
+            State::LineComment => {
+                if ch == '\n' {
+                    state = State::Code;
+                    out.push(' ');
                 } else {
-                    in_string = false;
-                    result.push(ch);
+                    blank(&mut out, ch);
                 }
             }
-            '/' if !in_string => {
-                match chars.peek() {
-                    Some('/') => {
-                        // Single-line comment - skip to end of line
-                        chars.next();
-                        result.push(' ');
-                        for c in chars.by_ref() {
-                            if c == '\n' {
-                                result.push(' ');
-                                break;
-                            }
-                        }
-                    }
-                    Some('*') => {
-                        // Multi-line comment
-                        chars.next();
-                        result.push(' ');
-                        let mut prev = '\0';
-                        for c in chars.by_ref() {
-                            if prev == '*' && c == '/' {
-                                break;
-                            }
-                            prev = c;
-                        }
-                    }
-                    _ => result.push(ch),
+            State::BlockComment => {
+                if ch == '*' && chars.peek() == Some(&'/') {
+                    chars.next();
+                    out.push_str("  ");
+                    state = State::Code;
+                } else {
+                    blank(&mut out, ch);
                 }
             }
-            '\n' | '\r' | '\t' if !in_string => {
-                result.push(' ');
-            }
-            _ => result.push(ch),
         }
     }
 
-    result
+    debug_assert_eq!(out.len(), input.len());
+    out
 }

@@ -6,9 +6,10 @@ use crate::{
     BinaryOp, BoxExpr, Identifier, IntervalOp, Literal, OptBoxExpr, QualifiedIdentifier, Query,
     Retrieve, Spanned, TemporalPrecision, TypeSpecifier, UnaryOp,
 };
+use serde::Serialize;
 
 /// All CQL expression types
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub enum Expression {
     // === Literals ===
     /// Literal value (null, boolean, number, string, date, etc.)
@@ -67,8 +68,12 @@ pub enum Expression {
     Tuple(TupleExpr),
     /// Instance creation
     Instance(InstanceExpr),
-    /// Indexer access (expr[index])
+    /// Indexer access (`expr[index]`)
     Indexer(IndexerExpr),
+    /// Code selector (`Code '8480-6' from "LOINC" display 'Systolic'`)
+    CodeSelector(CodeSelectorExpr),
+    /// Concept selector (`Concept { Code '1' from "CS", ... } display 'x'`)
+    ConceptSelector(ConceptSelectorExpr),
 
     // === Intervals ===
     /// Interval literal
@@ -180,21 +185,21 @@ pub enum Expression {
 // === Expression Components ===
 
 /// Identifier reference
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct IdentifierRef {
     /// The referenced identifier
     pub name: Identifier,
 }
 
 /// Qualified identifier reference
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct QualifiedIdentifierRef {
     /// The qualified identifier
     pub name: QualifiedIdentifier,
 }
 
 /// Property access
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct PropertyAccess {
     /// Source expression
     pub source: BoxExpr,
@@ -203,7 +208,7 @@ pub struct PropertyAccess {
 }
 
 /// Binary operation expression
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct BinaryOpExpr {
     /// Left operand
     pub left: BoxExpr,
@@ -214,7 +219,7 @@ pub struct BinaryOpExpr {
 }
 
 /// Unary operation expression
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct UnaryOpExpr {
     /// Operator
     pub op: UnaryOp,
@@ -223,7 +228,7 @@ pub struct UnaryOpExpr {
 }
 
 /// Interval operation with optional precision
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct IntervalOpExpr {
     /// Left operand
     pub left: BoxExpr,
@@ -236,7 +241,7 @@ pub struct IntervalOpExpr {
 }
 
 /// As cast expression
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct AsCastExpr {
     /// Expression to cast
     pub operand: BoxExpr,
@@ -247,7 +252,7 @@ pub struct AsCastExpr {
 }
 
 /// Is type test expression
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct IsTypeExpr {
     /// Expression to test
     pub operand: BoxExpr,
@@ -256,7 +261,7 @@ pub struct IsTypeExpr {
 }
 
 /// Convert expression
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct ConvertExpr {
     /// Expression to convert
     pub operand: BoxExpr,
@@ -265,7 +270,7 @@ pub struct ConvertExpr {
 }
 
 /// Cast expression
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct CastExpr {
     /// Expression to cast
     pub operand: BoxExpr,
@@ -274,14 +279,14 @@ pub struct CastExpr {
 }
 
 /// MinValue/MaxValue expression
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct MinMaxValueExpr {
     /// Target type name (e.g., "Integer", "DateTime")
     pub value_type: Identifier,
 }
 
 /// If expression
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct IfExpr {
     /// Condition
     pub condition: BoxExpr,
@@ -292,7 +297,7 @@ pub struct IfExpr {
 }
 
 /// Case expression
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct CaseExpr {
     /// Comparand (for simple case)
     pub comparand: OptBoxExpr,
@@ -303,7 +308,7 @@ pub struct CaseExpr {
 }
 
 /// Case item (when-then pair)
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct CaseItem {
     /// When condition
     pub when: BoxExpr,
@@ -312,32 +317,32 @@ pub struct CaseItem {
 }
 
 /// Coalesce expression
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct CoalesceExpr {
     /// Operands (returns first non-null)
     pub operands: Vec<Spanned<Expression>>,
 }
 
 /// Is null expression
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct IsNullExpr {
     pub operand: BoxExpr,
 }
 
 /// Is false expression
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct IsFalseExpr {
     pub operand: BoxExpr,
 }
 
 /// Is true expression
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct IsTrueExpr {
     pub operand: BoxExpr,
 }
 
 /// List expression
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct ListExpr {
     /// Optional element type
     pub element_type: Option<Spanned<TypeSpecifier>>,
@@ -346,14 +351,14 @@ pub struct ListExpr {
 }
 
 /// Tuple expression
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct TupleExpr {
     /// Tuple elements
     pub elements: Vec<TupleElement>,
 }
 
 /// Tuple element
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct TupleElement {
     /// Element name
     pub name: Identifier,
@@ -362,7 +367,7 @@ pub struct TupleElement {
 }
 
 /// Instance creation expression
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct InstanceExpr {
     /// Type to instantiate
     pub class_type: Spanned<TypeSpecifier>,
@@ -371,7 +376,7 @@ pub struct InstanceExpr {
 }
 
 /// Instance element
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct InstanceElement {
     /// Element name
     pub name: Identifier,
@@ -380,7 +385,7 @@ pub struct InstanceElement {
 }
 
 /// Indexer expression
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct IndexerExpr {
     /// Source expression (list or string)
     pub source: BoxExpr,
@@ -388,8 +393,28 @@ pub struct IndexerExpr {
     pub index: BoxExpr,
 }
 
+/// Code selector: `Code '<code>' from <codesystem> display '<display>'`
+#[derive(Debug, Clone, Serialize)]
+pub struct CodeSelectorExpr {
+    /// The code value
+    pub code: String,
+    /// The code system the code is drawn from (optionally library-qualified)
+    pub codesystem: QualifiedIdentifier,
+    /// Optional display string
+    pub display: Option<String>,
+}
+
+/// Concept selector: `Concept { <code selectors> } display '<display>'`
+#[derive(Debug, Clone, Serialize)]
+pub struct ConceptSelectorExpr {
+    /// The codes of the concept
+    pub codes: Vec<CodeSelectorExpr>,
+    /// Optional display string
+    pub display: Option<String>,
+}
+
 /// Interval expression
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct IntervalExpr {
     /// Low bound
     pub low: OptBoxExpr,
@@ -402,37 +427,37 @@ pub struct IntervalExpr {
 }
 
 /// Start of interval
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct StartExpr {
     pub operand: BoxExpr,
 }
 
 /// End of interval
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct EndExpr {
     pub operand: BoxExpr,
 }
 
 /// Point from singleton interval
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct PointFromExpr {
     pub operand: BoxExpr,
 }
 
 /// Width of interval
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct WidthExpr {
     pub operand: BoxExpr,
 }
 
 /// Size of interval
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct SizeExpr {
     pub operand: BoxExpr,
 }
 
 /// Function reference expression
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct FunctionRefExpr {
     /// Optional library qualifier
     pub library: Option<Identifier>,
@@ -443,7 +468,7 @@ pub struct FunctionRefExpr {
 }
 
 /// External function reference
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct ExternalFunctionRefExpr {
     /// External function name
     pub name: Identifier,
@@ -452,7 +477,7 @@ pub struct ExternalFunctionRefExpr {
 }
 
 /// Aggregate expression
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct AggregateExpr {
     /// Source expression
     pub source: BoxExpr,
@@ -465,7 +490,7 @@ pub struct AggregateExpr {
 }
 
 /// Date constructor
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct DateConstructorExpr {
     pub year: BoxExpr,
     pub month: OptBoxExpr,
@@ -473,7 +498,7 @@ pub struct DateConstructorExpr {
 }
 
 /// DateTime constructor
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct DateTimeConstructorExpr {
     pub year: BoxExpr,
     pub month: OptBoxExpr,
@@ -486,7 +511,7 @@ pub struct DateTimeConstructorExpr {
 }
 
 /// Time constructor
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct TimeConstructorExpr {
     pub hour: BoxExpr,
     pub minute: OptBoxExpr,
@@ -495,7 +520,7 @@ pub struct TimeConstructorExpr {
 }
 
 /// Duration between expression
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct DurationBetweenExpr {
     /// Precision for duration
     pub precision: TemporalPrecision,
@@ -506,7 +531,7 @@ pub struct DurationBetweenExpr {
 }
 
 /// Difference between expression
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct DifferenceBetweenExpr {
     /// Precision for difference
     pub precision: TemporalPrecision,
@@ -517,7 +542,7 @@ pub struct DifferenceBetweenExpr {
 }
 
 /// Date/time component extraction
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct DateTimeComponentExpr {
     /// Source date/time expression
     pub source: BoxExpr,
@@ -526,7 +551,7 @@ pub struct DateTimeComponentExpr {
 }
 
 /// Date/time component types
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 pub enum DateTimeComponent {
     Year,
     Month,
@@ -541,34 +566,34 @@ pub enum DateTimeComponent {
 }
 
 /// Concatenate expression
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct ConcatenateExpr {
     pub operands: Vec<Spanned<Expression>>,
 }
 
 /// Combine expression
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct CombineExpr {
     pub source: BoxExpr,
     pub separator: OptBoxExpr,
 }
 
 /// Split expression
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct SplitExpr {
     pub source: BoxExpr,
     pub separator: BoxExpr,
 }
 
 /// Matches expression
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct MatchesExpr {
     pub source: BoxExpr,
     pub pattern: BoxExpr,
 }
 
 /// Replace matches expression
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct ReplaceMatchesExpr {
     pub source: BoxExpr,
     pub pattern: BoxExpr,
@@ -576,25 +601,25 @@ pub struct ReplaceMatchesExpr {
 }
 
 /// First expression
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct FirstExpr {
     pub source: BoxExpr,
 }
 
 /// Last expression
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct LastExpr {
     pub source: BoxExpr,
 }
 
 /// Single expression
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct SingleExpr {
     pub source: BoxExpr,
 }
 
 /// Slice expression
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct SliceExpr {
     pub source: BoxExpr,
     pub start_index: BoxExpr,
@@ -602,14 +627,14 @@ pub struct SliceExpr {
 }
 
 /// Index of expression
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct IndexOfExpr {
     pub source: BoxExpr,
     pub element: BoxExpr,
 }
 
 /// Between expression
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct BetweenExpr {
     pub operand: BoxExpr,
     pub low: BoxExpr,
@@ -617,7 +642,7 @@ pub struct BetweenExpr {
 }
 
 /// Message expression
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct MessageExpr {
     pub source: BoxExpr,
     pub condition: BoxExpr,
@@ -627,7 +652,7 @@ pub struct MessageExpr {
 }
 
 /// Same as expression
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct SameAsExpr {
     pub left: BoxExpr,
     pub right: BoxExpr,
@@ -635,7 +660,7 @@ pub struct SameAsExpr {
 }
 
 /// Same or before expression
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct SameOrBeforeExpr {
     pub left: BoxExpr,
     pub right: BoxExpr,
@@ -643,7 +668,7 @@ pub struct SameOrBeforeExpr {
 }
 
 /// Same or after expression
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct SameOrAfterExpr {
     pub left: BoxExpr,
     pub right: BoxExpr,
@@ -651,7 +676,7 @@ pub struct SameOrAfterExpr {
 }
 
 /// Total expression (aggregate accumulator)
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct TotalExpr {
     pub result_type: Option<Spanned<TypeSpecifier>>,
 }

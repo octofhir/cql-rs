@@ -303,10 +303,17 @@ pub struct ContextDef {
     pub name: String,
 }
 
-/// Expression definition
+/// Expression definition.
+///
+/// Function definitions are represented by the same structure (as ELM's
+/// `FunctionDef` extends `ExpressionDef`): they carry `type: "FunctionDef"`
+/// and an operand list; see [`ExpressionDef::is_function`].
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ExpressionDef {
+    /// `"FunctionDef"` for function definitions, absent for expression definitions
+    #[serde(rename = "type", default, skip_serializing_if = "Option::is_none")]
+    pub def_type: Option<String>,
     /// Name
     pub name: String,
     /// Context
@@ -321,9 +328,33 @@ pub struct ExpressionDef {
     /// Result type specifier
     #[serde(skip_serializing_if = "Option::is_none")]
     pub result_type_specifier: Option<TypeSpecifier>,
+    /// Function operands (function definitions only)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub operand: Option<Vec<OperandDef>>,
+    /// Whether the function is fluent (function definitions only)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fluent: Option<bool>,
+    /// Whether the function is external (function definitions only)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub external: Option<bool>,
     /// Annotations
     #[serde(skip_serializing_if = "Option::is_none")]
     pub annotation: Option<Vec<Annotation>>,
+}
+
+impl ExpressionDef {
+    /// ELM type tag used for function definitions.
+    pub const FUNCTION_DEF: &'static str = "FunctionDef";
+
+    /// Whether this definition is a function definition.
+    pub fn is_function(&self) -> bool {
+        self.def_type.as_deref() == Some(Self::FUNCTION_DEF)
+    }
+
+    /// Number of operands (0 for expression definitions).
+    pub fn arity(&self) -> usize {
+        self.operand.as_ref().map_or(0, Vec::len)
+    }
 }
 
 /// Function definition
@@ -1370,8 +1401,14 @@ pub struct SortExpression {
 #[serde(rename_all = "camelCase")]
 pub struct SortByItem {
     pub direction: SortDirection,
+    /// Sort by a property of each result element (`ByColumn`)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub path: Option<String>,
+    /// Sort by an expression evaluated against each result element
+    /// (`ByExpression`); identifiers that are not otherwise in scope refer to
+    /// properties of the element.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub expression: Option<Box<Expression>>,
 }
 
 /// Sort direction

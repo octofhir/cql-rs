@@ -47,7 +47,7 @@ fn get_result_type_specifier(expr: &Expression) -> Option<TypeSpecifier> {
 }
 
 /// Convert a TypeSpecifier to CqlType
-fn type_specifier_to_cql_type(ts: &TypeSpecifier) -> CqlType {
+pub(crate) fn type_specifier_to_cql_type(ts: &TypeSpecifier) -> CqlType {
     match ts {
         TypeSpecifier::Named(n) => {
             let name = &n.name;
@@ -2086,11 +2086,9 @@ fn interval_intersect(a: &CqlInterval, b: &CqlInterval) -> EvalResult<CqlValue> 
     if let (Some(low), Some(high)) = (&new_low, &new_high) {
         match cql_compare(low, high)? {
             Some(Ordering::Greater) => return Ok(CqlValue::Null),
-            Some(Ordering::Equal) => {
-                // Point interval is valid only if both bounds are closed
-                if !new_low_closed || !new_high_closed {
-                    return Ok(CqlValue::Null);
-                }
+            // Point interval is valid only if both bounds are closed
+            Some(Ordering::Equal) if !new_low_closed || !new_high_closed => {
+                return Ok(CqlValue::Null);
             }
             _ => {}
         }
@@ -3397,13 +3395,13 @@ fn expand_time_interval_unit_intervals(
                     )))));
                 }
             }
-            "millisecond" | "milliseconds" | "ms" => {
-                // If interval doesn't have millisecond precision, return empty
-                if low.millisecond.is_none() || high.millisecond.is_none() {
-                    return Ok(CqlValue::List(CqlList::new(CqlType::Interval(Box::new(
-                        CqlType::Time,
-                    )))));
-                }
+            // If interval doesn't have millisecond precision, return empty
+            "millisecond" | "milliseconds" | "ms"
+                if low.millisecond.is_none() || high.millisecond.is_none() =>
+            {
+                return Ok(CqlValue::List(CqlList::new(CqlType::Interval(Box::new(
+                    CqlType::Time,
+                )))));
             }
             _ => {} // hour or other - proceed normally
         }

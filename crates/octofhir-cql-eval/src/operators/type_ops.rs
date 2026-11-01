@@ -36,14 +36,22 @@ impl CqlEngine {
             return Ok(CqlValue::Null);
         }
 
-        // For now, simplified implementation - just return the operand
-        // Full type checking would require type specifier conversion
-        if expr.strict.unwrap_or(false) {
-            // Strict mode - would need full type checking
+        let matches = match (&expr.as_type_specifier, &expr.as_type) {
+            (Some(ts), _) => value_is_type(&operand, ts),
+            (None, Some(name)) => named_type_matches(&operand, name),
+            (None, None) => true,
+        };
+        if matches {
             Ok(operand)
+        } else if expr.strict.unwrap_or(false) {
+            Err(EvalError::cast_error(
+                operand.get_type().name(),
+                type_display(expr),
+                "run-time type does not match",
+            ))
         } else {
-            // Non-strict mode
-            Ok(operand)
+            // CQL 1.5 §22.1 As: a non-strict cast of a mismatching value is null.
+            Ok(CqlValue::Null)
         }
     }
 
@@ -59,51 +67,13 @@ impl CqlEngine {
             return Ok(CqlValue::Boolean(false));
         }
 
-        // Get the target type from is_type or is_type_specifier
-        let target_type = if let Some(is_type) = &expr.is_type {
-            is_type.clone()
+        let matches = if let Some(is_type) = &expr.is_type {
+            named_type_matches(&operand, is_type)
         } else if let Some(is_type_specifier) = &expr.is_type_specifier {
-            match is_type_specifier {
-                TypeSpecifier::Named(n) => {
-                    // Just use the name - we'll normalize later
-                    n.name.clone()
-                }
-                _ => return Ok(CqlValue::Boolean(false)), // Complex types not fully supported
-            }
+            value_is_type(&operand, is_type_specifier)
         } else {
-            return Ok(CqlValue::Boolean(true)); // No type specified
+            true // No type specified
         };
-
-        // Check if operand matches the target type
-        let operand_type = operand.get_type();
-        let mut operand_type_name = operand_type.name().to_string();
-
-        // For tuples with __type field, use the __type value as the type name
-        if let CqlValue::Tuple(t) = &operand
-            && let Some(type_val) = t.get("__type")
-            && let CqlValue::String(type_str) = type_val
-        {
-            // Extract just the type name from qualified name
-            operand_type_name = type_str
-                .rsplit('}')
-                .next()
-                .unwrap_or(type_str)
-                .rsplit('.')
-                .next()
-                .unwrap_or(type_str)
-                .to_string();
-        }
-
-        // Normalize type names (remove various prefixes)
-        let target_normalized = target_type
-            .strip_prefix("System.")
-            .or_else(|| target_type.strip_prefix("{urn:hl7-org:elm-types:r1}"))
-            .or_else(|| target_type.strip_prefix("http://hl7.org/fhirpath/System."))
-            .unwrap_or(&target_type);
-
-        // Check direct type match
-        let matches = operand_type_name.eq_ignore_ascii_case(target_normalized)
-            || is_subtype_of(&operand_type_name, target_normalized);
         Ok(CqlValue::Boolean(matches))
     }
 
@@ -981,6 +951,142 @@ fn parse_ratio_string(s: &str) -> EvalResult<CqlValue> {
     };
 
     Ok(CqlValue::Ratio(CqlRatio::new(numerator, denominator)))
+}
+
+/// Whether a (non-null) value is an instance of the type described by `ts`.
+///
+/// `List<T>` matches lists whose non-null elements are all `T`; `Interval<T>`
+/// matches intervals whose boundaries are `T`; `Choice<...>` matches any of its
+/// alternatives; `Tuple { ... }` matches tuples that have every declared element.
+pub(crate) fn value_is_type(value: &CqlValue, ts: &TypeSpecifier) -> bool {
+    match (ts, value) {
+        (TypeSpecifier::Named(n), _) => match n.namespace.as_deref() {
+            Some("FHIR") => fhir_type_matches(value, &n.name),
+            _ => named_type_matches(value, &n.name),
+        },
+        (TypeSpecifier::List(list), CqlValue::List(items)) => items
+            .iter()
+            .filter(|v| !v.is_null())
+            .all(|v| value_is_type(v, &list.element_type)),
+        (TypeSpecifier::Interval(interval), CqlValue::Interval(i)) => [&i.low, &i.high]
+            .into_iter()
+            .flatten()
+            .filter(|v| !v.is_null())
+            .all(|v| value_is_type(v, &interval.point_type)),
+        (TypeSpecifier::Choice(choice), _) => choice.choice.iter().any(|t| value_is_type(value, t)),
+        (TypeSpecifier::Tuple(tuple), CqlValue::Tuple(t)) => {
+            tuple.element.iter().all(|e| t.get(&e.name).is_some())
+        }
+        _ => false,
+    }
+}
+
+/// Target type of an `as` expression, for messages.
+fn type_display(expr: &AsExpression) -> String {
+    match (&expr.as_type_specifier, &expr.as_type) {
+        (Some(TypeSpecifier::Named(n)), _) => n.name.clone(),
+        (Some(TypeSpecifier::List(_)), _) => "List".to_string(),
+        (Some(TypeSpecifier::Interval(_)), _) => "Interval".to_string(),
+        (Some(TypeSpecifier::Tuple(_)), _) => "Tuple".to_string(),
+        (Some(TypeSpecifier::Choice(_)), _) => "Choice".to_string(),
+        (None, Some(name)) => name.clone(),
+        (None, None) => "Any".to_string(),
+    }
+}
+
+/// Whether a value matches a FHIR model type name, given that FHIR data is
+/// presented as CQL system values (primitives as system primitives,
+/// `Coding` as Code, `CodeableConcept` as Concept, `Period`/`Range` as
+/// intervals, `Quantity` as Quantity) and resources as tuples carrying
+/// `resourceType`.
+fn fhir_type_matches(value: &CqlValue, fhir_type: &str) -> bool {
+    match fhir_type {
+        "boolean" => matches!(value, CqlValue::Boolean(_)),
+        "integer" | "positiveInt" | "unsignedInt" | "integer64" => {
+            matches!(value, CqlValue::Integer(_) | CqlValue::Long(_))
+        }
+        "decimal" => matches!(value, CqlValue::Decimal(_) | CqlValue::Integer(_)),
+        "string" | "code" | "id" | "uri" | "url" | "canonical" | "oid" | "uuid" | "markdown"
+        | "base64Binary" | "xhtml" => matches!(value, CqlValue::String(_)),
+        "date" => matches!(value, CqlValue::Date(_)),
+        "dateTime" | "instant" => matches!(value, CqlValue::DateTime(_) | CqlValue::Date(_)),
+        "time" => matches!(value, CqlValue::Time(_)),
+        "Quantity" | "Age" | "Duration" | "Distance" | "Count" | "SimpleQuantity"
+        | "MoneyQuantity" => matches!(value, CqlValue::Quantity(_)),
+        "Coding" => matches!(value, CqlValue::Code(_)),
+        "CodeableConcept" => matches!(value, CqlValue::Concept(_)),
+        "Period" | "Range" => matches!(value, CqlValue::Interval(_)),
+        "Ratio" => matches!(value, CqlValue::Ratio(_)),
+        "Resource" | "DomainResource" => {
+            matches!(value, CqlValue::Tuple(t) if t.get("resourceType").is_some())
+        }
+        _ => match value {
+            CqlValue::Tuple(t) => {
+                matches!(t.get("resourceType"), Some(CqlValue::String(rt)) if rt == fhir_type)
+            }
+            _ => false,
+        },
+    }
+}
+
+/// Whether a value's runtime type matches a named type (`Integer`,
+/// `System.Code`, `{urn:hl7-org:elm-types:r1}DateTime`, ...).
+fn named_type_matches(value: &CqlValue, target_type: &str) -> bool {
+    let mut operand_type_name = value.get_type().name().to_string();
+
+    // For tuples with __type field, use the __type value as the type name
+    if let CqlValue::Tuple(t) = value
+        && let Some(CqlValue::String(type_str)) = t.get("__type")
+    {
+        operand_type_name = type_str
+            .rsplit('}')
+            .next()
+            .unwrap_or(type_str)
+            .rsplit('.')
+            .next()
+            .unwrap_or(type_str)
+            .to_string();
+    }
+
+    let target_normalized = target_type
+        .strip_prefix("System.")
+        .or_else(|| target_type.strip_prefix("{urn:hl7-org:elm-types:r1}"))
+        .or_else(|| target_type.strip_prefix("http://hl7.org/fhirpath/System."))
+        .unwrap_or(target_type);
+
+    if let Some(fhir_type) = target_type
+        .strip_prefix("FHIR.")
+        .or_else(|| target_type.strip_prefix("{http://hl7.org/fhir}"))
+    {
+        return fhir_type_matches(value, fhir_type);
+    }
+
+    operand_type_name.eq_ignore_ascii_case(target_normalized)
+        || is_subtype_of(&operand_type_name, target_normalized)
+        || (!is_system_type_name(target_normalized) && fhir_type_matches(value, target_normalized))
+}
+
+/// Whether `name` is a CQL System type name.
+fn is_system_type_name(name: &str) -> bool {
+    matches!(
+        name,
+        "Any"
+            | "Boolean"
+            | "Integer"
+            | "Long"
+            | "Decimal"
+            | "String"
+            | "Date"
+            | "DateTime"
+            | "Time"
+            | "Quantity"
+            | "Ratio"
+            | "Code"
+            | "Concept"
+            | "ValueSet"
+            | "CodeSystem"
+            | "Vocabulary"
+    )
 }
 
 /// Check if a type is a subtype of another type in CQL's type hierarchy

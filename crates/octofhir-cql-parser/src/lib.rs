@@ -1,7 +1,4 @@
-//! CQL parser using Winnow
-//!
-//! This crate provides a complete CQL 1.5 parser using Winnow with recursive descent
-//! and precedence climbing for operator precedence.
+#![doc = include_str!("../README.md")]
 
 mod combinators;
 mod expression;

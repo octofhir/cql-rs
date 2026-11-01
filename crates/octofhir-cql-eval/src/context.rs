@@ -32,6 +32,9 @@ pub struct EvaluationContext {
     libraries: HashMap<String, Arc<Library>>,
     /// The main library being evaluated
     main_library: Option<Arc<Library>>,
+    /// Libraries whose definitions are currently being evaluated (innermost
+    /// last); references without a library qualifier resolve against the top.
+    library_stack: Vec<Arc<Library>>,
     /// Evaluation timestamp (used for Now())
     evaluation_timestamp: DateTime<FixedOffset>,
     /// Scope stack for query aliases and let bindings
@@ -150,6 +153,7 @@ impl EvaluationContext {
             parameters: HashMap::new(),
             libraries: HashMap::new(),
             main_library: None,
+            library_stack: Vec::new(),
             evaluation_timestamp: Local::now().fixed_offset(),
             scope_stack: Vec::new(),
             expression_cache: RwLock::new(HashMap::new()),
@@ -211,22 +215,106 @@ impl EvaluationContext {
         self.parameters.get(name)
     }
 
-    /// Get a parameter value with library qualifier
+    /// Get a supplied parameter value.
+    ///
+    /// Supplied parameter values apply by name to the main library and to
+    /// every included library that declares a parameter of that name (the
+    /// usual convention for measure parameters such as `"Measurement
+    /// Period"`), so the library qualifier does not narrow the lookup.
+    /// Parameters without a supplied value fall back to their declared
+    /// default, which the engine evaluates.
     pub fn get_parameter_qualified(
         &self,
-        library_name: Option<&str>,
+        _library_name: Option<&str>,
         name: &str,
     ) -> Option<&CqlValue> {
-        // TODO: Handle library-qualified parameter lookup
-        let _ = library_name;
         self.parameters.get(name)
     }
 
     // === Library Management ===
 
-    /// Add a library
+    /// Add a library that the main library (or another library) includes.
+    ///
+    /// `name` is the library name used in `include` declarations (the ELM
+    /// `IncludeDef.path`, i.e. the library identifier), not the local alias.
     pub fn add_library(&mut self, name: impl Into<String>, library: Library) {
         self.libraries.insert(name.into(), Arc::new(library));
+    }
+
+    /// Add an already shared library (see [`add_library`](Self::add_library)).
+    pub fn add_library_arc(&mut self, name: impl Into<String>, library: Arc<Library>) {
+        self.libraries.insert(name.into(), library);
+    }
+
+    /// Set the main library from a shared reference.
+    pub fn set_main_library(&mut self, library: Arc<Library>) {
+        self.main_library = Some(library);
+    }
+
+    /// The library that unqualified references currently resolve against:
+    /// the innermost library being evaluated, else the main library.
+    pub fn current_library(&self) -> Option<Arc<Library>> {
+        self.library_stack
+            .last()
+            .cloned()
+            .or_else(|| self.main_library.clone())
+    }
+
+    /// Resolve an include alias of the current library to the loaded library.
+    ///
+    /// Falls back to treating `alias` as a library name, so a library added
+    /// under its own name is found even without a matching include.
+    pub fn resolve_included(&self, alias: &str) -> Option<Arc<Library>> {
+        let path = self
+            .current_library()
+            .and_then(|lib| {
+                lib.includes.as_ref().and_then(|includes| {
+                    includes
+                        .defs
+                        .iter()
+                        .find(|i| i.local_identifier == alias)
+                        .map(|i| i.path.clone())
+                })
+            })
+            .unwrap_or_else(|| alias.to_string());
+        self.libraries.get(&path).cloned().or_else(|| {
+            self.main_library
+                .clone()
+                .filter(|main| main.identifier.id == path)
+        })
+    }
+
+    /// The library name (include path) that `alias` refers to in the current library.
+    pub fn include_path(&self, alias: &str) -> Option<String> {
+        self.current_library().and_then(|lib| {
+            lib.includes.as_ref().and_then(|includes| {
+                includes
+                    .defs
+                    .iter()
+                    .find(|i| i.local_identifier == alias)
+                    .map(|i| i.path.clone())
+            })
+        })
+    }
+
+    /// Make `library` the current library until the matching
+    /// [`pop_library`](Self::pop_library).
+    pub fn push_library(&mut self, library: Arc<Library>) {
+        self.library_stack.push(library);
+    }
+
+    /// Restore the previously current library.
+    pub fn pop_library(&mut self) {
+        self.library_stack.pop();
+    }
+
+    /// Run `f` with every query/let scope hidden, so a function body or a
+    /// referenced definition cannot see the caller's aliases.
+    pub fn with_isolated_scopes<T>(&mut self, f: impl FnOnce(&mut Self) -> T) -> T {
+        let saved = std::mem::take(&mut self.scope_stack);
+        let result = f(self);
+        self.scope_stack = saved;
+        result
     }
 
     /// Get the main library

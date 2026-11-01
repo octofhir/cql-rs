@@ -8,7 +8,6 @@ members = [
     "crates/octofhir-cql-eval",
     "crates/octofhir-cql-model",
     "crates/octofhir-cql-diagnostics",
-    "crates/octofhir-cql-cli",
 ]
 exclude = []
 resolver = "3"
@@ -34,7 +33,7 @@ octofhir-cql-diagnostics = { path = "crates/octofhir-cql-diagnostics", version =
 
 # External octofhir crates
 octofhir-fhir-model = { version = "0.1.7", features = ["serde", "http-client"] }
-octofhir-ucum = { version = "0.5.1", features = ["fhir", "serde"] }
+octofhir-ucum = { version = "0.9.1", features = ["fhir", "serde"] }
 
 # Core dependencies
 anyhow = "1"

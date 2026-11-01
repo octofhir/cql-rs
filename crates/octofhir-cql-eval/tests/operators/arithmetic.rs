@@ -813,12 +813,12 @@ fn test_ln_negative_returns_null() {
 }
 
 #[test]
-fn test_ln_zero_returns_null() {
+fn test_ln_zero_is_an_error() {
+    // cql-tests Ln0: `Ln(0)` is invalid (negative infinity cannot be represented)
     let e = engine();
     let mut c = ctx();
 
-    let result = e.eval_ln(&make_unary(decimal_expr("0.0")), &mut c).unwrap();
-    assert!(result.is_null());
+    assert!(e.eval_ln(&make_unary(decimal_expr("0.0")), &mut c).is_err());
 }
 
 #[test]

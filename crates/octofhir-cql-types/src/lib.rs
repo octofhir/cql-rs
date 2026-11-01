@@ -1,11 +1,4 @@
-//! CQL Type System
-//!
-//! This crate defines the complete CQL type system per the CQL 1.5 specification including:
-//! - CqlValue: Runtime value representation
-//! - CqlType: Type system with all CQL types
-//! - Type inference engine
-//! - Implicit/explicit conversion rules
-//! - Semantic analysis (symbol table, scopes, resolution)
+#![doc = include_str!("../README.md")]
 
 pub mod coercion;
 pub mod inference;

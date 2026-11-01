@@ -1,9 +1,10 @@
 //! Query expression AST nodes for CQL
 
 use crate::{BoxExpr, Identifier, OptBoxExpr, Spanned, TypeSpecifier};
+use serde::Serialize;
 
 /// A query expression
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct Query {
     /// Query sources
     pub sources: Vec<QuerySource>,
@@ -50,7 +51,7 @@ impl Query {
 }
 
 /// A source in a query (from clause)
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct QuerySource {
     /// The source expression (retrieve or other expression)
     pub expression: BoxExpr,
@@ -68,7 +69,7 @@ impl QuerySource {
 }
 
 /// Let clause for defining intermediate values
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct LetClause {
     /// Variable name
     pub identifier: Identifier,
@@ -86,7 +87,7 @@ impl LetClause {
 }
 
 /// Relationship clause (with/without)
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct RelationshipClause {
     /// Type of relationship
     pub kind: RelationshipKind,
@@ -97,7 +98,7 @@ pub struct RelationshipClause {
 }
 
 /// Kind of relationship clause
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 pub enum RelationshipKind {
     /// With clause (inclusion)
     With,
@@ -106,7 +107,7 @@ pub enum RelationshipKind {
 }
 
 /// Return clause
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct ReturnClause {
     /// Whether to return distinct values
     pub distinct: bool,
@@ -143,7 +144,7 @@ impl ReturnClause {
 }
 
 /// Aggregate clause
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct AggregateClause {
     /// Whether distinct
     pub distinct: bool,
@@ -158,7 +159,7 @@ pub struct AggregateClause {
 }
 
 /// Sort clause
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct SortClause {
     /// Sort items
     pub items: Vec<SortItem>,
@@ -175,7 +176,7 @@ impl SortClause {
 }
 
 /// Sort item
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct SortItem {
     /// Sort expression (None for sorting by the query result itself)
     pub expression: OptBoxExpr,
@@ -201,7 +202,7 @@ impl SortItem {
 }
 
 /// Sort direction
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize)]
 pub enum SortDirection {
     /// Ascending order (default)
     #[default]
@@ -227,7 +228,7 @@ impl SortDirection {
 }
 
 /// Retrieve expression for data retrieval
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct Retrieve {
     /// Data type to retrieve (e.g., "Condition", "Observation")
     pub data_type: Spanned<TypeSpecifier>,
@@ -263,7 +264,7 @@ impl Retrieve {
 }
 
 /// Code comparator for retrieve expressions
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 pub enum CodeComparator {
     /// in (code is in valueset)
     In,

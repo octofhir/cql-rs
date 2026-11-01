@@ -175,7 +175,7 @@ pub fn offset_to_line_col(source: &str, offset: usize) -> (usize, usize) {
 }
 
 /// A node with an associated span
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct Spanned<T> {
     /// The inner value
     pub inner: T,

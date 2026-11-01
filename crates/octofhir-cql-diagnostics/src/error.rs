@@ -135,7 +135,7 @@ impl RelatedInfo {
 #[derive(Debug, Clone, Error)]
 pub enum CqlError {
     /// Parse error
-    #[error("{code}: {message}")]
+    #[error("{code}: {message}{}", location_suffix(.location))]
     Parse {
         code: ErrorCode,
         message: String,
@@ -145,7 +145,7 @@ pub enum CqlError {
     },
 
     /// Semantic error (type checking, resolution)
-    #[error("{code}: {message}")]
+    #[error("{code}: {message}{}", location_suffix(.location))]
     Semantic {
         code: ErrorCode,
         message: String,
@@ -154,7 +154,7 @@ pub enum CqlError {
     },
 
     /// Evaluation error
-    #[error("{code}: {message}")]
+    #[error("{code}: {message}{}", location_suffix(.location))]
     Evaluation {
         code: ErrorCode,
         message: String,
@@ -357,6 +357,14 @@ impl CqlError {
             }
         }
     }
+}
+
+/// ` (line L, column C)` when a location is known.
+fn location_suffix(location: &Option<SourceLocation>) -> String {
+    location
+        .as_ref()
+        .map(|l| format!(" (line {}, column {})", l.line, l.column))
+        .unwrap_or_default()
 }
 
 /// Builder for creating CQL errors with fluent API

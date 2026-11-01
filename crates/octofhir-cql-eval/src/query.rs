@@ -15,16 +15,39 @@ use crate::context::EvaluationContext;
 use crate::engine::CqlEngine;
 use crate::error::{EvalError, EvalResult};
 use crate::operators::comparison::cql_compare;
-use octofhir_cql_elm::{Query, RelationshipClause, Retrieve, SortByItem, SortDirection};
+use octofhir_cql_elm::{
+    Expression, Query, RelationshipClause, Retrieve, SORT_ELEMENT_ALIAS, SortByItem, SortDirection,
+};
 use octofhir_cql_types::{CqlList, CqlValue};
 use std::cmp::Ordering;
+
+/// One row of a query: the alias bindings of a source combination plus the
+/// values of the query's `let` clauses for that combination.
+#[derive(Debug, Clone)]
+struct Row {
+    aliases: Vec<(String, CqlValue)>,
+    lets: Vec<(String, CqlValue)>,
+}
+
+impl Row {
+    /// Push a scope binding this row's aliases and lets.
+    fn enter(&self, ctx: &mut EvaluationContext) {
+        ctx.push_scope();
+        for (alias, value) in &self.aliases {
+            ctx.set_alias(alias, value.clone());
+        }
+        for (name, value) in &self.lets {
+            ctx.set_let(name, value.clone());
+        }
+    }
+}
 
 impl CqlEngine {
     /// Evaluate a Query expression
     ///
     /// A query in CQL consists of:
     /// 1. One or more sources (each with an alias)
-    /// 2. Optional let clauses (computed values available in scope)
+    /// 2. Optional let clauses (computed values available in every later clause)
     /// 3. Optional relationship clauses (with/without)
     /// 4. Optional where clause (filtering)
     /// 5. Optional return clause (projection)
@@ -34,40 +57,41 @@ impl CqlEngine {
         // Step 1: Evaluate all sources
         let sources = self.evaluate_query_sources(query, ctx)?;
 
-        // Track if this is a singleton source query (non-list source)
-        // A singleton source should return a scalar, not a list
+        // A singleton source (non-list value) yields a singleton result
         let is_singleton_source = sources.len() == 1 && sources[0].2;
 
         // Step 2: Generate combinations (cartesian product for multi-source)
-        let mut combinations = self.generate_source_combinations(&sources)?;
+        let combinations = self.generate_source_combinations(&sources)?;
 
-        // Step 3: Apply relationship clauses (with/without)
+        // Step 3: Bind let clauses for each combination
+        let mut rows = combinations
+            .into_iter()
+            .map(|aliases| self.bind_lets(aliases, query, ctx))
+            .collect::<EvalResult<Vec<_>>>()?;
+
+        // Step 4: Apply relationship clauses (with/without)
         if let Some(relationships) = &query.relationship {
-            combinations =
-                self.apply_relationship_clauses(combinations, relationships, query, ctx)?;
+            for relationship in relationships {
+                rows = self.apply_relationship(rows, relationship, ctx)?;
+            }
         }
-
-        // Step 4: Apply let clauses
-        // Let clauses are evaluated for each combination and made available in scope
 
         // Step 5: Apply where clause (filtering)
         if let Some(where_expr) = &query.where_clause {
-            combinations = self.apply_where_clause(combinations, where_expr, query, ctx)?;
+            rows = self.apply_where_clause(rows, where_expr, ctx)?;
         }
 
-        // Step 6: Check for aggregate clause
+        // Step 6: Aggregate clause replaces return/sort
         if let Some(aggregate) = &query.aggregate {
-            return self.apply_aggregate_clause(combinations, aggregate, query, ctx);
+            return self.apply_aggregate_clause(rows, aggregate, ctx);
         }
 
         // Step 7: Apply return clause (projection)
         let mut results = if let Some(return_clause) = &query.return_clause {
-            self.apply_return_clause(combinations, return_clause, query, ctx)?
+            self.apply_return_clause(rows, return_clause, ctx)?
         } else {
-            // Default: return the source value(s) directly
-            // For single source, return the aliased value
-            // For multi-source, return a tuple of all aliases
-            self.default_return(combinations, query)?
+            // Single source: the aliased value; multi-source: a tuple of aliases
+            Self::default_return(rows, query)
         };
 
         // Step 8: Apply distinct if specified
@@ -85,7 +109,6 @@ impl CqlEngine {
         }
 
         // Step 10: For singleton source, unwrap the result
-        // If the source was a non-list value, return the single result directly
         if is_singleton_source && results.len() == 1 {
             return Ok(results.into_iter().next().unwrap());
         }
@@ -155,121 +178,73 @@ impl CqlEngine {
         Ok(combinations)
     }
 
-    /// Apply relationship clauses (with/without)
-    fn apply_relationship_clauses(
+    /// Evaluate the let clauses for one combination; each let sees the
+    /// aliases and the lets before it.
+    fn bind_lets(
         &self,
-        combinations: Vec<Vec<(String, CqlValue)>>,
-        relationships: &[RelationshipClause],
+        aliases: Vec<(String, CqlValue)>,
         query: &Query,
         ctx: &mut EvaluationContext,
-    ) -> EvalResult<Vec<Vec<(String, CqlValue)>>> {
-        let mut result = combinations;
-
-        for relationship in relationships {
-            result = match relationship {
-                RelationshipClause::With(with) => {
-                    self.apply_with_clause(result, with, query, ctx)?
-                }
-                RelationshipClause::Without(without) => {
-                    self.apply_without_clause(result, without, query, ctx)?
-                }
-            };
-        }
-
-        Ok(result)
+    ) -> EvalResult<Row> {
+        let mut row = Row {
+            aliases,
+            lets: Vec::new(),
+        };
+        let Some(let_clauses) = &query.let_clause else {
+            return Ok(row);
+        };
+        row.enter(ctx);
+        let result = let_clauses.iter().try_for_each(|clause| {
+            let value = self.evaluate(&clause.expression, ctx)?;
+            ctx.set_let(&clause.identifier, value.clone());
+            row.lets.push((clause.identifier.clone(), value));
+            Ok(())
+        });
+        ctx.pop_scope();
+        result.map(|()| row)
     }
 
-    /// Apply a With clause
-    ///
-    /// Returns combinations where at least one related item satisfies the such-that condition
-    fn apply_with_clause(
+    /// Apply a with/without clause: keep rows for which some (with) or no
+    /// (without) related element satisfies the such-that condition.
+    fn apply_relationship(
         &self,
-        combinations: Vec<Vec<(String, CqlValue)>>,
-        with: &octofhir_cql_elm::WithClause,
-        _query: &Query,
+        rows: Vec<Row>,
+        relationship: &RelationshipClause,
         ctx: &mut EvaluationContext,
-    ) -> EvalResult<Vec<Vec<(String, CqlValue)>>> {
-        // Evaluate the with source
-        let related_value = self.evaluate(&with.expression, ctx)?;
-        let related_values: Vec<CqlValue> = match related_value {
+    ) -> EvalResult<Vec<Row>> {
+        let (expression, alias, such_that, keep_matching) = match relationship {
+            RelationshipClause::With(w) => (&w.expression, &w.alias, &w.such_that, true),
+            RelationshipClause::Without(w) => (&w.expression, &w.alias, &w.such_that, false),
+        };
+
+        let related_values: Vec<CqlValue> = match self.evaluate(expression, ctx)? {
             CqlValue::List(list) => list.iter().cloned().collect(),
             CqlValue::Null => vec![],
             other => vec![other],
         };
 
         let mut result = Vec::new();
-
-        for combo in combinations {
-            // Set up scope with current combination aliases
-            ctx.push_scope();
-            for (alias, value) in &combo {
-                ctx.set_alias(alias, value.clone());
-            }
-
-            // Check if any related value satisfies the such-that condition
+        for row in rows {
+            row.enter(ctx);
             let mut has_match = false;
             for related in &related_values {
-                ctx.set_alias(&with.alias, related.clone());
-                let condition = self.evaluate(&with.such_that, ctx)?;
-                if condition.is_true() {
-                    has_match = true;
-                    break;
+                ctx.set_alias(alias, related.clone());
+                match self.evaluate(such_that, ctx) {
+                    Ok(condition) if condition.is_true() => {
+                        has_match = true;
+                        break;
+                    }
+                    Ok(_) => {}
+                    Err(e) => {
+                        ctx.pop_scope();
+                        return Err(e);
+                    }
                 }
             }
-
             ctx.pop_scope();
 
-            if has_match {
-                result.push(combo);
-            }
-        }
-
-        Ok(result)
-    }
-
-    /// Apply a Without clause
-    ///
-    /// Returns combinations where NO related item satisfies the such-that condition
-    fn apply_without_clause(
-        &self,
-        combinations: Vec<Vec<(String, CqlValue)>>,
-        without: &octofhir_cql_elm::WithoutClause,
-        _query: &Query,
-        ctx: &mut EvaluationContext,
-    ) -> EvalResult<Vec<Vec<(String, CqlValue)>>> {
-        // Evaluate the without source
-        let related_value = self.evaluate(&without.expression, ctx)?;
-        let related_values: Vec<CqlValue> = match related_value {
-            CqlValue::List(list) => list.iter().cloned().collect(),
-            CqlValue::Null => vec![],
-            other => vec![other],
-        };
-
-        let mut result = Vec::new();
-
-        for combo in combinations {
-            // Set up scope with current combination aliases
-            ctx.push_scope();
-            for (alias, value) in &combo {
-                ctx.set_alias(alias, value.clone());
-            }
-
-            // Check that NO related value satisfies the such-that condition
-            let mut has_match = false;
-            for related in &related_values {
-                ctx.set_alias(&without.alias, related.clone());
-                let condition = self.evaluate(&without.such_that, ctx)?;
-                if condition.is_true() {
-                    has_match = true;
-                    break;
-                }
-            }
-
-            ctx.pop_scope();
-
-            // Include only if there's no match
-            if !has_match {
-                result.push(combo);
+            if has_match == keep_matching {
+                result.push(row);
             }
         }
 
@@ -279,36 +254,20 @@ impl CqlEngine {
     /// Apply where clause filtering
     fn apply_where_clause(
         &self,
-        combinations: Vec<Vec<(String, CqlValue)>>,
+        rows: Vec<Row>,
         where_expr: &octofhir_cql_elm::Expression,
-        query: &Query,
         ctx: &mut EvaluationContext,
-    ) -> EvalResult<Vec<Vec<(String, CqlValue)>>> {
+    ) -> EvalResult<Vec<Row>> {
         let mut result = Vec::new();
 
-        for combo in combinations {
-            ctx.push_scope();
-
-            // Set all aliases
-            for (alias, value) in &combo {
-                ctx.set_alias(alias, value.clone());
-            }
-
-            // Evaluate let clauses
-            if let Some(let_clauses) = &query.let_clause {
-                for let_clause in let_clauses {
-                    let value = self.evaluate(&let_clause.expression, ctx)?;
-                    ctx.set_let(&let_clause.identifier, value);
-                }
-            }
-
-            // Evaluate where condition
-            let condition = self.evaluate(where_expr, ctx)?;
+        for row in rows {
+            row.enter(ctx);
+            let condition = self.evaluate(where_expr, ctx);
             ctx.pop_scope();
 
             // Include if condition is true (not false or null)
-            if condition.is_true() {
-                result.push(combo);
+            if condition?.is_true() {
+                result.push(row);
             }
         }
 
@@ -318,73 +277,46 @@ impl CqlEngine {
     /// Apply return clause projection
     fn apply_return_clause(
         &self,
-        combinations: Vec<Vec<(String, CqlValue)>>,
+        rows: Vec<Row>,
         return_clause: &octofhir_cql_elm::ReturnClause,
-        query: &Query,
         ctx: &mut EvaluationContext,
     ) -> EvalResult<Vec<CqlValue>> {
-        let mut results = Vec::new();
+        let mut results = Vec::with_capacity(rows.len());
 
-        for combo in combinations {
-            ctx.push_scope();
-
-            // Set all aliases
-            for (alias, value) in &combo {
-                ctx.set_alias(alias, value.clone());
-            }
-
-            // Evaluate let clauses
-            if let Some(let_clauses) = &query.let_clause {
-                for let_clause in let_clauses {
-                    let value = self.evaluate(&let_clause.expression, ctx)?;
-                    ctx.set_let(&let_clause.identifier, value);
-                }
-            }
-
-            // Evaluate return expression
-            let result = self.evaluate(&return_clause.expression, ctx)?;
+        for row in rows {
+            row.enter(ctx);
+            let result = self.evaluate(&return_clause.expression, ctx);
             ctx.pop_scope();
-
-            results.push(result);
+            results.push(result?);
         }
 
         Ok(results)
     }
 
     /// Default return when no return clause is specified
-    fn default_return(
-        &self,
-        combinations: Vec<Vec<(String, CqlValue)>>,
-        query: &Query,
-    ) -> EvalResult<Vec<CqlValue>> {
+    fn default_return(rows: Vec<Row>, query: &Query) -> Vec<CqlValue> {
         let single_source = query.source.len() == 1;
 
-        Ok(combinations
-            .into_iter()
-            .map(|combo| {
+        rows.into_iter()
+            .map(|row| {
                 if single_source {
-                    // Single source: return the value directly
-                    combo
+                    row.aliases
                         .into_iter()
                         .next()
                         .map(|(_, v)| v)
                         .unwrap_or(CqlValue::Null)
                 } else {
-                    // Multi-source: return a tuple of all values
-                    CqlValue::Tuple(octofhir_cql_types::CqlTuple::from_elements(
-                        combo.into_iter().collect::<Vec<_>>(),
-                    ))
+                    CqlValue::Tuple(octofhir_cql_types::CqlTuple::from_elements(row.aliases))
                 }
             })
-            .collect())
+            .collect()
     }
 
     /// Apply aggregate clause
     fn apply_aggregate_clause(
         &self,
-        combinations: Vec<Vec<(String, CqlValue)>>,
+        rows: Vec<Row>,
         aggregate: &octofhir_cql_elm::AggregateClause,
-        query: &Query,
         ctx: &mut EvaluationContext,
     ) -> EvalResult<CqlValue> {
         // Get initial value
@@ -395,65 +327,47 @@ impl CqlEngine {
         };
 
         // Apply distinct if specified
-        let items = if aggregate.distinct.unwrap_or(false) {
-            self.make_combinations_distinct(combinations)?
+        let rows = if aggregate.distinct.unwrap_or(false) {
+            Self::distinct_rows(rows)
         } else {
-            combinations
+            rows
         };
 
-        // Process each combination
-        for combo in items {
-            ctx.push_scope();
-
-            // Set all aliases
-            for (alias, value) in &combo {
-                ctx.set_alias(alias, value.clone());
-            }
-
-            // Evaluate let clauses
-            if let Some(let_clauses) = &query.let_clause {
-                for let_clause in let_clauses {
-                    let value = self.evaluate(&let_clause.expression, ctx)?;
-                    ctx.set_let(&let_clause.identifier, value);
-                }
-            }
-
-            // Set the accumulator as an alias so it can be referenced in the expression
+        for row in rows {
+            row.enter(ctx);
+            // The accumulator is visible to the aggregate expression by name
             ctx.set_alias(&aggregate.identifier, accumulator.clone());
-
-            // Evaluate aggregate expression
-            accumulator = self.evaluate(&aggregate.expression, ctx)?;
+            let next = self.evaluate(&aggregate.expression, ctx);
             ctx.pop_scope();
+            accumulator = next?;
         }
 
         Ok(accumulator)
     }
 
-    /// Make combinations distinct by comparing tuples
-    fn make_combinations_distinct(
-        &self,
-        combinations: Vec<Vec<(String, CqlValue)>>,
-    ) -> EvalResult<Vec<Vec<(String, CqlValue)>>> {
-        let mut result: Vec<Vec<(String, CqlValue)>> = Vec::new();
+    /// Remove rows whose alias values equal an earlier row's
+    fn distinct_rows(rows: Vec<Row>) -> Vec<Row> {
+        let mut result: Vec<Row> = Vec::new();
 
-        for combo in combinations {
-            let is_duplicate = result.iter().any(|existing| {
-                if existing.len() != combo.len() {
-                    return false;
-                }
-                existing.iter().zip(combo.iter()).all(|((_, v1), (_, v2))| {
-                    crate::operators::comparison::cql_equal(v1, v2)
-                        .unwrap_or(Some(false))
-                        .unwrap_or(false)
-                })
-            });
+        for row in rows {
+            let is_duplicate =
+                result.iter().any(|existing| {
+                    existing.aliases.len() == row.aliases.len()
+                        && existing.aliases.iter().zip(row.aliases.iter()).all(
+                            |((_, v1), (_, v2))| {
+                                crate::operators::comparison::cql_equal(v1, v2)
+                                    .unwrap_or(Some(false))
+                                    .unwrap_or(false)
+                            },
+                        )
+                });
 
             if !is_duplicate {
-                result.push(combo);
+                result.push(row);
             }
         }
 
-        Ok(result)
+        result
     }
 
     /// Apply distinct to results
@@ -501,7 +415,14 @@ impl CqlEngine {
         let mut keyed: Vec<(CqlValue, CqlValue)> = Vec::new();
 
         for value in values.iter() {
-            let key = if let Some(path) = &sort_item.path {
+            let key = if let Some(expression) = &sort_item.expression {
+                // Sort by expression, evaluated with the element bound to `$this`
+                ctx.push_scope();
+                ctx.set_alias(SORT_ELEMENT_ALIAS, value.clone());
+                let key = self.evaluate(expression, ctx);
+                ctx.pop_scope();
+                key?
+            } else if let Some(path) = &sort_item.path {
                 // Sort by path
                 self.get_property_value_for_sort(value, path, ctx)?
             } else {
@@ -546,12 +467,18 @@ impl CqlEngine {
         _ctx: &EvaluationContext,
     ) -> EvalResult<CqlValue> {
         // Navigate into tuples/structures to get the property value
+        if let Some((head, rest)) = path.split_once('.') {
+            let inner = self.get_property_value_for_sort(value, head, _ctx)?;
+            return self.get_property_value_for_sort(&inner, rest, _ctx);
+        }
         match value {
             CqlValue::Null => Ok(CqlValue::Null),
-            CqlValue::Tuple(t) => t
-                .get(path)
-                .cloned()
-                .ok_or_else(|| EvalError::invalid_property(path, "Tuple")),
+            CqlValue::Tuple(t) => Ok(t.get(path).cloned().unwrap_or(CqlValue::Null)),
+            CqlValue::Interval(_)
+            | CqlValue::Quantity(_)
+            | CqlValue::Code(_)
+            | CqlValue::Concept(_)
+            | CqlValue::Ratio(_) => self.get_property_value(value, path, _ctx),
             _ => {
                 // For other types, return the value itself if sorting by identity
                 Ok(value.clone())
@@ -567,11 +494,18 @@ impl CqlEngine {
         retrieve: &Retrieve,
         ctx: &mut EvaluationContext,
     ) -> EvalResult<CqlValue> {
-        // Evaluate code path if present
-        let codes = if let Some(codes_expr) = &retrieve.codes {
-            Some(self.evaluate(codes_expr, ctx)?)
-        } else {
-            None
+        // Evaluate the terminology filter. A value set is passed to the data
+        // provider as its expansion when the terminology provider can expand
+        // it, otherwise as the value set reference `{ name, id, version }`.
+        let codes = match &retrieve.codes {
+            Some(codes_expr) => {
+                let value = self.evaluate(codes_expr, ctx)?;
+                Some(match codes_expr.as_ref() {
+                    Expression::ValueSetRef(_) => self.expand_value_set_value(value, ctx),
+                    _ => value,
+                })
+            }
+            None => None,
         };
 
         // Evaluate date range if present
@@ -599,6 +533,20 @@ impl CqlEngine {
         );
 
         Ok(CqlValue::List(CqlList::from_elements(results)))
+    }
+
+    /// Expand a value set reference value into a list of codes using the
+    /// terminology provider; returns the reference unchanged if it cannot be
+    /// expanded.
+    fn expand_value_set_value(&self, value: CqlValue, ctx: &EvaluationContext) -> CqlValue {
+        let expansion = crate::references::TerminologyId::from_value(&value).and_then(|vs| {
+            ctx.terminology_provider()
+                .and_then(|provider| provider.expand_value_set(&vs.id))
+        });
+        match expansion {
+            Some(codes) => CqlValue::List(CqlList::from_elements(codes)),
+            None => value,
+        }
     }
 
     /// Evaluate a Tuple expression
@@ -995,6 +943,7 @@ mod tests {
                 by: vec![SortByItem {
                     direction: SortDirection::Desc,
                     path: None,
+                    expression: None,
                 }],
             }),
         };

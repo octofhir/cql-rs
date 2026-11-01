@@ -8,6 +8,7 @@
 use crate::context::EvaluationContext;
 use crate::engine::CqlEngine;
 use crate::error::{EvalError, EvalResult};
+use crate::operators::comparison::cql_compare;
 use bigdecimal::BigDecimal;
 use chrono::{Datelike, Timelike};
 use octofhir_cql_elm::{
@@ -1981,11 +1982,18 @@ fn value_same_or_before(
         (CqlValue::Integer(l), CqlValue::Integer(r)) => Ok(CqlValue::Boolean(*l <= *r)),
         (CqlValue::Decimal(l), CqlValue::Decimal(r)) => Ok(CqlValue::Boolean(*l <= *r)),
         (CqlValue::Long(l), CqlValue::Long(r)) => Ok(CqlValue::Boolean(*l <= *r)),
-        (CqlValue::Quantity(l), CqlValue::Quantity(r)) => {
-            // TODO: Handle unit conversion if needed
-            Ok(CqlValue::Boolean(l.value <= r.value))
-        }
+        (CqlValue::Quantity(_), CqlValue::Quantity(_)) => Ok(match cql_compare(left, right)? {
+            Some(ordering) => CqlValue::Boolean(ordering != std::cmp::Ordering::Greater),
+            None => CqlValue::Null,
+        }),
         (CqlValue::Date(d1), CqlValue::Date(d2)) => same_or_before_dates(d1, d2, precision),
+        // Implicit Date -> DateTime promotion (CQL 1.5 §2.5.2)
+        (CqlValue::Date(d), CqlValue::DateTime(dt)) => {
+            same_or_before_datetimes(&CqlDateTime::from_date(d.clone()), dt, precision)
+        }
+        (CqlValue::DateTime(dt), CqlValue::Date(d)) => {
+            same_or_before_datetimes(dt, &CqlDateTime::from_date(d.clone()), precision)
+        }
         (CqlValue::DateTime(dt1), CqlValue::DateTime(dt2)) => {
             same_or_before_datetimes(dt1, dt2, precision)
         }
@@ -2008,11 +2016,18 @@ fn value_same_or_after(
         (CqlValue::Integer(l), CqlValue::Integer(r)) => Ok(CqlValue::Boolean(*l >= *r)),
         (CqlValue::Decimal(l), CqlValue::Decimal(r)) => Ok(CqlValue::Boolean(*l >= *r)),
         (CqlValue::Long(l), CqlValue::Long(r)) => Ok(CqlValue::Boolean(*l >= *r)),
-        (CqlValue::Quantity(l), CqlValue::Quantity(r)) => {
-            // TODO: Handle unit conversion if needed
-            Ok(CqlValue::Boolean(l.value >= r.value))
-        }
+        (CqlValue::Quantity(_), CqlValue::Quantity(_)) => Ok(match cql_compare(left, right)? {
+            Some(ordering) => CqlValue::Boolean(ordering != std::cmp::Ordering::Less),
+            None => CqlValue::Null,
+        }),
         (CqlValue::Date(d1), CqlValue::Date(d2)) => same_or_after_dates(d1, d2, precision),
+        // Implicit Date -> DateTime promotion (CQL 1.5 §2.5.2)
+        (CqlValue::Date(d), CqlValue::DateTime(dt)) => {
+            same_or_after_datetimes(&CqlDateTime::from_date(d.clone()), dt, precision)
+        }
+        (CqlValue::DateTime(dt), CqlValue::Date(d)) => {
+            same_or_after_datetimes(dt, &CqlDateTime::from_date(d.clone()), precision)
+        }
         (CqlValue::DateTime(dt1), CqlValue::DateTime(dt2)) => {
             same_or_after_datetimes(dt1, dt2, precision)
         }

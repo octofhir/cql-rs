@@ -27,58 +27,45 @@ impl TerminologyAdapter {
 
 impl EvalTerminologyProvider for TerminologyAdapter {
     fn in_value_set(&self, code: &CqlValue, value_set_id: &str) -> Option<bool> {
-        // Extract code from CqlValue
-        let cql_code = match code {
-            CqlValue::Code(c) => c,
-            CqlValue::Concept(concept) => concept.codes.first()?,
+        // A Concept is in the value set if any of its codes is.
+        let codes: Vec<&CqlCode> = match code {
+            CqlValue::Code(c) => vec![c],
+            CqlValue::Concept(concept) => concept.codes.iter().collect(),
             _ => return None,
         };
 
-        // Call the FHIR terminology provider
-        // This is async in the FHIR provider, so we need to handle it
-        let code_str = &cql_code.code;
-        let system = Some(cql_code.system.as_str());
-        let display = cql_code.display.as_deref();
-
-        let result = tokio::runtime::Handle::try_current()
-            .ok()
-            .and_then(|handle| {
-                tokio::task::block_in_place(|| {
-                    handle.block_on(async {
-                        self.provider
-                            .validate_code_vs(value_set_id, system, code_str, display)
-                            .await
-                            .ok()
-                    })
-                })
-            });
-
-        result.map(|validation_result| validation_result.result)
+        let mut unknown = false;
+        for cql_code in codes {
+            let result = crate::blocking::block_on(self.provider.validate_code_vs(
+                value_set_id,
+                Some(cql_code.system.as_str()),
+                &cql_code.code,
+                cql_code.display.as_deref(),
+            ))
+            .and_then(Result::ok);
+            match result {
+                Some(validation) if validation.result => return Some(true),
+                Some(_) => {}
+                None => unknown = true,
+            }
+        }
+        if unknown { None } else { Some(false) }
     }
 
     fn in_code_system(&self, code: &CqlValue, code_system_id: &str) -> Option<bool> {
-        // Extract code from CqlValue
-        let cql_code = match code {
-            CqlValue::Code(c) => c,
-            CqlValue::Concept(concept) => concept.codes.first()?,
-            _ => return None,
-        };
-
-        // Check if the code's system matches the given code system
-        Some(cql_code.system == code_system_id)
+        match code {
+            CqlValue::Code(c) => Some(c.system == code_system_id),
+            CqlValue::Concept(concept) => {
+                Some(concept.codes.iter().any(|c| c.system == code_system_id))
+            }
+            _ => None,
+        }
     }
 
     fn expand_value_set(&self, value_set_id: &str) -> Option<Vec<CqlValue>> {
-        // Call the FHIR terminology provider to expand the value set
-        let result = tokio::runtime::Handle::try_current()
-            .ok()
-            .and_then(|handle| {
-                handle.block_on(async {
-                    self.provider.expand_valueset(value_set_id, None).await.ok()
-                })
-            });
-
-        result.map(|expansion| {
+        let expansion =
+            crate::blocking::block_on(self.provider.expand_valueset(value_set_id, None))?.ok()?;
+        Some(
             expansion
                 .contains
                 .into_iter()
@@ -90,42 +77,29 @@ impl EvalTerminologyProvider for TerminologyAdapter {
                         display: concept.display,
                     })
                 })
-                .collect()
-        })
+                .collect(),
+        )
     }
 
     fn lookup_display(&self, code: &CqlValue) -> Option<String> {
-        // Extract code from CqlValue
         let cql_code = match code {
             CqlValue::Code(c) => c,
             CqlValue::Concept(concept) => concept.codes.first()?,
             _ => return None,
         };
 
-        // If the code already has a display, return it
-        if let Some(ref display) = cql_code.display {
+        if let Some(display) = &cql_code.display {
             return Some(display.clone());
         }
 
-        // Otherwise, try to look it up
-        let system = &cql_code.system;
-        let code_str = &cql_code.code;
-        let version = cql_code.version.as_deref();
-
-        let result = tokio::runtime::Handle::try_current()
-            .ok()
-            .and_then(|handle| {
-                tokio::task::block_in_place(|| {
-                    handle.block_on(async {
-                        self.provider
-                            .lookup_code(system, code_str, version, None)
-                            .await
-                            .ok()
-                    })
-                })
-            });
-
-        result.and_then(|lookup_result| lookup_result.display)
+        crate::blocking::block_on(self.provider.lookup_code(
+            &cql_code.system,
+            &cql_code.code,
+            cql_code.version.as_deref(),
+            None,
+        ))?
+        .ok()?
+        .display
     }
 }
 

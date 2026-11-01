@@ -29,6 +29,7 @@ smallvec = { workspace = true }
 num-traits = "0.2"
 
 [dev-dependencies]
+octofhir-cql-parser = { workspace = true }
 tokio = { workspace = true, features = ["rt", "macros"] }
 
 [lints]

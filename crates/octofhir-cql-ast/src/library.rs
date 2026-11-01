@@ -4,9 +4,10 @@ use crate::{
     AccessModifier, BoxExpr, Identifier, OptBoxExpr, QualifiedIdentifier, Spanned, TypeSpecifier,
     VersionSpecifier,
 };
+use serde::Serialize;
 
 /// A complete CQL library
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct Library {
     /// Library definition (name and version)
     pub definition: Option<LibraryDefinition>,
@@ -55,7 +56,7 @@ impl Library {
 }
 
 /// Library definition (name and version)
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct LibraryDefinition {
     /// Library name (qualified identifier)
     pub name: QualifiedIdentifier,
@@ -64,16 +65,18 @@ pub struct LibraryDefinition {
 }
 
 /// Using definition for data model
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct UsingDefinition {
     /// Model identifier (e.g., "FHIR")
     pub model: Identifier,
     /// Optional version
     pub version: Option<VersionSpecifier>,
+    /// Optional local alias (`called`)
+    pub alias: Option<Identifier>,
 }
 
 /// Include definition for library inclusion
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct IncludeDefinition {
     /// Library identifier
     pub library: QualifiedIdentifier,
@@ -84,7 +87,7 @@ pub struct IncludeDefinition {
 }
 
 /// Parameter definition
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct ParameterDefinition {
     /// Access modifier
     pub access: AccessModifier,
@@ -97,7 +100,7 @@ pub struct ParameterDefinition {
 }
 
 /// Codesystem definition
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct CodesystemDefinition {
     /// Access modifier
     pub access: AccessModifier,
@@ -110,7 +113,7 @@ pub struct CodesystemDefinition {
 }
 
 /// Valueset definition
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct ValuesetDefinition {
     /// Access modifier
     pub access: AccessModifier,
@@ -125,14 +128,14 @@ pub struct ValuesetDefinition {
 }
 
 /// Reference to a codesystem in valueset definition
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct CodeSystemRef {
     /// Codesystem name
     pub name: QualifiedIdentifier,
 }
 
 /// Code definition
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct CodeDefinition {
     /// Access modifier
     pub access: AccessModifier,
@@ -147,7 +150,7 @@ pub struct CodeDefinition {
 }
 
 /// Concept definition (group of codes)
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct ConceptDefinition {
     /// Access modifier
     pub access: AccessModifier,
@@ -160,14 +163,14 @@ pub struct ConceptDefinition {
 }
 
 /// Context definition
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct ContextDefinition {
     /// Context identifier (e.g., "Patient", "Practitioner")
     pub context: Identifier,
 }
 
 /// A statement in the library (expression definition or function definition)
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub enum Statement {
     /// Named expression definition
     ExpressionDef(ExpressionDefinition),
@@ -176,7 +179,7 @@ pub enum Statement {
 }
 
 /// Expression definition (named expression)
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct ExpressionDefinition {
     /// Access modifier
     pub access: AccessModifier,
@@ -184,10 +187,12 @@ pub struct ExpressionDefinition {
     pub name: Identifier,
     /// The expression
     pub expression: BoxExpr,
+    /// Context in effect where the definition appears (e.g. `Patient`), if any
+    pub context: Option<String>,
 }
 
 /// Function definition
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct FunctionDefinition {
     /// Access modifier
     pub access: AccessModifier,
@@ -203,10 +208,12 @@ pub struct FunctionDefinition {
     pub body: Option<BoxExpr>,
     /// Whether this is an external function
     pub external: bool,
+    /// Context in effect where the definition appears (e.g. `Patient`), if any
+    pub context: Option<String>,
 }
 
 /// Function parameter
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct FunctionParameter {
     /// Parameter name
     pub name: Identifier,

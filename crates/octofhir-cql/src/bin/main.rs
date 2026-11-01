@@ -1,188 +1,190 @@
-//! CQL command-line interface
+//! `cql` — Clinical Quality Language command-line tool.
 
-use clap::{Parser, Subcommand};
-use octofhir_cql::cli::{execute, output, repl, translate, validate};
+use clap::{Parser, Subcommand, ValueEnum};
+use colored::Colorize;
+use octofhir_cql::cli::{self, eval::EvalOptions, repl::ReplOptions};
+use std::io::IsTerminal;
 use std::path::PathBuf;
+use std::process::ExitCode;
 
-/// CQL command-line tool
+/// Parse, translate, validate and evaluate CQL libraries.
 #[derive(Parser)]
-#[command(name = "cql")]
-#[command(author, version, about = "Clinical Quality Language (CQL) tools", long_about = None)]
+#[command(name = "cql", author, version, about, long_about = None)]
 struct Cli {
-    /// Verbose output
-    #[arg(short, long, global = true)]
-    verbose: bool,
-
-    /// Output format (json, table, pretty)
-    #[arg(short = 'f', long, global = true)]
-    format: Option<String>,
-
-    /// Output file (default: stdout)
-    #[arg(short, long, global = true)]
-    output: Option<PathBuf>,
-
-    /// Color output (auto, always, never)
-    #[arg(long, default_value = "auto", global = true)]
-    color: String,
+    /// When to color output
+    #[arg(long, value_enum, default_value_t = ColorMode::Auto, global = true)]
+    color: ColorMode,
 
     #[command(subcommand)]
-    command: Commands,
+    command: Command,
+}
+
+#[derive(Clone, Copy, ValueEnum)]
+enum ColorMode {
+    Auto,
+    Always,
+    Never,
 }
 
 #[derive(Subcommand)]
-enum Commands {
-    /// Execute a CQL file
-    Execute {
-        /// CQL file to execute
+enum Command {
+    /// Parse a CQL file and print its syntax tree as JSON
+    Parse {
+        /// CQL file
         file: PathBuf,
+        /// Print the Rust debug representation instead of JSON
+        #[arg(long)]
+        debug: bool,
+        /// Single-line JSON
+        #[arg(long)]
+        compact: bool,
+        /// Write to a file instead of stdout
+        #[arg(short, long)]
+        output: Option<PathBuf>,
+    },
 
-        /// Parameters (name=value)
+    /// Translate a CQL library to ELM (JSON)
+    Translate {
+        /// CQL file
+        file: PathBuf,
+        /// Directory to search for included libraries (repeatable; the file's
+        /// own directory is always searched first)
+        #[arg(short = 'L', long = "library-path")]
+        library_paths: Vec<PathBuf>,
+        /// Single-line JSON
+        #[arg(long)]
+        compact: bool,
+        /// Write to a file instead of stdout
+        #[arg(short, long)]
+        output: Option<PathBuf>,
+    },
+
+    /// Check CQL files for syntax and name-resolution errors (exit code 1 on errors)
+    Validate {
+        /// CQL files
+        #[arg(required = true)]
+        files: Vec<PathBuf>,
+        /// Directory to search for included libraries (repeatable)
+        #[arg(short = 'L', long = "library-path")]
+        library_paths: Vec<PathBuf>,
+        /// Print only errors
+        #[arg(short, long)]
+        quiet: bool,
+    },
+
+    /// Evaluate a library's definitions, optionally per patient against FHIR data
+    #[command(visible_alias = "run")]
+    Eval {
+        /// CQL file
+        file: PathBuf,
+        /// FHIR data: a resource, Bundle or JSON array (.json) or NDJSON (.ndjson); repeatable
+        #[arg(short, long)]
+        data: Vec<PathBuf>,
+        /// Parameter value as a CQL expression: NAME=EXPRESSION (repeatable)
         #[arg(short, long = "param")]
         params: Vec<String>,
-
-        /// Context data file (JSON)
-        #[arg(short, long)]
-        data: Option<PathBuf>,
-
-        /// Library search paths
+        /// Evaluate only this definition (repeatable)
+        #[arg(short, long = "expression")]
+        expressions: Vec<String>,
+        /// Evaluate only for this Patient id (repeatable)
+        #[arg(long = "patient")]
+        patients: Vec<String>,
+        /// Directory to search for included libraries (repeatable)
         #[arg(short = 'L', long = "library-path")]
         library_paths: Vec<PathBuf>,
+        /// Evaluation timestamp for Now()/Today() (RFC 3339 or a date)
+        #[arg(long)]
+        now: Option<String>,
+        /// Single-line JSON
+        #[arg(long)]
+        compact: bool,
+        /// Write to a file instead of stdout
+        #[arg(short, long)]
+        output: Option<PathBuf>,
     },
 
-    /// Translate CQL to ELM
-    Translate {
-        /// CQL file to translate
-        file: PathBuf,
-
-        /// Output format (json, xml)
-        #[arg(short = 'F', long = "format", default_value = "json")]
-        elm_format: String,
-
-        /// Include annotations
-        #[arg(short, long)]
-        annotations: bool,
-
-        /// Pretty-print output
-        #[arg(short, long)]
-        pretty: bool,
-
-        /// Library search paths
-        #[arg(short = 'L', long = "library-path")]
-        library_paths: Vec<PathBuf>,
-    },
-
-    /// Validate CQL syntax and semantics
-    Validate {
-        /// CQL files to validate
-        files: Vec<PathBuf>,
-
-        /// Strict mode (warnings as errors)
-        #[arg(short, long)]
-        strict: bool,
-
-        /// Library search paths
-        #[arg(short = 'L', long = "library-path")]
-        library_paths: Vec<PathBuf>,
-    },
-
-    /// Start interactive REPL
+    /// Evaluate expressions interactively
     Repl {
-        /// Data model to use
-        #[arg(short, long, default_value = "FHIR")]
-        model: String,
-
-        /// Model version
-        #[arg(short = 'V', long)]
-        version: Option<String>,
-
-        /// Library search paths
+        /// FHIR data files (see `eval --data`)
+        #[arg(short, long)]
+        data: Vec<PathBuf>,
+        /// Run in Patient context for this Patient id
+        #[arg(long)]
+        patient: Option<String>,
+        /// Directory to search for included libraries (repeatable)
         #[arg(short = 'L', long = "library-path")]
         library_paths: Vec<PathBuf>,
     },
 }
 
-#[tokio::main]
-async fn main() {
+fn main() -> ExitCode {
     human_panic::setup_panic!();
-
     let cli = Cli::parse();
 
-    // Set up color output
-    output::setup_colors(&cli.color);
-
-    // Set up verbosity
-    if cli.verbose {
-        // Note: setting env vars is unsafe in Rust 2024 edition
-        // For now, we just use the verbose flag directly in commands
-    }
+    let color = match cli.color {
+        ColorMode::Always => true,
+        ColorMode::Never => false,
+        ColorMode::Auto => std::io::stderr().is_terminal(),
+    };
+    colored::control::set_override(color);
 
     let result = match cli.command {
-        Commands::Execute {
+        Command::Parse {
             file,
-            params,
-            data,
-            library_paths,
-        } => {
-            let config = execute::ExecuteConfig {
-                file,
-                params,
-                data,
-                library_paths,
-                verbose: cli.verbose,
-                output_format: cli.format.clone(),
-                output_file: cli.output.clone(),
-            };
-            execute::execute(config).await
-        }
-
-        Commands::Translate {
+            debug,
+            compact,
+            output,
+        } => cli::parse(&file, debug, compact, output.as_deref()),
+        Command::Translate {
             file,
-            elm_format,
-            annotations,
-            pretty,
             library_paths,
-        } => {
-            let config = translate::TranslateConfig {
-                file,
-                format: elm_format,
-                annotations,
-                pretty,
-                library_paths,
-                output_file: cli.output.clone(),
-            };
-            translate::translate(config).await
-        }
-
-        Commands::Validate {
+            compact,
+            output,
+        } => cli::translate(&file, &library_paths, compact, output.as_deref()),
+        Command::Validate {
             files,
-            strict,
             library_paths,
-        } => {
-            let config = validate::ValidateConfig {
-                files,
-                strict,
-                library_paths,
-                verbose: cli.verbose,
-            };
-            validate::validate(config).await
-        }
-
-        Commands::Repl {
-            model,
-            version,
+            quiet,
+        } => cli::validate(&files, &library_paths, quiet),
+        Command::Eval {
+            file,
+            data,
+            params,
+            expressions,
+            patients,
             library_paths,
-        } => {
-            let config = repl::ReplConfig {
-                model,
-                version,
-                library_paths,
-            };
-            repl::run(config).await
-        }
+            now,
+            compact,
+            output,
+        } => cli::eval::run(&EvalOptions {
+            file,
+            data,
+            params,
+            expressions,
+            patients,
+            library_paths,
+            now,
+            compact,
+            output,
+        }),
+        Command::Repl {
+            data,
+            patient,
+            library_paths,
+        } => cli::repl::run(&ReplOptions {
+            data,
+            patient,
+            library_paths,
+        })
+        .map(|()| true),
     };
 
-    if let Err(e) = result {
-        eprintln!("{}", output::format_error(&e));
-        std::process::exit(1);
+    match result {
+        Ok(true) => ExitCode::SUCCESS,
+        Ok(false) => ExitCode::FAILURE,
+        Err(error) => {
+            eprintln!("{} {error:#}", "error:".red().bold());
+            ExitCode::FAILURE
+        }
     }
 }

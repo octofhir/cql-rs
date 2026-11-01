@@ -1,7 +1,12 @@
 //! AST to ELM Converter
 //!
-//! This module provides comprehensive conversion from CQL AST to ELM representation.
-//! It handles all expression types, library structures, and preserves type information.
+//! This module converts a CQL AST into its ELM representation. Besides the
+//! structural mapping it performs name resolution the way the reference
+//! translator does: identifiers become `AliasRef`, `QueryLetRef`,
+//! `OperandRef`, `ExpressionRef`, `ParameterRef`, `ValueSetRef`,
+//! `CodeSystemRef`, `CodeRef` or `ConceptRef` depending on what they name, and
+//! library-qualified names and calls keep their library alias. Names that do
+//! not resolve are reported through [`AstToElmConverter::diagnostics`].
 
 use octofhir_cql_ast::{
     self as ast, AccessModifier as AstAccessModifier, BinaryOp, DateTimeComponent,
@@ -9,39 +14,232 @@ use octofhir_cql_ast::{
     Retrieve as AstRetrieve, SortDirection as AstSortDirection, Statement, TemporalPrecision,
     UnaryOp,
 };
-// Note: Spanned has `.inner` field (not `.inner`)
+use octofhir_cql_diagnostics::{
+    CQL0100, CQL0101, CQL0103, CQL0109, CqlError, SourceLocation, Span,
+};
+use std::cell::RefCell;
+use std::collections::{HashMap, HashSet};
 
 use crate::model::{
-    AccessModifier, AfterExpression, AggregateClause, AggregateExpression, AliasedQuerySource,
-    AsExpression, BeforeExpression, BinaryExpression, BoundaryExpression, CaseExpression, CaseItem,
-    CodeDef, CodeDefs, CodeRef, CodeSystemDef, CodeSystemDefs, CodeSystemRef, CombineExpression,
-    ConceptDef, ConceptDefs, ContextDef, ContextDefs, ConvertExpression, CurrentExpression,
-    DateExpression, DateTimeComponentFromExpression, DateTimeExpression, DateTimePrecision,
+    AccessModifier, AfterExpression, AggregateClause, AggregateExpression, AliasRef,
+    AliasedQuerySource, AsExpression, BeforeExpression, BinaryExpression, BoundaryExpression,
+    CalculateAgeAtExpression, CalculateAgeExpression, CaseExpression, CaseItem, CodeDef, CodeDefs,
+    CodeLiteralExpression, CodeRef, CodeSystemDef, CodeSystemDefs, CodeSystemRef,
+    CombineExpression, ConceptDef, ConceptDefs, ConceptLiteralExpression, ConceptRef, ContextDef,
+    ContextDefs, ConvertExpression, CurrentExpression, DateExpression,
+    DateTimeComponentFromExpression, DateTimeExpression, DateTimePrecision,
     DifferenceBetweenExpression, DurationBetweenExpression, Element, ExpandExpression, Expression,
     ExpressionDef, ExpressionRef, FirstLastExpression, FunctionRef, IdentifierRef, IfExpression,
-    IncludeDef, IncludeDefs, IndexOfExpression, InstanceElementExpression, InstanceExpression,
-    IntervalExpression, IsExpression, IterationExpression, LastPositionOfExpression, LetClause,
-    Library, ListExpression, ListTypeSpecifier, Literal as ElmLiteral, MessageExpression,
-    MinMaxValueExpression, NamedTypeSpecifier, NaryExpression, NowExpression, NullLiteral,
-    ParameterDef, ParameterDefs, PositionOfExpression, Property, QuantityExpression, Query,
-    RatioExpression, RelationshipClause, Retrieve, ReturnClause, RoundExpression, SameAsExpression,
-    SameOrAfterExpression, SameOrBeforeExpression, SliceExpression, SortByItem, SortClause,
-    SortDirection, SplitExpression, SplitOnMatchesExpression, Statements, SubstringExpression,
-    TernaryExpression, TimeExpression, TimeOfDayExpression, TodayExpression, TotalExpression,
-    TupleElementDefinition, TupleElementExpression, TupleExpression, TupleTypeSpecifier,
-    TypeSpecifier, UnaryExpression, UsingDef, UsingDefs, ValueSetDef, ValueSetDefs,
-    VersionedIdentifier, WithClause, WithoutClause,
+    InCodeSystemExpression, InValueSetExpression, IncludeDef, IncludeDefs, IndexOfExpression,
+    InstanceElementExpression, InstanceExpression, IntervalExpression, IsExpression,
+    IterationExpression, LastPositionOfExpression, LetClause, Library, ListExpression,
+    ListTypeSpecifier, Literal as ElmLiteral, MessageExpression, MinMaxValueExpression,
+    NamedTypeSpecifier, NaryExpression, NowExpression, NullLiteral, OperandDef, OperandRef,
+    ParameterDef, ParameterDefs, ParameterRef, PositionOfExpression, Property, QuantityExpression,
+    Query, QueryLetRef, RatioExpression, RelationshipClause, Retrieve, ReturnClause,
+    RoundExpression, SameAsExpression, SameOrAfterExpression, SameOrBeforeExpression,
+    SliceExpression, SortByItem, SortClause, SortDirection, SplitExpression,
+    SplitOnMatchesExpression, Statements, SubstringExpression, TernaryExpression, TimeExpression,
+    TimeOfDayExpression, TodayExpression, TotalExpression, TupleElementDefinition,
+    TupleElementExpression, TupleExpression, TupleTypeSpecifier, TypeSpecifier, UnaryExpression,
+    UsingDef, UsingDefs, ValueSetDef, ValueSetDefs, ValueSetRef, VersionedIdentifier, WithClause,
+    WithoutClause,
 };
+
+/// Namespace URI of the FHIR model in ELM qualified type names.
+pub const FHIR_MODEL_URI: &str = "http://hl7.org/fhir";
+
+/// Name of the implicit `$this` alias bound to each element while a
+/// `sort by <expression>` item is evaluated.
+pub const SORT_ELEMENT_ALIAS: &str = "$this";
+
+/// Default code path used by a terminology-filtered FHIR retrieve
+/// (`[Condition: "Diabetes"]`), i.e. the primary code path of the FHIR R4
+/// resource type as declared by the FHIR ModelInfo.
+pub fn fhir_primary_code_path(resource_type: &str) -> Option<&'static str> {
+    Some(match resource_type {
+        "AdverseEvent" => "event",
+        "AllergyIntolerance" | "Condition" | "DiagnosticReport" | "Medication" | "Observation"
+        | "Procedure" | "ServiceRequest" | "Task" | "Questionnaire" => "code",
+        "BodyStructure" | "Claim" | "Coverage" | "Device" | "Encounter" | "Specimen" => "type",
+        "CarePlan" | "Communication" | "CommunicationRequest" | "Goal" => "category",
+        "DeviceRequest" => "code",
+        "DeviceUseStatement" => "device",
+        "FamilyMemberHistory" => "relationship",
+        "Immunization" | "ImmunizationRecommendation" => "vaccineCode",
+        "MedicationAdministration"
+        | "MedicationDispense"
+        | "MedicationRequest"
+        | "MedicationStatement" => "medication",
+        "Location" => "type",
+        "NutritionOrder" => "oralDiet",
+        "Practitioner" | "PractitionerRole" => "code",
+        _ => return None,
+    })
+}
+
+/// Operand list of an ELM function call (the ELM model boxes each operand).
+#[allow(clippy::vec_box)]
+type Operands = Vec<Box<Expression>>;
+
+/// Signature summary of a user-defined function.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct FunctionSignature {
+    /// Number of operands
+    pub arity: usize,
+    /// Whether the function is declared `fluent`
+    pub fluent: bool,
+}
+
+/// Names declared by a library, used for identifier resolution.
+#[derive(Debug, Clone, Default)]
+pub struct LibrarySymbols {
+    expressions: HashSet<String>,
+    functions: HashMap<String, Vec<FunctionSignature>>,
+    parameters: HashSet<String>,
+    codesystems: HashSet<String>,
+    valuesets: HashSet<String>,
+    codes: HashSet<String>,
+    concepts: HashSet<String>,
+    contexts: HashSet<String>,
+}
+
+impl LibrarySymbols {
+    /// Collect the declarations of an AST library.
+    pub fn from_ast(library: &AstLibrary) -> Self {
+        let mut symbols = Self::default();
+        for p in &library.parameters {
+            symbols.parameters.insert(p.inner.name.name.clone());
+        }
+        for cs in &library.codesystems {
+            symbols.codesystems.insert(cs.inner.name.name.clone());
+        }
+        for vs in &library.valuesets {
+            symbols.valuesets.insert(vs.inner.name.name.clone());
+        }
+        for c in &library.codes {
+            symbols.codes.insert(c.inner.name.name.clone());
+        }
+        for c in &library.concepts {
+            symbols.concepts.insert(c.inner.name.name.clone());
+        }
+        for c in &library.contexts {
+            symbols.contexts.insert(c.inner.context.name.clone());
+        }
+        for stmt in &library.statements {
+            match &stmt.inner {
+                Statement::ExpressionDef(def) => {
+                    symbols.expressions.insert(def.name.name.clone());
+                }
+                Statement::FunctionDef(def) => {
+                    symbols
+                        .functions
+                        .entry(def.name.name.clone())
+                        .or_default()
+                        .push(FunctionSignature {
+                            arity: def.parameters.len(),
+                            fluent: def.fluent,
+                        });
+                }
+            }
+        }
+        // `context Patient` implicitly defines `Patient` as the context resource.
+        for context in &library.contexts {
+            if context.inner.context.name != "Unfiltered" {
+                symbols
+                    .expressions
+                    .insert(context.inner.context.name.clone());
+            }
+        }
+        symbols
+    }
+
+    /// The kind of declaration `name` refers to, if any.
+    fn lookup(&self, name: &str) -> Option<SymbolKind> {
+        if self.expressions.contains(name) {
+            Some(SymbolKind::Expression)
+        } else if self.parameters.contains(name) {
+            Some(SymbolKind::Parameter)
+        } else if self.valuesets.contains(name) {
+            Some(SymbolKind::ValueSet)
+        } else if self.codesystems.contains(name) {
+            Some(SymbolKind::CodeSystem)
+        } else if self.codes.contains(name) {
+            Some(SymbolKind::Code)
+        } else if self.concepts.contains(name) {
+            Some(SymbolKind::Concept)
+        } else {
+            None
+        }
+    }
+
+    /// Whether a function `name` accepting `arity` operands is declared.
+    fn has_function(&self, name: &str, arity: usize, fluent_only: bool) -> bool {
+        self.functions.get(name).is_some_and(|sigs| {
+            sigs.iter()
+                .any(|s| s.arity == arity && (!fluent_only || s.fluent))
+        })
+    }
+}
+
+/// What a library-level name refers to.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum SymbolKind {
+    Expression,
+    Parameter,
+    ValueSet,
+    CodeSystem,
+    Code,
+    Concept,
+}
+
+/// Names introduced by an enclosing query or function.
+#[derive(Debug, Default)]
+struct Scope {
+    aliases: HashSet<String>,
+    lets: HashSet<String>,
+    operands: HashSet<String>,
+    /// Inside a `sort by <expression>`: unresolved identifiers are properties
+    /// of the element being sorted.
+    sort_element: bool,
+}
 
 /// AST to ELM Converter
 ///
-/// Converts a CQL AST (from parsing) to an ELM representation (for serialization/execution).
+/// Converts a CQL AST (from parsing) to an ELM representation (for
+/// serialization/execution).
+///
+/// ```
+/// use octofhir_cql_elm::AstToElmConverter;
+///
+/// let ast = octofhir_cql_parser::parse("library L define X: 1 + 1").unwrap();
+/// let mut converter = AstToElmConverter::new();
+/// let elm = converter.convert_library(&ast);
+/// assert!(converter.diagnostics().is_empty());
+/// assert_eq!(elm.identifier.id, "L");
+/// ```
 #[derive(Debug, Default)]
 pub struct AstToElmConverter {
     /// Current context (e.g., "Patient")
     current_context: Option<String>,
     /// Library name for references
     library_name: Option<String>,
+    /// Declarations of the library being converted
+    symbols: LibrarySymbols,
+    /// Declarations of included libraries, keyed by library name (include path)
+    included: HashMap<String, LibrarySymbols>,
+    /// Include alias -> library name (include path)
+    include_aliases: HashMap<String, String>,
+    /// Data model namespace for unqualified retrieve types (e.g. FHIR)
+    model_uri: Option<String>,
+    /// Query/function scopes, innermost last
+    scopes: RefCell<Vec<Scope>>,
+    /// Definition currently being converted (for diagnostics)
+    current_definition: RefCell<Option<(String, Span)>>,
+    /// Source text for diagnostic locations
+    source: Option<String>,
+    /// Resolution problems found during conversion
+    diagnostics: RefCell<Vec<CqlError>>,
 }
 
 impl AstToElmConverter {
@@ -50,8 +248,55 @@ impl AstToElmConverter {
         Self::default()
     }
 
+    /// Provide the CQL source text so diagnostics carry line/column locations.
+    pub fn with_source(mut self, source: impl Into<String>) -> Self {
+        self.source = Some(source.into());
+        self
+    }
+
+    /// Register the declarations of an included library.
+    ///
+    /// `name` is the library name as written in the `include` declaration
+    /// (e.g. `FHIRHelpers`). With the included library known, qualified
+    /// references such as `Common."Active"` are emitted as the precise ELM
+    /// reference kind and unknown names are reported as diagnostics. Without
+    /// it, qualified references become library-qualified `ExpressionRef`s that
+    /// the evaluator resolves at run time.
+    pub fn add_included_library(&mut self, name: impl Into<String>, library: &AstLibrary) {
+        self.included
+            .insert(name.into(), LibrarySymbols::from_ast(library));
+    }
+
+    /// Resolution problems found by the last [`convert_library`](Self::convert_library) call.
+    pub fn diagnostics(&self) -> Vec<CqlError> {
+        self.diagnostics.borrow().clone()
+    }
+
     /// Convert a complete AST library to ELM
     pub fn convert_library(&mut self, ast_lib: &AstLibrary) -> Library {
+        self.diagnostics.borrow_mut().clear();
+        self.scopes.borrow_mut().clear();
+        self.current_context = None;
+        self.symbols = LibrarySymbols::from_ast(ast_lib);
+        self.include_aliases = ast_lib
+            .includes
+            .iter()
+            .map(|i| {
+                let include = &i.inner;
+                let path = include.library.name.name.clone();
+                let alias = include
+                    .alias
+                    .as_ref()
+                    .map_or_else(|| path.clone(), |a| a.name.clone());
+                (alias, path)
+            })
+            .collect();
+        self.model_uri = ast_lib
+            .usings
+            .iter()
+            .find(|u| u.inner.model.name == "FHIR" || u.inner.model.name == "QICore")
+            .map(|_| FHIR_MODEL_URI.to_string());
+
         // Extract library identifier
         let identifier = if let Some(def) = &ast_lib.definition {
             self.library_name = Some(def.name.name.name.clone());
@@ -61,6 +306,7 @@ impl AstToElmConverter {
                 version: def.version.as_ref().map(|v| v.version.clone()),
             }
         } else {
+            self.library_name = None;
             VersionedIdentifier {
                 id: "Anonymous".to_string(),
                 system: None,
@@ -69,6 +315,7 @@ impl AstToElmConverter {
         };
 
         let mut library = Library::new(&identifier.id, identifier.version.as_deref());
+        library.identifier = identifier;
 
         // Convert usings
         if !ast_lib.usings.is_empty() {
@@ -98,7 +345,10 @@ impl AstToElmConverter {
                 defs: ast_lib
                     .parameters
                     .iter()
-                    .map(|p| self.convert_parameter(&p.inner))
+                    .map(|p| {
+                        self.enter_definition(&p.inner.name.name, p.span);
+                        self.convert_parameter(&p.inner)
+                    })
                     .collect(),
             });
         }
@@ -149,39 +399,471 @@ impl AstToElmConverter {
 
         // Convert contexts
         if !ast_lib.contexts.is_empty() {
+            let mut seen = HashSet::new();
             library.contexts = Some(ContextDefs {
                 defs: ast_lib
                     .contexts
                     .iter()
-                    .map(|c| {
-                        self.current_context = Some(c.inner.context.name.clone());
-                        ContextDef {
-                            name: c.inner.context.name.clone(),
-                        }
+                    .filter(|c| seen.insert(c.inner.context.name.clone()))
+                    .map(|c| ContextDef {
+                        name: c.inner.context.name.clone(),
                     })
                     .collect(),
             });
         }
 
         // Convert statements (expression and function definitions)
-        if !ast_lib.statements.is_empty() {
-            library.statements = Some(Statements {
-                defs: ast_lib
-                    .statements
-                    .iter()
-                    .filter_map(|s| self.convert_statement(&s.inner))
-                    .collect(),
-            });
+        let mut defs: Vec<ExpressionDef> = Vec::new();
+        let mut defined = HashSet::new();
+        for stmt in &ast_lib.statements {
+            let (name, is_function) = match &stmt.inner {
+                Statement::ExpressionDef(def) => (&def.name.name, false),
+                Statement::FunctionDef(def) => (&def.name.name, true),
+            };
+            if !is_function && !defined.insert(name.clone()) {
+                self.report(
+                    CqlError::semantic(CQL0109, format!("`{name}` is defined more than once")),
+                    Some(stmt.span),
+                );
+            }
+            self.enter_definition(name, stmt.span);
+            defs.push(self.convert_statement(&stmt.inner));
+        }
+        *self.current_definition.borrow_mut() = None;
+
+        // `context Patient` implicitly defines `Patient` as the single resource
+        // of the context type: `define Patient: singleton from [Patient]`.
+        for context in &library
+            .contexts
+            .as_ref()
+            .map_or(&[][..], |c| &c.defs[..])
+            .to_vec()
+        {
+            if context.name == "Unfiltered" || defined.contains(&context.name) {
+                continue;
+            }
+            defs.insert(0, self.implicit_context_def(&context.name));
+            defined.insert(context.name.clone());
+        }
+
+        if !defs.is_empty() {
+            library.statements = Some(Statements { defs });
         }
 
         library
     }
 
+    /// `define <Context>: singleton from [<Context>]`
+    fn implicit_context_def(&self, context: &str) -> ExpressionDef {
+        ExpressionDef {
+            def_type: None,
+            name: context.to_string(),
+            context: Some(context.to_string()),
+            access_level: Some(AccessModifier::Public),
+            expression: Some(Box::new(Expression::SingletonFrom(UnaryExpression {
+                element: Element::default(),
+                operand: Box::new(Expression::Retrieve(Retrieve {
+                    element: Element::default(),
+                    data_type: self.qualified_type_name(None, context),
+                    template_id: None,
+                    id_expression: None,
+                    code_property: None,
+                    codes: None,
+                    date_property: None,
+                    date_range: None,
+                    context: None,
+                    include: None,
+                })),
+            }))),
+            result_type_specifier: None,
+            operand: None,
+            fluent: None,
+            external: None,
+            annotation: None,
+        }
+    }
+
+    /// ELM type name for a model type: `{http://hl7.org/fhir}Condition` for
+    /// FHIR types, the bare name otherwise.
+    fn qualified_type_name(&self, namespace: Option<&str>, name: &str) -> String {
+        match namespace {
+            Some("FHIR") | Some("QICore") => format!("{{{FHIR_MODEL_URI}}}{name}"),
+            Some("System") => format!("{{urn:hl7-org:elm-types:r1}}{name}"),
+            Some(other) => format!("{{{other}}}{name}"),
+            None => match &self.model_uri {
+                Some(uri) => format!("{{{uri}}}{name}"),
+                None => name.to_string(),
+            },
+        }
+    }
+
+    fn enter_definition(&self, name: &str, span: Span) {
+        *self.current_definition.borrow_mut() = Some((name.to_string(), span));
+    }
+
+    /// Record a diagnostic, attributing it to the current definition.
+    fn report(&self, error: CqlError, span: Option<Span>) {
+        let current = self.current_definition.borrow().clone();
+        let span = span.or(current.as_ref().map(|(_, s)| *s));
+        let error = match error {
+            CqlError::Semantic {
+                code,
+                message,
+                context,
+                ..
+            } => {
+                let message = match &current {
+                    Some((def, _)) if !message.contains(&format!("`{def}`")) => {
+                        format!("{message} (in `{def}`)")
+                    }
+                    _ => message,
+                };
+                let location = match (&self.source, span) {
+                    (Some(source), Some(span)) if span.end > span.start => {
+                        Some(SourceLocation::from_span(span, source))
+                    }
+                    _ => None,
+                };
+                CqlError::Semantic {
+                    code,
+                    message,
+                    location,
+                    context,
+                }
+            }
+            other => other,
+        };
+        self.diagnostics.borrow_mut().push(error);
+    }
+
+    /// Run `f` with `scope` pushed as the innermost scope.
+    fn with_scope<T>(&self, scope: Scope, f: impl FnOnce() -> T) -> T {
+        self.scopes.borrow_mut().push(scope);
+        let result = f();
+        self.scopes.borrow_mut().pop();
+        result
+    }
+
+    /// Resolve a simple identifier to the ELM reference it denotes.
+    fn resolve_identifier(&self, name: &str) -> Expression {
+        let element = Element::default();
+        {
+            let scopes = self.scopes.borrow();
+            for scope in scopes.iter().rev() {
+                if scope.lets.contains(name) {
+                    return Expression::QueryLetRef(QueryLetRef {
+                        element,
+                        name: name.to_string(),
+                    });
+                }
+                if scope.aliases.contains(name) {
+                    return Expression::AliasRef(AliasRef {
+                        element,
+                        name: name.to_string(),
+                    });
+                }
+                if scope.operands.contains(name) {
+                    return Expression::OperandRef(OperandRef {
+                        element,
+                        name: name.to_string(),
+                    });
+                }
+            }
+        }
+
+        if let Some(kind) = self.symbols.lookup(name) {
+            return Self::symbol_ref(kind, None, name);
+        }
+
+        let in_sort = self.scopes.borrow().iter().any(|s| s.sort_element);
+        if in_sort {
+            return Expression::Property(Property {
+                element,
+                source: None,
+                path: name.to_string(),
+                scope: Some(SORT_ELEMENT_ALIAS.to_string()),
+            });
+        }
+
+        self.report(
+            CqlError::semantic(CQL0100, format!("could not resolve identifier `{name}`")),
+            None,
+        );
+        Expression::IdentifierRef(IdentifierRef {
+            element,
+            library_name: None,
+            name: name.to_string(),
+        })
+    }
+
+    /// Whether `name` is a query alias, let or operand in an enclosing scope.
+    fn is_local(&self, name: &str) -> bool {
+        self.scopes
+            .borrow()
+            .iter()
+            .any(|s| s.aliases.contains(name) || s.lets.contains(name) || s.operands.contains(name))
+    }
+
+    /// Resolve `library.name` where `library` is an include alias.
+    fn resolve_qualified(&self, library: &str, name: &str) -> Expression {
+        let path = self
+            .include_aliases
+            .get(library)
+            .cloned()
+            .unwrap_or_else(|| library.to_string());
+        if let Some(symbols) = self.included.get(&path) {
+            if let Some(kind) = symbols.lookup(name) {
+                return Self::symbol_ref(kind, Some(library), name);
+            }
+            self.report(
+                CqlError::semantic(
+                    CQL0100,
+                    format!("library `{library}` does not define `{name}`"),
+                ),
+                None,
+            );
+        }
+        // Included library not available at translation time: the evaluator
+        // resolves the name against the loaded library.
+        Expression::ExpressionRef(ExpressionRef {
+            element: Element::default(),
+            library_name: Some(library.to_string()),
+            name: name.to_string(),
+        })
+    }
+
+    fn symbol_ref(kind: SymbolKind, library: Option<&str>, name: &str) -> Expression {
+        let element = Element::default();
+        let library_name = library.map(str::to_string);
+        let name = name.to_string();
+        match kind {
+            SymbolKind::Expression => Expression::ExpressionRef(ExpressionRef {
+                element,
+                library_name,
+                name,
+            }),
+            SymbolKind::Parameter => Expression::ParameterRef(ParameterRef {
+                element,
+                library_name,
+                name,
+            }),
+            SymbolKind::ValueSet => Expression::ValueSetRef(ValueSetRef {
+                element,
+                library_name,
+                name,
+                preserve: None,
+            }),
+            SymbolKind::CodeSystem => Expression::CodeSystemRef(CodeSystemRef {
+                element,
+                library_name,
+                name,
+            }),
+            SymbolKind::Code => Expression::CodeRef(CodeRef {
+                element,
+                library_name,
+                name,
+            }),
+            SymbolKind::Concept => Expression::ConceptRef(ConceptRef {
+                element,
+                library_name,
+                name,
+            }),
+        }
+    }
+
+    /// Convert `source.property`, where `source` may name an included library.
+    fn convert_property(&self, prop: &ast::PropertyAccess) -> Expression {
+        if let AstExpression::IdentifierRef(id) = &prop.source.inner {
+            let qualifier = &id.name.name;
+            if !self.is_local(qualifier)
+                && self.symbols.lookup(qualifier).is_none()
+                && self.include_aliases.contains_key(qualifier)
+            {
+                return self.resolve_qualified(qualifier, &prop.property.name);
+            }
+        }
+        Expression::Property(Property {
+            element: Element::default(),
+            source: Some(Box::new(self.convert_expression(&prop.source.inner))),
+            path: prop.property.name.clone(),
+            scope: None,
+        })
+    }
+
+    /// Convert a function invocation: user-defined (local or included),
+    /// fluent, built-in operator or system function.
+    fn convert_function_ref(&self, fn_ref: &ast::FunctionRefExpr) -> Expression {
+        let name = fn_ref.name.name.as_str();
+        let args: &[ast::Spanned<AstExpression>] = &fn_ref.arguments;
+
+        if let Some(qualifier) = &fn_ref.library {
+            let qualifier = qualifier.name.as_str();
+            if self.include_aliases.contains_key(qualifier) && !self.is_local(qualifier) {
+                let path = &self.include_aliases[qualifier];
+                if let Some(symbols) = self.included.get(path)
+                    && !symbols.functions.contains_key(name)
+                {
+                    self.report(
+                        CqlError::semantic(
+                            CQL0101,
+                            format!("library `{qualifier}` does not define function `{name}`"),
+                        ),
+                        None,
+                    );
+                }
+                return self.function_ref(Some(qualifier), name, self.convert_args(args));
+            }
+            if self.is_local(qualifier) || self.symbols.lookup(qualifier).is_some() {
+                // `X.f(args)` where X is a value: fluent invocation.
+                let mut operands = vec![Box::new(self.resolve_identifier(qualifier))];
+                operands.extend(self.convert_args(args));
+                return self.resolve_unqualified_call(name, operands, true);
+            }
+            self.report(
+                CqlError::semantic(
+                    CQL0103,
+                    format!("`{qualifier}` is not an included library alias"),
+                ),
+                None,
+            );
+            return self.function_ref(Some(qualifier), name, self.convert_args(args));
+        }
+
+        // User-defined functions in this library take precedence.
+        if self.symbols.has_function(name, args.len(), false) {
+            return self.function_ref(None, name, self.convert_args(args));
+        }
+
+        if let Some(expr) = self.try_convert_clinical_function(name, args) {
+            return expr;
+        }
+        if let Some(expr) = self.try_convert_builtin_function(name, args) {
+            return expr;
+        }
+
+        let operands = self.convert_args(args);
+        self.resolve_unqualified_call(name, operands, false)
+    }
+
+    /// Resolve an unqualified call (possibly fluent) against the current
+    /// library and the declared includes.
+    fn resolve_unqualified_call(&self, name: &str, operands: Operands, fluent: bool) -> Expression {
+        let arity = operands.len();
+        if self.symbols.has_function(name, arity, fluent) {
+            return self.function_ref(None, name, operands);
+        }
+        let mut aliases: Vec<&String> = self.include_aliases.keys().collect();
+        aliases.sort();
+        for alias in aliases {
+            let path = &self.include_aliases[alias];
+            if let Some(symbols) = self.included.get(path)
+                && symbols.has_function(name, arity, fluent)
+            {
+                return self.function_ref(Some(alias), name, operands);
+            }
+        }
+        // System function (resolved by the evaluator's registry) or a fluent
+        // function of an include whose declarations are unknown here.
+        self.function_ref(None, name, operands)
+    }
+
+    fn function_ref(&self, library: Option<&str>, name: &str, operands: Operands) -> Expression {
+        Expression::FunctionRef(FunctionRef {
+            element: Element::default(),
+            library_name: library.map(str::to_string),
+            name: name.to_string(),
+            operand: if operands.is_empty() {
+                None
+            } else {
+                Some(operands)
+            },
+            signature: None,
+        })
+    }
+
+    fn convert_args(&self, args: &[ast::Spanned<AstExpression>]) -> Operands {
+        args.iter()
+            .map(|a| Box::new(self.convert_expression(&a.inner)))
+            .collect()
+    }
+
+    /// `AgeInYears()`, `AgeInYearsAt(x)`, `CalculateAgeInYears(d)`,
+    /// `CalculateAgeInYearsAt(d, x)` and the other precisions (CQL 1.5 §22.5).
+    fn try_convert_clinical_function(
+        &self,
+        name: &str,
+        args: &[ast::Spanned<AstExpression>],
+    ) -> Option<Expression> {
+        const PRECISIONS: [(&str, DateTimePrecision); 6] = [
+            ("Years", DateTimePrecision::Year),
+            ("Months", DateTimePrecision::Month),
+            ("Weeks", DateTimePrecision::Week),
+            ("Days", DateTimePrecision::Day),
+            ("Hours", DateTimePrecision::Hour),
+            ("Minutes", DateTimePrecision::Minute),
+        ];
+        let (rest, implicit_birth_date) = match name.strip_prefix("AgeIn") {
+            Some(rest) => (rest, true),
+            None => (name.strip_prefix("CalculateAgeIn")?, false),
+        };
+        let (unit, at) = match rest.strip_suffix("At") {
+            Some(unit) => (unit, true),
+            None => (rest, false),
+        };
+        let precision = PRECISIONS.iter().find(|(u, _)| *u == unit)?.1;
+
+        let mut operands = Vec::new();
+        if implicit_birth_date {
+            operands.push(Box::new(self.patient_birth_date()));
+        }
+        operands.extend(self.convert_args(args));
+
+        let expected = usize::from(at) + 1;
+        if operands.len() != expected {
+            return None;
+        }
+        if at {
+            Some(Expression::CalculateAgeAt(CalculateAgeAtExpression {
+                element: Element::default(),
+                operand: operands,
+                precision,
+            }))
+        } else {
+            Some(Expression::CalculateAge(CalculateAgeExpression {
+                element: Element::default(),
+                operand: operands.pop().expect("one operand"),
+                precision,
+            }))
+        }
+    }
+
+    /// `Patient.birthDate` of the context patient.
+    fn patient_birth_date(&self) -> Expression {
+        Expression::Property(Property {
+            element: Element::default(),
+            source: Some(Box::new(Expression::ExpressionRef(ExpressionRef {
+                element: Element::default(),
+                library_name: None,
+                name: "Patient".to_string(),
+            }))),
+            path: "birthDate".to_string(),
+            scope: None,
+        })
+    }
+
     /// Convert using definition
     fn convert_using(&self, using: &ast::UsingDefinition) -> UsingDef {
+        let uri = match using.model.name.as_str() {
+            "FHIR" => FHIR_MODEL_URI.to_string(),
+            "System" => "urn:hl7-org:elm-types:r1".to_string(),
+            other => format!("urn:hl7-org:elm-modelinfo:{other}"),
+        };
         UsingDef {
-            local_identifier: using.model.name.clone(),
-            uri: format!("urn:hl7-org:elm-modelinfo:{}", using.model.name),
+            local_identifier: using
+                .alias
+                .as_ref()
+                .map_or_else(|| using.model.name.clone(), |a| a.name.clone()),
+            uri,
             version: using.version.as_ref().map(|v| v.version.clone()),
             annotation: None,
         }
@@ -289,34 +971,69 @@ impl AstToElmConverter {
         }
     }
 
+    /// Convert a code selector (`Code '1' from "CS" display 'x'`).
+    fn convert_code_selector(&self, code: &ast::CodeSelectorExpr) -> CodeLiteralExpression {
+        CodeLiteralExpression {
+            element: Element::default(),
+            system: CodeSystemRef {
+                element: Element::default(),
+                library_name: code.codesystem.qualifier.clone(),
+                name: code.codesystem.name.name.clone(),
+            },
+            code: code.code.clone(),
+            display: code.display.clone(),
+            version: None,
+        }
+    }
+
     /// Convert statement (expression or function definition)
-    fn convert_statement(&self, stmt: &Statement) -> Option<ExpressionDef> {
+    fn convert_statement(&self, stmt: &Statement) -> ExpressionDef {
         match stmt {
-            Statement::ExpressionDef(def) => Some(ExpressionDef {
+            Statement::ExpressionDef(def) => ExpressionDef {
+                def_type: None,
                 name: def.name.name.clone(),
-                context: self.current_context.clone(),
+                context: def.context.clone(),
                 access_level: Some(self.convert_access_modifier(def.access)),
                 expression: Some(Box::new(self.convert_expression(&def.expression.inner))),
-                result_type_specifier: None, // Type info added during type checking
+                result_type_specifier: None,
+                operand: None,
+                fluent: None,
+                external: None,
                 annotation: None,
-            }),
+            },
             Statement::FunctionDef(def) => {
-                // Function definitions are also stored as ExpressionDefs in ELM
-                // with operands
-                Some(ExpressionDef {
+                let scope = Scope {
+                    operands: def.parameters.iter().map(|p| p.name.name.clone()).collect(),
+                    ..Scope::default()
+                };
+                let body = def.body.as_ref().map(|e| {
+                    self.with_scope(scope, || Box::new(self.convert_expression(&e.inner)))
+                });
+                ExpressionDef {
+                    def_type: Some(ExpressionDef::FUNCTION_DEF.to_string()),
                     name: def.name.name.clone(),
-                    context: self.current_context.clone(),
+                    context: def.context.clone(),
                     access_level: Some(self.convert_access_modifier(def.access)),
-                    expression: def
-                        .body
-                        .as_ref()
-                        .map(|e| Box::new(self.convert_expression(&e.inner))),
+                    expression: body,
                     result_type_specifier: def
                         .return_type
                         .as_ref()
                         .map(|ts| self.convert_type_specifier(&ts.inner)),
+                    operand: Some(
+                        def.parameters
+                            .iter()
+                            .map(|p| OperandDef {
+                                name: p.name.name.clone(),
+                                operand_type_specifier: Some(
+                                    self.convert_type_specifier(&p.type_specifier.inner),
+                                ),
+                            })
+                            .collect(),
+                    ),
+                    fluent: def.fluent.then_some(true),
+                    external: def.external.then_some(true),
                     annotation: None,
-                })
+                }
             }
         }
     }
@@ -376,24 +1093,32 @@ impl AstToElmConverter {
             AstExpression::Literal(lit) => self.convert_literal(lit),
 
             // === Identifiers and References ===
-            AstExpression::IdentifierRef(id_ref) => Expression::IdentifierRef(IdentifierRef {
-                element: Element::default(),
-                library_name: None,
-                name: id_ref.name.name.clone(),
-            }),
-            AstExpression::QualifiedIdentifierRef(qid_ref) => {
-                Expression::ExpressionRef(ExpressionRef {
+            AstExpression::IdentifierRef(id_ref) => self.resolve_identifier(&id_ref.name.name),
+            AstExpression::QualifiedIdentifierRef(qid_ref) => match &qid_ref.name.qualifier {
+                Some(qualifier) if self.include_aliases.contains_key(qualifier) => {
+                    self.resolve_qualified(qualifier, &qid_ref.name.name.name)
+                }
+                Some(qualifier) => Expression::Property(Property {
                     element: Element::default(),
-                    library_name: qid_ref.name.qualifier.clone(),
-                    name: qid_ref.name.name.name.clone(),
+                    source: Some(Box::new(self.resolve_identifier(qualifier))),
+                    path: qid_ref.name.name.name.clone(),
+                    scope: None,
+                }),
+                None => self.resolve_identifier(&qid_ref.name.name.name),
+            },
+            AstExpression::Property(prop) => self.convert_property(prop),
+            AstExpression::CodeSelector(code) => Expression::Code(self.convert_code_selector(code)),
+            AstExpression::ConceptSelector(concept) => {
+                Expression::Concept(ConceptLiteralExpression {
+                    element: Element::default(),
+                    code: concept
+                        .codes
+                        .iter()
+                        .map(|c| self.convert_code_selector(c))
+                        .collect(),
+                    display: concept.display.clone(),
                 })
             }
-            AstExpression::Property(prop) => Expression::Property(Property {
-                element: Element::default(),
-                source: Some(Box::new(self.convert_expression(&prop.source.inner))),
-                path: prop.property.name.clone(),
-                scope: None,
-            }),
 
             // === Operators ===
             AstExpression::BinaryOp(bin_op) => self.convert_binary_op(bin_op),
@@ -589,33 +1314,7 @@ impl AstToElmConverter {
             AstExpression::Retrieve(retrieve) => self.convert_retrieve(retrieve),
 
             // === Function Calls ===
-            AstExpression::FunctionRef(fn_ref) => {
-                // Check if this is a built-in function that should be converted to an operator
-                if fn_ref.library.is_none()
-                    && let Some(expr) =
-                        self.try_convert_builtin_function(&fn_ref.name.name, &fn_ref.arguments)
-                {
-                    return expr;
-                }
-                // Otherwise, treat as a regular function reference
-                Expression::FunctionRef(FunctionRef {
-                    element: Element::default(),
-                    library_name: fn_ref.library.as_ref().map(|l| l.name.clone()),
-                    name: fn_ref.name.name.clone(),
-                    operand: if fn_ref.arguments.is_empty() {
-                        None
-                    } else {
-                        Some(
-                            fn_ref
-                                .arguments
-                                .iter()
-                                .map(|a| Box::new(self.convert_expression(&a.inner)))
-                                .collect(),
-                        )
-                    },
-                    signature: None,
-                })
-            }
+            AstExpression::FunctionRef(fn_ref) => self.convert_function_ref(fn_ref),
             AstExpression::ExternalFunctionRef(ext_fn) => Expression::FunctionRef(FunctionRef {
                 element: Element::default(),
                 library_name: None,
@@ -1044,8 +1743,32 @@ impl AstToElmConverter {
     /// Convert binary operation
     fn convert_binary_op(&self, bin_op: &ast::BinaryOpExpr) -> Expression {
         let left = Box::new(self.convert_expression(&bin_op.left.inner));
-        let right = Box::new(self.convert_expression(&bin_op.right.inner));
-        let operand = vec![left, right];
+        let right = self.convert_expression(&bin_op.right.inner);
+
+        // Terminology membership: `code in "Value Set"` / `code in "Code System"`
+        if bin_op.op == BinaryOp::In {
+            match right {
+                Expression::ValueSetRef(valueset) => {
+                    return Expression::InValueSet(InValueSetExpression {
+                        element: Element::default(),
+                        code: left,
+                        valueset: Some(valueset),
+                        valueset_expression: None,
+                    });
+                }
+                Expression::CodeSystemRef(codesystem) => {
+                    return Expression::InCodeSystem(InCodeSystemExpression {
+                        element: Element::default(),
+                        code: left,
+                        codesystem,
+                        codesystem_expression: None,
+                    });
+                }
+                _ => {}
+            }
+        }
+
+        let operand = vec![left, Box::new(right)];
 
         match bin_op.op {
             BinaryOp::Add => Expression::Add(BinaryExpression {
@@ -1300,124 +2023,194 @@ impl AstToElmConverter {
 
     /// Convert query
     fn convert_query(&self, query: &AstQuery) -> Expression {
+        // Sources are evaluated outside the query's own scope.
+        let source: Vec<AliasedQuerySource> = query
+            .sources
+            .iter()
+            .map(|s| AliasedQuerySource {
+                expression: Box::new(self.convert_expression(&s.expression.inner)),
+                alias: s.alias.name.clone(),
+            })
+            .collect();
+
+        let scope = Scope {
+            aliases: query.sources.iter().map(|s| s.alias.name.clone()).collect(),
+            ..Scope::default()
+        };
+
+        self.scopes.borrow_mut().push(scope);
+
+        // Each let may reference the aliases and the lets before it.
+        let let_clause: Vec<LetClause> = query
+            .lets
+            .iter()
+            .map(|l| {
+                let expression = Box::new(self.convert_expression(&l.expression.inner));
+                if let Some(scope) = self.scopes.borrow_mut().last_mut() {
+                    scope.lets.insert(l.identifier.name.clone());
+                }
+                LetClause {
+                    identifier: l.identifier.name.clone(),
+                    expression,
+                }
+            })
+            .collect();
+
+        let relationship: Vec<RelationshipClause> = query
+            .relationships
+            .iter()
+            .map(|r| self.convert_relationship(r))
+            .collect();
+        let where_clause = query
+            .where_clause
+            .as_ref()
+            .map(|w| Box::new(self.convert_expression(&w.inner)));
+        let return_clause = query.return_clause.as_ref().map(|r| ReturnClause {
+            expression: Box::new(self.convert_expression(&r.expression.inner)),
+            distinct: if r.distinct { Some(true) } else { None },
+        });
+        let aggregate = query.aggregate_clause.as_ref().map(|a| {
+            let starting = a
+                .starting
+                .as_ref()
+                .map(|s| Box::new(self.convert_expression(&s.inner)));
+            let accumulator = Scope {
+                aliases: std::iter::once(a.identifier.name.clone()).collect(),
+                ..Scope::default()
+            };
+            let expression = self.with_scope(accumulator, || {
+                Box::new(self.convert_expression(&a.expression.inner))
+            });
+            AggregateClause {
+                identifier: a.identifier.name.clone(),
+                expression,
+                starting,
+                distinct: if a.distinct { Some(true) } else { None },
+            }
+        });
+
+        self.scopes.borrow_mut().pop();
+
+        // Sort items see the elements of the result, not the query aliases.
+        let sort = query.sort_clause.as_ref().map(|s| SortClause {
+            by: s
+                .items
+                .iter()
+                .map(|item| self.convert_sort_item(item))
+                .collect(),
+        });
+
         Expression::Query(Query {
             element: Element::default(),
-            source: query
-                .sources
-                .iter()
-                .map(|s| AliasedQuerySource {
-                    expression: Box::new(self.convert_expression(&s.expression.inner)),
-                    alias: s.alias.name.clone(),
-                })
-                .collect(),
-            let_clause: if query.lets.is_empty() {
-                None
-            } else {
-                Some(
-                    query
-                        .lets
-                        .iter()
-                        .map(|l| LetClause {
-                            identifier: l.identifier.name.clone(),
-                            expression: Box::new(self.convert_expression(&l.expression.inner)),
-                        })
-                        .collect(),
-                )
-            },
-            relationship: if query.relationships.is_empty() {
-                None
-            } else {
-                Some(
-                    query
-                        .relationships
-                        .iter()
-                        .map(|r| self.convert_relationship(r))
-                        .collect(),
-                )
-            },
-            where_clause: query
-                .where_clause
-                .as_ref()
-                .map(|w| Box::new(self.convert_expression(&w.inner))),
-            return_clause: query.return_clause.as_ref().map(|r| ReturnClause {
-                expression: Box::new(self.convert_expression(&r.expression.inner)),
-                distinct: if r.distinct { Some(true) } else { None },
-            }),
-            aggregate: query.aggregate_clause.as_ref().map(|a| AggregateClause {
-                identifier: a.identifier.name.clone(),
-                expression: Box::new(self.convert_expression(&a.expression.inner)),
-                starting: a
-                    .starting
-                    .as_ref()
-                    .map(|s| Box::new(self.convert_expression(&s.inner))),
-                distinct: if a.distinct { Some(true) } else { None },
-            }),
-            sort: query.sort_clause.as_ref().map(|s| SortClause {
-                by: s
-                    .items
-                    .iter()
-                    .map(|item| SortByItem {
-                        direction: self.convert_sort_direction(item.direction),
-                        path: item.expression.as_ref().and_then(|e| {
-                            // Try to extract path from expression if it's a property
-                            if let AstExpression::Property(prop) = &e.inner {
-                                Some(prop.property.name.clone())
-                            } else {
-                                None
-                            }
-                        }),
-                    })
-                    .collect(),
-            }),
+            source,
+            let_clause: (!let_clause.is_empty()).then_some(let_clause),
+            relationship: (!relationship.is_empty()).then_some(relationship),
+            where_clause,
+            return_clause,
+            aggregate,
+            sort,
         })
+    }
+
+    /// Convert a sort item: `sort asc`, `sort by path`, `sort by <expression>`.
+    fn convert_sort_item(&self, item: &ast::SortItem) -> SortByItem {
+        let direction = self.convert_sort_direction(item.direction);
+        let Some(expr) = &item.expression else {
+            return SortByItem {
+                direction,
+                path: None,
+                expression: None,
+            };
+        };
+        // A bare identifier (or dotted path) names a property of the element.
+        if let Some(path) = Self::simple_path(&expr.inner) {
+            return SortByItem {
+                direction,
+                path: Some(path),
+                expression: None,
+            };
+        }
+        let scope = Scope {
+            sort_element: true,
+            ..Scope::default()
+        };
+        let expression = self.with_scope(scope, || Box::new(self.convert_expression(&expr.inner)));
+        SortByItem {
+            direction,
+            path: None,
+            expression: Some(expression),
+        }
+    }
+
+    /// `a` or `a.b.c` when every segment is a plain identifier that does not
+    /// name a library-level declaration.
+    fn simple_path(expr: &AstExpression) -> Option<String> {
+        match expr {
+            AstExpression::IdentifierRef(id) => Some(id.name.name.clone()),
+            AstExpression::Property(prop) => {
+                Self::simple_path(&prop.source.inner).map(|p| format!("{p}.{}", prop.property.name))
+            }
+            _ => None,
+        }
     }
 
     /// Convert relationship clause
     fn convert_relationship(&self, rel: &ast::RelationshipClause) -> RelationshipClause {
+        let expression = Box::new(self.convert_expression(&rel.source.expression.inner));
+        let alias = rel.source.alias.name.clone();
+        let scope = Scope {
+            aliases: std::iter::once(alias.clone()).collect(),
+            ..Scope::default()
+        };
+        let such_that = Box::new(self.with_scope(scope, || {
+            rel.such_that
+                .as_ref()
+                .map(|s| self.convert_expression(&s.inner))
+                .unwrap_or(Expression::Literal(ElmLiteral {
+                    element: Element::default(),
+                    value_type: "{urn:hl7-org:elm-types:r1}Boolean".to_string(),
+                    value: Some("true".to_string()),
+                }))
+        }));
         match rel.kind {
             ast::RelationshipKind::With => RelationshipClause::With(WithClause {
-                expression: Box::new(self.convert_expression(&rel.source.expression.inner)),
-                alias: rel.source.alias.name.clone(),
-                such_that: Box::new(
-                    rel.such_that
-                        .as_ref()
-                        .map(|s| self.convert_expression(&s.inner))
-                        .unwrap_or(Expression::Literal(ElmLiteral {
-                            element: Element::default(),
-                            value_type: "{urn:hl7-org:elm-types:r1}Boolean".to_string(),
-                            value: Some("true".to_string()),
-                        })),
-                ),
+                expression,
+                alias,
+                such_that,
             }),
             ast::RelationshipKind::Without => RelationshipClause::Without(WithoutClause {
-                expression: Box::new(self.convert_expression(&rel.source.expression.inner)),
-                alias: rel.source.alias.name.clone(),
-                such_that: Box::new(
-                    rel.such_that
-                        .as_ref()
-                        .map(|s| self.convert_expression(&s.inner))
-                        .unwrap_or(Expression::Literal(ElmLiteral {
-                            element: Element::default(),
-                            value_type: "{urn:hl7-org:elm-types:r1}Boolean".to_string(),
-                            value: Some("true".to_string()),
-                        })),
-                ),
+                expression,
+                alias,
+                such_that,
             }),
         }
     }
 
     /// Convert retrieve
     fn convert_retrieve(&self, retrieve: &AstRetrieve) -> Expression {
+        let (namespace, type_name) = match &retrieve.data_type.inner {
+            ast::TypeSpecifier::Named(named) => (named.namespace.clone(), named.name.clone()),
+            other => (None, self.type_specifier_to_string(other)),
+        };
+        let type_name = type_name.as_str();
+        let data_type = self.qualified_type_name(namespace.as_deref(), type_name);
+        let is_fhir = data_type.starts_with(&format!("{{{FHIR_MODEL_URI}}}"));
+        let codes = retrieve
+            .codes
+            .as_ref()
+            .map(|c| Box::new(self.convert_expression(&c.inner)));
+        let code_property = retrieve.code_path.clone().or_else(|| {
+            (codes.is_some() && is_fhir)
+                .then(|| fhir_primary_code_path(type_name).map(str::to_string))
+                .flatten()
+        });
         Expression::Retrieve(Retrieve {
             element: Element::default(),
-            data_type: self.type_specifier_to_string(&retrieve.data_type.inner),
+            data_type,
             template_id: retrieve.template_id.clone(),
             id_expression: None,
-            code_property: retrieve.code_path.clone(),
-            codes: retrieve
-                .codes
-                .as_ref()
-                .map(|c| Box::new(self.convert_expression(&c.inner))),
+            code_property,
+            codes,
             date_property: retrieve.date_path.clone(),
             date_range: retrieve
                 .date_range

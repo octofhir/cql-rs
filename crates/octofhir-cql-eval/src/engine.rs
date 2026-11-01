@@ -7,9 +7,10 @@ use crate::context::EvaluationContext;
 use crate::error::{EvalError, EvalResult};
 use crate::registry::OperatorRegistry;
 use bigdecimal::BigDecimal;
-use octofhir_cql_elm::{Expression, FunctionRef, Library, Literal};
-use octofhir_cql_types::{CqlDate, CqlDateTime, CqlList, CqlTime, CqlTuple, CqlType, CqlValue};
+use octofhir_cql_elm::{Expression, Library, Literal};
+use octofhir_cql_types::{CqlDate, CqlDateTime, CqlList, CqlTime, CqlValue};
 use std::str::FromStr;
+use std::sync::Arc;
 
 /// The main CQL evaluation engine
 ///
@@ -17,7 +18,7 @@ use std::str::FromStr;
 /// operator implementations for each expression type.
 pub struct CqlEngine {
     /// Operator and function registry
-    registry: OperatorRegistry,
+    pub(crate) registry: OperatorRegistry,
 }
 
 impl Default for CqlEngine {
@@ -44,25 +45,29 @@ impl CqlEngine {
         &mut self.registry
     }
 
-    /// Evaluate a library and return results for all public definitions
+    /// Evaluate a library and return the value of every public expression
+    /// definition, in declaration order (function definitions are skipped).
+    ///
+    /// Libraries the main library includes must be registered on the context
+    /// with [`EvaluationContext::add_library`].
     pub fn evaluate_library(
         &self,
         library: &Library,
         ctx: &mut EvaluationContext,
     ) -> EvalResult<indexmap::IndexMap<String, CqlValue>> {
+        let library = Self::shared_library(library, ctx);
         let mut results = indexmap::IndexMap::new();
 
         if let Some(statements) = &library.statements {
             for def in &statements.defs {
-                // Skip private definitions unless explicitly requested
-                if def.access_level == Some(octofhir_cql_elm::AccessModifier::Private) {
+                if def.is_function()
+                    || def.expression.is_none()
+                    || def.access_level == Some(octofhir_cql_elm::AccessModifier::Private)
+                {
                     continue;
                 }
-
-                if let Some(expr) = &def.expression {
-                    let value = self.evaluate(expr, ctx)?;
-                    results.insert(def.name.clone(), value);
-                }
+                let value = self.evaluate_definition(library.clone(), &def.name, ctx)?;
+                results.insert(def.name.clone(), value);
             }
         }
 
@@ -76,29 +81,25 @@ impl CqlEngine {
         name: &str,
         ctx: &mut EvaluationContext,
     ) -> EvalResult<CqlValue> {
-        // Check cache first
-        let cache_key = format!("{}:{}", library.identifier.id, name);
-        if let Some(cached) = ctx.get_cached(&cache_key) {
-            return Ok(cached);
+        let library = Self::shared_library(library, ctx);
+        self.evaluate_definition(library, name, ctx)
+    }
+
+    /// The shared handle for `library`: the context's main library when it has
+    /// the same identifier (id and version), otherwise a new handle, which
+    /// also becomes the main library if the context has none.
+    fn shared_library(library: &Library, ctx: &mut EvaluationContext) -> Arc<Library> {
+        if let Some(main) = ctx.main_library_arc()
+            && main.identifier.id == library.identifier.id
+            && main.identifier.version == library.identifier.version
+        {
+            return main;
         }
-
-        // Find the definition
-        let def = library
-            .statements
-            .as_ref()
-            .and_then(|s| s.defs.iter().find(|d| d.name == name))
-            .ok_or_else(|| EvalError::undefined_expression(name))?;
-
-        // Evaluate and cache
-        let expr = def
-            .expression
-            .as_ref()
-            .ok_or_else(|| EvalError::undefined_expression(name))?;
-
-        let value = self.evaluate(expr, ctx)?;
-        ctx.cache_result(cache_key, value.clone());
-
-        Ok(value)
+        let shared = Arc::new(library.clone());
+        if ctx.main_library().is_none() {
+            ctx.set_main_library(shared.clone());
+        }
+        shared
     }
 
     /// Main expression evaluation dispatcher
@@ -400,58 +401,9 @@ impl CqlEngine {
     }
 
     // =========================================================================
-    // Reference evaluation - placeholder implementations
+    // Local references (operands, aliases, lets); library-level references are
+    // evaluated in `references.rs`
     // =========================================================================
-
-    fn eval_expression_ref(
-        &self,
-        r: &octofhir_cql_elm::ExpressionRef,
-        ctx: &mut EvaluationContext,
-    ) -> EvalResult<CqlValue> {
-        // Get Arc clone to avoid borrow conflict
-        if let Some(library) = ctx.main_library_arc() {
-            return self.evaluate_expression(&library, &r.name, ctx);
-        }
-        Err(EvalError::undefined_expression(&r.name))
-    }
-
-    fn eval_function_ref(
-        &self,
-        r: &FunctionRef,
-        ctx: &mut EvaluationContext,
-    ) -> EvalResult<CqlValue> {
-        // Evaluate arguments
-        let args: Vec<CqlValue> = match &r.operand {
-            Some(operands) => operands
-                .iter()
-                .map(|op| self.evaluate(op, ctx))
-                .collect::<EvalResult<Vec<_>>>()?,
-            None => vec![],
-        };
-
-        // Look up function in registry
-        let arg_types: Vec<CqlType> = args.iter().map(|v| v.get_type()).collect();
-        if let Some(def) = self.registry.functions.get(&r.name, &arg_types)
-            && let Some(impl_fn) = &def.implementation
-        {
-            return impl_fn(&args, ctx);
-        }
-
-        // Try to find user-defined function in library
-        // TODO: Implement user-defined function lookup
-
-        Err(EvalError::undefined_function(&r.name))
-    }
-
-    fn eval_parameter_ref(
-        &self,
-        r: &octofhir_cql_elm::ParameterRef,
-        ctx: &mut EvaluationContext,
-    ) -> EvalResult<CqlValue> {
-        ctx.get_parameter_qualified(r.library_name.as_deref(), &r.name)
-            .cloned()
-            .ok_or_else(|| EvalError::undefined_parameter(&r.name))
-    }
 
     fn eval_operand_ref(
         &self,
@@ -525,18 +477,19 @@ impl CqlEngine {
         self.get_property_value(&source, &p.path, ctx)
     }
 
-    fn get_property_value(
+    pub(crate) fn get_property_value(
         &self,
         value: &CqlValue,
         path: &str,
         ctx: &EvaluationContext,
     ) -> EvalResult<CqlValue> {
+        if let Some(property) = structured_property(value, path) {
+            return Ok(property);
+        }
         match value {
             CqlValue::Null => Ok(CqlValue::Null),
-            CqlValue::Tuple(t) => t
-                .get(path)
-                .cloned()
-                .ok_or_else(|| EvalError::invalid_property(path, "Tuple")),
+            // Absent elements (e.g. FHIR elements omitted from the JSON) are null.
+            CqlValue::Tuple(t) => Ok(t.get(path).cloned().unwrap_or(CqlValue::Null)),
             CqlValue::List(l) => {
                 // For lists, project the property across all elements
                 let projected: Vec<CqlValue> = l
@@ -557,52 +510,36 @@ impl CqlEngine {
             }
         }
     }
+}
 
-    fn eval_valueset_ref(
-        &self,
-        r: &octofhir_cql_elm::ValueSetRef,
-        _ctx: &mut EvaluationContext,
-    ) -> EvalResult<CqlValue> {
-        // Value set references return a reference that can be used with InValueSet
-        // For now, return a tuple representing the value set reference
-        Ok(CqlValue::Tuple(CqlTuple::from_elements([
-            ("type", CqlValue::string("ValueSet")),
-            ("name", CqlValue::string(&r.name)),
-        ])))
-    }
-
-    fn eval_codesystem_ref(
-        &self,
-        r: &octofhir_cql_elm::CodeSystemRef,
-        _ctx: &mut EvaluationContext,
-    ) -> EvalResult<CqlValue> {
-        Ok(CqlValue::Tuple(CqlTuple::from_elements([
-            ("type", CqlValue::string("CodeSystem")),
-            ("name", CqlValue::string(&r.name)),
-        ])))
-    }
-
-    fn eval_code_ref(
-        &self,
-        r: &octofhir_cql_elm::CodeRef,
-        _ctx: &mut EvaluationContext,
-    ) -> EvalResult<CqlValue> {
-        // TODO: Look up code definition from library
-        Ok(CqlValue::Tuple(CqlTuple::from_elements([
-            ("type", CqlValue::string("CodeRef")),
-            ("name", CqlValue::string(&r.name)),
-        ])))
-    }
-
-    fn eval_concept_ref(
-        &self,
-        r: &octofhir_cql_elm::ConceptRef,
-        _ctx: &mut EvaluationContext,
-    ) -> EvalResult<CqlValue> {
-        // TODO: Look up concept definition from library
-        Ok(CqlValue::Tuple(CqlTuple::from_elements([
-            ("type", CqlValue::string("ConceptRef")),
-            ("name", CqlValue::string(&r.name)),
-        ])))
-    }
+/// Properties of the structured system types (CQL 1.5 Appendix B), plus the
+/// FHIR element names of the FHIR types they represent (`Period.start/end`,
+/// `CodeableConcept.coding/text`, `Coding.*`, `Quantity.code/system`).
+fn structured_property(value: &CqlValue, path: &str) -> Option<CqlValue> {
+    let boxed = |v: &Option<Box<CqlValue>>| v.as_deref().cloned().unwrap_or(CqlValue::Null);
+    let text = |v: &Option<String>| v.as_ref().map_or(CqlValue::Null, CqlValue::string);
+    Some(match (value, path) {
+        (CqlValue::Interval(i), "low" | "start") => boxed(&i.low),
+        (CqlValue::Interval(i), "high" | "end") => boxed(&i.high),
+        (CqlValue::Interval(i), "lowClosed") => CqlValue::Boolean(i.low_closed),
+        (CqlValue::Interval(i), "highClosed") => CqlValue::Boolean(i.high_closed),
+        (CqlValue::Quantity(q), "value") => CqlValue::Decimal(q.value.clone()),
+        (CqlValue::Quantity(q), "unit" | "code") => text(&q.unit),
+        (CqlValue::Quantity(_), "system") => CqlValue::string("http://unitsofmeasure.org"),
+        (CqlValue::Ratio(r), "numerator") => CqlValue::Quantity(r.numerator.clone()),
+        (CqlValue::Ratio(r), "denominator") => CqlValue::Quantity(r.denominator.clone()),
+        (CqlValue::Code(c), "code") => CqlValue::string(&c.code),
+        (CqlValue::Code(c), "system") => CqlValue::string(&c.system),
+        (CqlValue::Code(c), "version") => text(&c.version),
+        (CqlValue::Code(c), "display") => text(&c.display),
+        (CqlValue::Concept(c), "codes" | "coding") => CqlValue::List(CqlList::from_elements(
+            c.codes
+                .iter()
+                .cloned()
+                .map(CqlValue::Code)
+                .collect::<Vec<_>>(),
+        )),
+        (CqlValue::Concept(c), "display" | "text") => text(&c.display),
+        _ => return None,
+    })
 }

@@ -10,6 +10,7 @@
 use crate::context::EvaluationContext;
 use crate::engine::CqlEngine;
 use crate::error::{EvalError, EvalResult};
+use crate::references::TerminologyId;
 use octofhir_cql_elm::{
     CalculateAgeAtExpression, CalculateAgeExpression, CodeLiteralExpression,
     ConceptLiteralExpression, DateTimePrecision as ElmPrecision, InCodeSystemExpression,
@@ -51,16 +52,25 @@ impl CqlEngine {
     pub fn eval_code_literal(
         &self,
         expr: &CodeLiteralExpression,
-        _ctx: &mut EvaluationContext,
+        ctx: &mut EvaluationContext,
     ) -> EvalResult<CqlValue> {
-        let code = CqlCode {
-            code: expr.code.clone(),
-            system: expr.system.name.clone(),
-            version: expr.version.clone(),
-            display: expr.display.clone(),
-        };
+        Ok(CqlValue::Code(self.code_from_literal(expr, ctx)))
+    }
 
-        Ok(CqlValue::Code(code))
+    /// Build a Code from a code selector, resolving its code system reference
+    /// to the declared URL and version. A reference that names no declared
+    /// code system is taken to be the system URL itself.
+    fn code_from_literal(&self, expr: &CodeLiteralExpression, ctx: &EvaluationContext) -> CqlCode {
+        let (system, version) = match self.resolve_code_system(&expr.system, ctx) {
+            Ok(cs) => (cs.id, expr.version.clone().or(cs.version)),
+            Err(_) => (expr.system.name.clone(), expr.version.clone()),
+        };
+        CqlCode {
+            code: expr.code.clone(),
+            system,
+            version,
+            display: expr.display.clone(),
+        }
     }
 
     /// Evaluate a Concept literal expression
@@ -69,17 +79,12 @@ impl CqlEngine {
     pub fn eval_concept_literal(
         &self,
         expr: &ConceptLiteralExpression,
-        _ctx: &mut EvaluationContext,
+        ctx: &mut EvaluationContext,
     ) -> EvalResult<CqlValue> {
         let codes: Vec<CqlCode> = expr
             .code
             .iter()
-            .map(|c| CqlCode {
-                code: c.code.clone(),
-                system: c.system.name.clone(),
-                version: c.version.clone(),
-                display: c.display.clone(),
-            })
+            .map(|c| self.code_from_literal(c, ctx))
             .collect();
 
         let concept = CqlConcept {
@@ -150,12 +155,12 @@ impl CqlEngine {
         // Get code system ID
         let code_system_id = if let Some(cs_expr) = &expr.codesystem_expression {
             let cs = self.evaluate(cs_expr, ctx)?;
-            match cs {
-                CqlValue::String(s) => s,
-                _ => return Err(EvalError::type_mismatch("String", cs.get_type().name())),
+            match TerminologyId::from_value(&cs) {
+                Some(id) => id.id,
+                None => return Err(EvalError::type_mismatch("CodeSystem", cs.get_type().name())),
             }
         } else {
-            expr.codesystem.name.clone()
+            self.resolve_code_system(&expr.codesystem, ctx)?.id
         };
 
         // Use terminology provider
@@ -203,18 +208,9 @@ impl CqlEngine {
         // Get value set ID
         let value_set_id = if let Some(vs_expr) = &expr.valueset_expression {
             let vs = self.evaluate(vs_expr, ctx)?;
-            match vs {
-                CqlValue::String(s) => s,
-                CqlValue::Tuple(t) => {
-                    // Value set reference tuple
-                    t.get("name")
-                        .and_then(|v| match v {
-                            CqlValue::String(s) => Some(s.clone()),
-                            _ => None,
-                        })
-                        .ok_or_else(|| EvalError::internal("Invalid value set reference"))?
-                }
-                _ => {
+            match TerminologyId::from_value(&vs) {
+                Some(id) => id.id,
+                None => {
                     return Err(EvalError::type_mismatch(
                         "String or ValueSet",
                         vs.get_type().name(),
@@ -222,7 +218,7 @@ impl CqlEngine {
                 }
             }
         } else if let Some(vs_ref) = &expr.valueset {
-            vs_ref.name.clone()
+            self.resolve_value_set(vs_ref, ctx)?.id
         } else {
             return Err(EvalError::internal(
                 "InValueSet expression missing value set",

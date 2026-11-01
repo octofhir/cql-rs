@@ -36,7 +36,7 @@ test:
 
 # Test CLI functionality
 test-cli:
-    cargo test -p octofhir-cql --bin cql
+    cargo test -p octofhir-cql --test cli
 
 # Run tests with output
 test-verbose:
@@ -124,13 +124,17 @@ cli-help:
 cli-version:
     cargo run -p octofhir-cql --bin cql -- --version
 
-# Validate example CQL files
+# Validate the example measure library
 example-validate:
-    cargo run -p octofhir-cql --bin cql -- validate examples/*.cql
+    cargo run -p octofhir-cql --bin cql -- validate crates/octofhir-cql/tests/fixtures/DiabetesScreening.cql crates/octofhir-cql/tests/fixtures/CommonLogic.cql
 
-# Translate example to ELM
+# Translate the example measure library to ELM JSON
 example-translate:
-    cargo run -p octofhir-cql --bin cql -- translate examples/simple.cql --pretty
+    cargo run -p octofhir-cql --bin cql -- translate crates/octofhir-cql/tests/fixtures/DiabetesScreening.cql
+
+# Evaluate the example measure library for every patient in the example bundle
+example-eval:
+    cargo run -p octofhir-cql --bin cql -- eval crates/octofhir-cql/tests/fixtures/DiabetesScreening.cql --data crates/octofhir-cql/tests/fixtures/diabetes-bundle.json
 
 # Start REPL
 example-repl:
@@ -284,11 +288,11 @@ validate file: build-cli
 
 # Translate a specific CQL file
 translate file: build-cli
-    ./target/debug/cql translate {{file}} --pretty
+    ./target/debug/cql translate {{file}}
 
-# Execute a specific CQL file
-execute file *args: build-cli
-    ./target/debug/cql execute {{file}} {{args}}
+# Evaluate a specific CQL file (e.g. just eval measure.cql --data bundle.json)
+eval file *args: build-cli
+    ./target/debug/cql eval {{file}} {{args}}
 
 # Start REPL
 repl: build-cli

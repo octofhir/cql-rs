@@ -1,7 +1,9 @@
 //! FHIR ModelInfo support
 //!
-//! This module provides embedded FHIR ModelInfo for R4 and R5.
+//! - [`json`]: FHIR JSON ⇄ CQL value conversion (FHIRHelpers semantics)
+//! - embedded FHIR ModelInfo for R4 and R5
 
+pub mod json;
 pub mod r4;
 pub mod r5;
 

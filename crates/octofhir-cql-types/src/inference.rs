@@ -416,6 +416,8 @@ impl TypeInferrer {
                 }
             }
 
+            Expression::CodeSelector(_) => Ok(CqlType::Code),
+            Expression::ConceptSelector(_) => Ok(CqlType::Concept),
             Expression::Error => Ok(CqlType::Any),
         }
     }

@@ -69,26 +69,19 @@ impl DataProvider for DataRetrieverAdapter {
             _ => None,
         });
 
-        // Call the async retrieve in a blocking manner
-        // In a real implementation, this would need to handle async properly
-        let result = tokio::runtime::Handle::try_current()
-            .ok()
-            .and_then(|handle| {
-                handle.block_on(async {
-                    self.retriever
-                        .retrieve(
-                            &self.context,
-                            data_type,
-                            code_property,
-                            code_list.as_deref(),
-                            template_id,
-                            date_property,
-                            interval.as_ref(),
-                        )
-                        .await
-                        .ok()
-                })
-            });
+        // The evaluator is synchronous; drive the async retriever to completion.
+        // Retrieval errors yield no resources (the `DataProvider` contract has no
+        // error channel); implement `DataProvider` directly to surface them.
+        let result = crate::blocking::block_on(self.retriever.retrieve(
+            &self.context,
+            data_type,
+            code_property,
+            code_list.as_deref(),
+            template_id,
+            date_property,
+            interval.as_ref(),
+        ))
+        .and_then(Result::ok);
 
         result.unwrap_or_default()
     }

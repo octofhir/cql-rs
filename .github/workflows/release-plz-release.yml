@@ -1,22 +1,116 @@
 name: Release
 
+# Publishes the crates whose version changed (release-plz: crates.io, git tags and GitHub
+# releases), then attaches prebuilt `cql` binaries to the GitHub release of octofhir-cql.
+# Run it with a `tag` to (re)build the binaries of an existing release only.
+
 on:
   workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing octofhir-cql release tag to attach binaries to (skips publishing)
+        required: false
+        type: string
+
+env:
+  CARGO_TERM_COLOR: always
 
 jobs:
   release:
     name: Publish to crates.io
+    if: inputs.tag == ''
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    outputs:
+      tag: ${{ steps.cli-tag.outputs.tag }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - uses: dtolnay/rust-toolchain@stable
-      - uses: MarcoIeni/release-plz-action@v0.5
+      - id: release-plz
+        uses: MarcoIeni/release-plz-action@v0.5
         with:
           command: release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+      - name: Tag of the octofhir-cql release
+        id: cli-tag
+        env:
+          RELEASES: ${{ steps.release-plz.outputs.releases }}
+        run: |
+          tag=$(jq -r '.[] | select(.package_name == "octofhir-cql") | .tag' <<< "${RELEASES:-[]}")
+          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+          echo "octofhir-cql release tag: ${tag:-none}"
+
+  binaries:
+    name: cql (${{ matrix.postfix }})
+    needs: release
+    # Runs after a release of octofhir-cql, or on its own for an existing tag
+    if: >-
+      always() &&
+      (inputs.tag != '' || (needs.release.result == 'success' && needs.release.outputs.tag != ''))
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            postfix: linux-x64
+          - os: ubuntu-24.04-arm
+            target: aarch64-unknown-linux-gnu
+            postfix: linux-arm64
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            postfix: macos-x64
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            postfix: macos-arm64
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            postfix: windows-x64
+    runs-on: ${{ matrix.os }}
+    env:
+      TAG: ${{ inputs.tag != '' && inputs.tag || needs.release.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.TAG }}
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: release-${{ matrix.target }}
+      - name: Build
+        run: cargo build --release --locked --target ${{ matrix.target }} -p octofhir-cql --bin cql
+      - name: Package (Unix)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          mkdir -p dist
+          asset="cql-${{ matrix.postfix }}"
+          cp "target/${{ matrix.target }}/release/cql" "dist/${asset}"
+          chmod +x "dist/${asset}"
+          (cd dist && shasum -a 256 "${asset}" > "${asset}.sha256")
+      - name: Package (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          mkdir -p dist
+          asset="cql-${{ matrix.postfix }}.exe"
+          cp "target/${{ matrix.target }}/release/cql.exe" "dist/${asset}"
+          (cd dist && sha256sum "${asset}" > "${asset}.sha256")
+      - name: Smoke test
+        if: matrix.target != 'x86_64-apple-darwin'
+        shell: bash
+        run: ./dist/cql-${{ matrix.postfix }}$([ "$RUNNER_OS" = Windows ] && echo .exe) --version
+      - name: Attach to the release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ env.TAG }}
+          files: dist/*

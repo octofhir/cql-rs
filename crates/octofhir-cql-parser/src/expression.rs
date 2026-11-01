@@ -11,14 +11,16 @@ use crate::combinators::{
 use bigdecimal::BigDecimal;
 use octofhir_cql_ast::{
     AggregateClause, AsCastExpr, BetweenExpr, BinaryOp, BinaryOpExpr, CaseExpr, CaseItem,
-    ConvertExpr, DateConstructorExpr, DateTimeComponent, DateTimeComponentExpr,
-    DateTimeConstructorExpr, DifferenceBetweenExpr, DurationBetweenExpr, Expression,
-    FunctionRefExpr, Identifier, IdentifierRef, IfExpr, IndexerExpr, InstanceElement, InstanceExpr,
-    IntervalExpr, IntervalOp, IntervalOpExpr, IntervalTypeSpecifier, IsNullExpr, IsTypeExpr,
-    ListExpr, ListTypeSpecifier, Literal, MinMaxValueExpr, NamedTypeSpecifier, PropertyAccess,
-    QuantityLiteral, Query, QuerySource, Retrieve, ReturnClause, SameAsExpr, SameOrAfterExpr,
-    SameOrBeforeExpr, SortClause, SortDirection, SortItem, Spanned, TemporalPrecision,
-    TimeConstructorExpr, TupleElement, TupleExpr, TypeSpecifier, UnaryOp, UnaryOpExpr,
+    ChoiceTypeSpecifier, CodeComparator, CodeSelectorExpr, ConceptSelectorExpr, ConvertExpr,
+    DateConstructorExpr, DateTimeComponent, DateTimeComponentExpr, DateTimeConstructorExpr,
+    DifferenceBetweenExpr, DurationBetweenExpr, Expression, FunctionRefExpr, Identifier,
+    IdentifierRef, IfExpr, IndexerExpr, InstanceElement, InstanceExpr, IntervalExpr, IntervalOp,
+    IntervalOpExpr, IntervalTypeSpecifier, IsNullExpr, IsTypeExpr, LetClause, ListExpr,
+    ListTypeSpecifier, Literal, MinMaxValueExpr, NamedTypeSpecifier, PropertyAccess,
+    QualifiedIdentifier, QuantityLiteral, Query, QuerySource, RelationshipClause, RelationshipKind,
+    Retrieve, ReturnClause, SameAsExpr, SameOrAfterExpr, SameOrBeforeExpr, SortClause,
+    SortDirection, SortItem, Spanned, TemporalPrecision, TimeConstructorExpr, TupleElement,
+    TupleElementDefinition, TupleExpr, TupleTypeSpecifier, TypeSpecifier, UnaryOp, UnaryOpExpr,
 };
 use octofhir_cql_diagnostics::Span;
 use winnow::combinator::{alt, opt, separated};
@@ -42,7 +44,13 @@ fn expression_with_dummy_spans<'a>(input: &mut Input<'a>) -> PResult<Spanned<Exp
     let maybe_query = input.starts_with("from")
         || input.starts_with('(')
         || input.starts_with('{')
-        || input.starts_with('[');
+        || input.starts_with('[')
+        || input.starts_with('"')
+        || input.starts_with('`')
+        || input
+            .chars()
+            .next()
+            .is_some_and(|c| c.is_alphabetic() || c == '_');
 
     if maybe_query {
         let checkpoint = *input;
@@ -67,41 +75,77 @@ fn dummy_span<T>(inner: T) -> Spanned<T> {
     Spanned::new(inner, Span::new(0, 0))
 }
 
-/// Parse a type specifier, handling generics like List<String>, Interval<Date>
-fn type_specifier_parser<'a>(input: &mut Input<'a>) -> PResult<TypeSpecifier> {
-    // Get the base type name (could be qualified like System.String)
+/// Parse a type specifier: named (`Integer`, `FHIR.Patient`), `List<T>`,
+/// `Interval<T>`, `Choice<T1, T2, ...>` and `Tuple { name Type, ... }`.
+pub fn type_specifier_parser<'a>(input: &mut Input<'a>) -> PResult<TypeSpecifier> {
     let type_name = identifier_or_keyword_parser(input)?;
     let name = type_name.name.clone();
+    let lower_name = name.to_lowercase();
 
     ws.parse_next(input)?;
 
-    // Check for generic type parameter
-    if lit("<").parse_next(input).is_ok() {
-        ws.parse_next(input)?;
-        // Parse the type argument
-        let inner_type = type_specifier_parser(input)?;
-        ws.parse_next(input)?;
-        lit(">").parse_next(input)?;
-
-        // Determine if this is List or Interval based on name
-        let lower_name = name.to_lowercase();
-        if lower_name == "list" {
-            return Ok(TypeSpecifier::List(ListTypeSpecifier::new(inner_type)));
-        } else if lower_name == "interval" {
-            return Ok(TypeSpecifier::Interval(IntervalTypeSpecifier::new(
-                inner_type,
-            )));
+    if lower_name == "tuple" {
+        let checkpoint = *input;
+        if lit("{").parse_next(input).is_ok() {
+            let elements: Vec<TupleElementDefinition> = separated(
+                0..,
+                |input: &mut Input<'a>| {
+                    ws.parse_next(input)?;
+                    let element = identifier_or_keyword_parser(input)?;
+                    ws.parse_next(input)?;
+                    let element_type = type_specifier_parser(input)?;
+                    ws.parse_next(input)?;
+                    Ok(TupleElementDefinition::new(element, Some(element_type)))
+                },
+                ",",
+            )
+            .parse_next(input)?;
+            ws.parse_next(input)?;
+            lit("}").parse_next(input)?;
+            return Ok(TypeSpecifier::Tuple(TupleTypeSpecifier::new(elements)));
         }
-        // For other generic types, just use the base name (could be extended later)
+        *input = checkpoint;
     }
 
-    // Check for qualified name (e.g., System.String)
+    if lit("<").parse_next(input).is_ok() {
+        let arguments: Vec<TypeSpecifier> = separated(
+            1..,
+            |input: &mut Input<'a>| {
+                ws.parse_next(input)?;
+                let ts = type_specifier_parser(input)?;
+                ws.parse_next(input)?;
+                Ok(ts)
+            },
+            ",",
+        )
+        .parse_next(input)?;
+        lit(">").parse_next(input)?;
+
+        let mut arguments = arguments.into_iter();
+        return match lower_name.as_str() {
+            "list" if arguments.len() == 1 => Ok(TypeSpecifier::List(ListTypeSpecifier::new(
+                arguments.next().expect("one argument"),
+            ))),
+            "interval" if arguments.len() == 1 => Ok(TypeSpecifier::Interval(
+                IntervalTypeSpecifier::new(arguments.next().expect("one argument")),
+            )),
+            "choice" => Ok(TypeSpecifier::Choice(ChoiceTypeSpecifier::new(
+                arguments.collect(),
+            ))),
+            _ => Err(ContextError::new()),
+        };
+    }
+
+    // Qualified name (e.g., System.String, FHIR.Patient)
+    let checkpoint = *input;
     if lit(".").parse_next(input).is_ok() {
-        let inner_name = identifier_or_keyword_parser(input)?;
-        return Ok(TypeSpecifier::Named(NamedTypeSpecifier {
-            namespace: Some(name),
-            name: inner_name.name,
-        }));
+        if let Ok(inner_name) = identifier_or_keyword_parser(input) {
+            return Ok(TypeSpecifier::Named(NamedTypeSpecifier {
+                namespace: Some(name),
+                name: inner_name.name,
+            }));
+        }
+        *input = checkpoint;
     }
 
     Ok(TypeSpecifier::Named(NamedTypeSpecifier {
@@ -339,6 +383,14 @@ fn interval_operator_expression<'a>(input: &mut Input<'a>) -> PResult<Spanned<Ex
         ws.parse_next(input)?;
         let checkpoint = *input;
 
+        // Compound timing phrases (`starts before end of`, `3 days or less after`,
+        // `within 30 days of`, `ends during`, ...)
+        if let Some(timing) = compound_timing_phrase(input, &left)? {
+            left = timing;
+            continue;
+        }
+        *input = checkpoint;
+
         // Try parsing "same X or before/after", "same X as", or "on or before/after X"
         if padded_keyword("same").parse_next(input).is_ok() {
             // Parse optional precision
@@ -530,6 +582,413 @@ fn interval_operator_expression<'a>(input: &mut Input<'a>) -> PResult<Spanned<Ex
     }
 
     Ok(left)
+}
+
+/// Which point of the left operand a timing phrase compares.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum TimingBoundary {
+    Start,
+    End,
+    Occurs,
+}
+
+/// Quantity offset of a before/after phrase.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum OffsetKind {
+    /// `3 days before`
+    Exactly,
+    /// `3 days or more before`
+    OrMore,
+    /// `3 days or less before`
+    OrLess,
+    /// `less than 3 days before`
+    LessThan,
+    /// `more than 3 days before`
+    MoreThan,
+}
+
+fn point_call(name: &str, operand: Spanned<Expression>) -> Spanned<Expression> {
+    dummy_span(Expression::FunctionRef(FunctionRefExpr {
+        library: None,
+        name: Identifier::new(name),
+        arguments: vec![operand],
+    }))
+}
+
+fn binary(
+    op: BinaryOp,
+    left: Spanned<Expression>,
+    right: Spanned<Expression>,
+) -> Spanned<Expression> {
+    dummy_span(Expression::BinaryOp(BinaryOpExpr {
+        left: Box::new(left),
+        op,
+        right: Box::new(right),
+    }))
+}
+
+fn interval_op(
+    op: IntervalOp,
+    left: Spanned<Expression>,
+    right: Spanned<Expression>,
+    precision: Option<TemporalPrecision>,
+) -> Spanned<Expression> {
+    dummy_span(Expression::IntervalOp(IntervalOpExpr {
+        left: Box::new(left),
+        op,
+        right: Box::new(right),
+        precision,
+    }))
+}
+
+fn same_or_before(
+    left: Spanned<Expression>,
+    right: Spanned<Expression>,
+    precision: Option<TemporalPrecision>,
+) -> Spanned<Expression> {
+    dummy_span(Expression::SameOrBefore(SameOrBeforeExpr {
+        left: Box::new(left),
+        right: Box::new(right),
+        precision,
+    }))
+}
+
+fn same_or_after(
+    left: Spanned<Expression>,
+    right: Spanned<Expression>,
+    precision: Option<TemporalPrecision>,
+) -> Spanned<Expression> {
+    dummy_span(Expression::SameOrAfter(SameOrAfterExpr {
+        left: Box::new(left),
+        right: Box::new(right),
+        precision,
+    }))
+}
+
+/// Parse a temporal precision keyword (`day`, `days`, ...) without `of`.
+fn precision_keyword<'a>(input: &mut Input<'a>) -> Option<TemporalPrecision> {
+    let checkpoint = *input;
+    let _ = ws.parse_next(input);
+    let precision = alt((
+        alt((keyword("years"), keyword("year"))).value(TemporalPrecision::Year),
+        alt((keyword("months"), keyword("month"))).value(TemporalPrecision::Month),
+        alt((keyword("weeks"), keyword("week"))).value(TemporalPrecision::Week),
+        alt((keyword("days"), keyword("day"))).value(TemporalPrecision::Day),
+        alt((keyword("hours"), keyword("hour"))).value(TemporalPrecision::Hour),
+        alt((keyword("minutes"), keyword("minute"))).value(TemporalPrecision::Minute),
+        alt((keyword("seconds"), keyword("second"))).value(TemporalPrecision::Second),
+        alt((keyword("milliseconds"), keyword("millisecond")))
+            .value(TemporalPrecision::Millisecond),
+    ))
+    .parse_next(input)
+    .ok();
+    if precision.is_none() {
+        *input = checkpoint;
+    }
+    precision
+}
+
+/// Parse the compound CQL 1.5 timing phrases (spec §5.6.2, grammar rule
+/// `intervalOperatorPhrase`) that the simple operator loop does not cover:
+///
+/// - `(starts|ends|occurs) <relationship> ...` with any relationship
+/// - quantity offsets: `3 days [or more|or less] before|after`,
+///   `less than|more than 3 days before|after`
+/// - `[on or] before|after [or on]`
+/// - `[properly] within 3 days of`
+/// - `(starts|ends|occurs) [properly] during|included in`
+/// - `(starts|ends|occurs) same <precision> as|or before|or after`
+///
+/// Returns `Ok(None)` (input untouched by the caller's checkpoint) when no
+/// compound phrase starts here.
+fn compound_timing_phrase<'a>(
+    input: &mut Input<'a>,
+    left: &Spanned<Expression>,
+) -> PResult<Option<Spanned<Expression>>> {
+    let start = *input;
+
+    let boundary = if padded_keyword("starts").parse_next(input).is_ok() {
+        Some(TimingBoundary::Start)
+    } else if padded_keyword("ends").parse_next(input).is_ok() {
+        Some(TimingBoundary::End)
+    } else if padded_keyword("occurs").parse_next(input).is_ok() {
+        Some(TimingBoundary::Occurs)
+    } else {
+        None
+    };
+
+    // Quantity offset
+    let mut offset: Option<(Spanned<Expression>, OffsetKind)> = None;
+    {
+        let checkpoint = *input;
+        let exclusive = if padded_keyword("less").parse_next(input).is_ok()
+            && padded_keyword("than").parse_next(input).is_ok()
+        {
+            Some(OffsetKind::LessThan)
+        } else {
+            *input = checkpoint;
+            if padded_keyword("more").parse_next(input).is_ok()
+                && padded_keyword("than").parse_next(input).is_ok()
+            {
+                Some(OffsetKind::MoreThan)
+            } else {
+                *input = checkpoint;
+                None
+            }
+        };
+        let _ = ws.parse_next(input);
+        match quantity_literal_parser(input) {
+            Ok(q) if q.unit.is_some() => {
+                let quantity = dummy_span(Expression::Literal(Literal::Quantity(q)));
+                let kind = match exclusive {
+                    Some(kind) => kind,
+                    None => {
+                        let qualifier = *input;
+                        if padded_keyword("or").parse_next(input).is_ok() {
+                            if padded_keyword("more").parse_next(input).is_ok() {
+                                OffsetKind::OrMore
+                            } else if padded_keyword("less").parse_next(input).is_ok() {
+                                OffsetKind::OrLess
+                            } else {
+                                *input = qualifier;
+                                OffsetKind::Exactly
+                            }
+                        } else {
+                            OffsetKind::Exactly
+                        }
+                    }
+                };
+                offset = Some((quantity, kind));
+            }
+            _ => {
+                if exclusive.is_some() {
+                    *input = start;
+                    return Ok(None);
+                }
+                *input = checkpoint;
+            }
+        }
+    }
+
+    let left_point = match boundary {
+        Some(TimingBoundary::Start) => point_call("Start", left.clone()),
+        Some(TimingBoundary::End) => point_call("End", left.clone()),
+        Some(TimingBoundary::Occurs) | None => left.clone(),
+    };
+
+    // `[properly] within <quantity> of`
+    {
+        let checkpoint = *input;
+        let properly = padded_keyword("properly").parse_next(input).is_ok();
+        if offset.is_none() && padded_keyword("within").parse_next(input).is_ok() {
+            let _ = ws.parse_next(input);
+            let q = quantity_literal_parser(input)?;
+            padded_keyword("of").parse_next(input)?;
+            let right = union_expression(input)?;
+            let quantity = dummy_span(Expression::Literal(Literal::Quantity(q)));
+            let low = binary(BinaryOp::Subtract, right.clone(), quantity.clone());
+            let high = binary(BinaryOp::Add, right, quantity);
+            let expr = if properly {
+                binary(
+                    BinaryOp::And,
+                    interval_op(IntervalOp::After, left_point.clone(), low, None),
+                    interval_op(IntervalOp::Before, left_point, high, None),
+                )
+            } else {
+                binary(
+                    BinaryOp::And,
+                    same_or_after(left_point.clone(), low, None),
+                    same_or_before(left_point, high, None),
+                )
+            };
+            return Ok(Some(expr));
+        }
+        *input = checkpoint;
+    }
+
+    // `[on or] before|after [or on]`
+    let checkpoint = *input;
+    let mut inclusive = padded_keyword("on").parse_next(input).is_ok()
+        && padded_keyword("or").parse_next(input).is_ok();
+    if !inclusive {
+        *input = checkpoint;
+    }
+    let direction = if padded_keyword("before").parse_next(input).is_ok() {
+        Some(IntervalOp::Before)
+    } else if padded_keyword("after").parse_next(input).is_ok() {
+        Some(IntervalOp::After)
+    } else {
+        None
+    };
+
+    if let Some(direction) = direction {
+        let or_on = *input;
+        if padded_keyword("or").parse_next(input).is_ok()
+            && padded_keyword("on").parse_next(input).is_ok()
+        {
+            inclusive = true;
+        } else {
+            *input = or_on;
+        }
+        // Simple `X before Y` / `X on or before Y` stay with the operator loop.
+        if boundary.is_none() && offset.is_none() {
+            *input = start;
+            return Ok(None);
+        }
+        let precision = parse_temporal_precision(input)?;
+        let right = union_expression(input)?;
+        let before = direction == IntervalOp::Before;
+        let right_point = right;
+
+        let expr = match offset {
+            None => {
+                if inclusive {
+                    if before {
+                        same_or_before(left_point, right_point, precision)
+                    } else {
+                        same_or_after(left_point, right_point, precision)
+                    }
+                } else {
+                    interval_op(direction, left_point, right_point, precision)
+                }
+            }
+            Some((quantity, kind)) => {
+                // Reference point shifted by the offset: right - q (before) / right + q (after)
+                let shifted = binary(
+                    if before {
+                        BinaryOp::Subtract
+                    } else {
+                        BinaryOp::Add
+                    },
+                    right_point.clone(),
+                    quantity,
+                );
+                // "beyond the shifted point" and "between the shifted point and the reference"
+                let beyond_inclusive = |l: Spanned<Expression>, r: Spanned<Expression>| {
+                    if before {
+                        same_or_before(l, r, precision)
+                    } else {
+                        same_or_after(l, r, precision)
+                    }
+                };
+                let beyond_strict = |l: Spanned<Expression>, r: Spanned<Expression>| {
+                    interval_op(direction, l, r, precision)
+                };
+                let toward_inclusive = |l: Spanned<Expression>, r: Spanned<Expression>| {
+                    if before {
+                        same_or_after(l, r, precision)
+                    } else {
+                        same_or_before(l, r, precision)
+                    }
+                };
+                let toward_strict = |l: Spanned<Expression>, r: Spanned<Expression>| {
+                    interval_op(
+                        if before {
+                            IntervalOp::After
+                        } else {
+                            IntervalOp::Before
+                        },
+                        l,
+                        r,
+                        precision,
+                    )
+                };
+                // Relation to the reference point itself (inclusive with `on or`)
+                let near_reference = |l: Spanned<Expression>, r: Spanned<Expression>| {
+                    if inclusive {
+                        beyond_inclusive(l, r)
+                    } else {
+                        beyond_strict(l, r)
+                    }
+                };
+                match kind {
+                    OffsetKind::Exactly => dummy_span(Expression::SameAs(SameAsExpr {
+                        left: Box::new(left_point),
+                        right: Box::new(shifted),
+                        precision,
+                    })),
+                    OffsetKind::OrMore => beyond_inclusive(left_point, shifted),
+                    OffsetKind::MoreThan => beyond_strict(left_point, shifted),
+                    OffsetKind::OrLess => binary(
+                        BinaryOp::And,
+                        toward_inclusive(left_point.clone(), shifted),
+                        near_reference(left_point, right_point),
+                    ),
+                    OffsetKind::LessThan => binary(
+                        BinaryOp::And,
+                        toward_strict(left_point.clone(), shifted),
+                        near_reference(left_point, right_point),
+                    ),
+                }
+            }
+        };
+        return Ok(Some(expr));
+    }
+
+    if offset.is_some() {
+        // An offset must be followed by before/after.
+        *input = start;
+        return Ok(None);
+    }
+
+    let Some(boundary) = boundary else {
+        *input = start;
+        return Ok(None);
+    };
+
+    // `(starts|ends|occurs) [properly] during|included in`
+    let checkpoint = *input;
+    let properly = padded_keyword("properly").parse_next(input).is_ok();
+    let membership = if padded_keyword("during").parse_next(input).is_ok()
+        || (padded_keyword("included").parse_next(input).is_ok()
+            && padded_keyword("in").parse_next(input).is_ok())
+    {
+        true
+    } else {
+        *input = checkpoint;
+        false
+    };
+    if membership {
+        let precision = parse_temporal_precision(input)?;
+        let right = union_expression(input)?;
+        let op = match (boundary, properly) {
+            (TimingBoundary::Occurs, false) => IntervalOp::During,
+            (TimingBoundary::Occurs, true) => IntervalOp::ProperlyIncludedIn,
+            (_, false) => IntervalOp::During,
+            (_, true) => IntervalOp::ProperlyIncludedIn,
+        };
+        return Ok(Some(interval_op(op, left_point, right, precision)));
+    }
+
+    // `(starts|ends|occurs) same <precision> as|or before|or after`
+    if padded_keyword("same").parse_next(input).is_ok() {
+        let precision = precision_keyword(input);
+        let expr = if padded_keyword("as").parse_next(input).is_ok() {
+            let right = union_expression(input)?;
+            dummy_span(Expression::SameAs(SameAsExpr {
+                left: Box::new(left_point),
+                right: Box::new(right),
+                precision,
+            }))
+        } else if padded_keyword("or").parse_next(input).is_ok() {
+            if padded_keyword("before").parse_next(input).is_ok() {
+                same_or_before(left_point, union_expression(input)?, precision)
+            } else if padded_keyword("after").parse_next(input).is_ok() {
+                same_or_after(left_point, union_expression(input)?, precision)
+            } else {
+                *input = start;
+                return Ok(None);
+            }
+        } else {
+            *input = start;
+            return Ok(None);
+        };
+        return Ok(Some(expr));
+    }
+
+    // Plain `X starts Y` / `X ends Y` stay with the operator loop.
+    *input = start;
+    Ok(None)
 }
 
 /// Helper to parse complex timing phrases like "starts 1 day or less on or after"
@@ -1279,7 +1738,7 @@ fn postfix_expression<'a>(input: &mut Input<'a>) -> PResult<Spanned<Expression>>
 
         if lit(".").parse_next(input).is_ok() {
             ws.parse_next(input)?;
-            let prop = identifier_parser(input)?;
+            let prop = identifier_or_keyword_parser(input)?;
             ws.parse_next(input)?;
 
             // Check if this is a fluent function call: .method()
@@ -1403,10 +1862,99 @@ fn atom<'a>(input: &mut Input<'a>) -> PResult<Spanned<Expression>> {
         },
         // Tuple literal
         |input: &mut Input<'a>| tuple_expression(input),
+        // Code / Concept selectors (`Code '1' from "CS"`, `Concept { ... }`)
+        |input: &mut Input<'a>| selector_expression(input),
         // Regular identifiers and function calls (must come last)
         |input: &mut Input<'a>| identifier_or_function_call(input),
     ))
     .parse_next(input)
+}
+
+/// Parse a code selector body after the `Code` keyword:
+/// `'<code>' from <codesystem> [display '<text>']`.
+fn code_selector_body<'a>(input: &mut Input<'a>) -> PResult<CodeSelectorExpr> {
+    ws.parse_next(input)?;
+    let code = string_parser(input)?;
+    padded_keyword("from").parse_next(input)?;
+    let first = identifier_parser(input)?;
+    let checkpoint = *input;
+    let codesystem = if lit(".").parse_next(input).is_ok() {
+        match identifier_or_keyword_parser(input) {
+            Ok(name) => QualifiedIdentifier::qualified(first.name, name),
+            Err(_) => {
+                *input = checkpoint;
+                QualifiedIdentifier::simple(first)
+            }
+        }
+    } else {
+        QualifiedIdentifier::simple(first)
+    };
+    let display = opt_display_clause(input)?;
+    Ok(CodeSelectorExpr {
+        code,
+        codesystem,
+        display,
+    })
+}
+
+/// Parse an optional `display '<text>'` clause.
+fn opt_display_clause<'a>(input: &mut Input<'a>) -> PResult<Option<String>> {
+    let checkpoint = *input;
+    if padded_keyword("display").parse_next(input).is_ok() {
+        return string_parser(input).map(Some);
+    }
+    *input = checkpoint;
+    Ok(None)
+}
+
+/// Whether the input continues with `Code '` (the start of a code selector).
+fn at_code_selector(input: Input<'_>) -> bool {
+    let mut probe = input;
+    ws.parse_next(&mut probe).is_ok()
+        && keyword("Code").parse_next(&mut probe).is_ok()
+        && ws.parse_next(&mut probe).is_ok()
+        && probe.starts_with('\'')
+}
+
+/// Parse a Code selector or a Concept selector of code selectors.
+///
+/// `Code { ... }` and `Concept { codes: ... }` instance selectors are left to
+/// [`identifier_or_function_call`].
+fn selector_expression<'a>(input: &mut Input<'a>) -> PResult<Spanned<Expression>> {
+    let checkpoint = *input;
+    if at_code_selector(input) {
+        ws.parse_next(input)?;
+        keyword("Code").parse_next(input)?;
+        let code = code_selector_body(input)?;
+        return Ok(dummy_span(Expression::CodeSelector(code)));
+    }
+
+    if keyword("Concept").parse_next(input).is_ok() {
+        ws.parse_next(input)?;
+        if lit("{").parse_next(input).is_ok() && at_code_selector(input) {
+            let codes: Vec<CodeSelectorExpr> = separated(
+                1..,
+                |input: &mut Input<'a>| {
+                    ws.parse_next(input)?;
+                    keyword("Code").parse_next(input)?;
+                    let code = code_selector_body(input)?;
+                    ws.parse_next(input)?;
+                    Ok(code)
+                },
+                ",",
+            )
+            .parse_next(input)?;
+            ws.parse_next(input)?;
+            lit("}").parse_next(input)?;
+            let display = opt_display_clause(input)?;
+            return Ok(dummy_span(Expression::ConceptSelector(
+                ConceptSelectorExpr { codes, display },
+            )));
+        }
+    }
+
+    *input = checkpoint;
+    Err(ContextError::new())
 }
 
 /// Parse if expression
@@ -1555,18 +2103,82 @@ fn interval_constructor<'a>(input: &mut Input<'a>) -> PResult<Spanned<Expression
 fn retrieve_expression<'a>(input: &mut Input<'a>) -> PResult<Spanned<Expression>> {
     lit("[").parse_next(input)?;
     ws.parse_next(input)?;
-    let type_name = identifier_parser(input)?;
+
+    // Optional related context: `[Mother -> Observation]`
+    let checkpoint = *input;
+    let context = match identifier_parser(input) {
+        Ok(ctx) => {
+            ws.parse_next(input)?;
+            if lit("->").parse_next(input).is_ok() {
+                ws.parse_next(input)?;
+                Some(ctx)
+            } else {
+                *input = checkpoint;
+                None
+            }
+        }
+        Err(_) => None,
+    };
+
+    // Named type, optionally model-qualified (`FHIR.Condition`)
+    let first = identifier_or_keyword_parser(input)?;
+    let type_spec = {
+        let checkpoint = *input;
+        if lit(".").parse_next(input).is_ok()
+            && let Ok(name) = identifier_or_keyword_parser(input)
+        {
+            TypeSpecifier::Named(NamedTypeSpecifier {
+                namespace: Some(first.name),
+                name: name.name,
+            })
+        } else {
+            *input = checkpoint;
+            TypeSpecifier::Named(NamedTypeSpecifier {
+                namespace: None,
+                name: first.name,
+            })
+        }
+    };
     ws.parse_next(input)?;
+
+    let mut retrieve = Retrieve::new(dummy_span(type_spec));
+    retrieve.context = context;
+
+    // Optional terminology filter: `: "Value Set"` or `: code in "Value Set"`
+    if lit(":").parse_next(input).is_ok() {
+        ws.parse_next(input)?;
+        let checkpoint = *input;
+        let path_and_comparator = (|| -> PResult<(String, CodeComparator)> {
+            let mut path = identifier_or_keyword_parser(input)?.name;
+            while lit(".").parse_next(input).is_ok() {
+                path.push('.');
+                path.push_str(&identifier_or_keyword_parser(input)?.name);
+            }
+            ws.parse_next(input)?;
+            let comparator = alt((
+                keyword("in").value(CodeComparator::In),
+                lit("~").value(CodeComparator::Equivalent),
+                lit("=").value(CodeComparator::Equal),
+            ))
+            .parse_next(input)?;
+            Ok((path, comparator))
+        })();
+        match path_and_comparator {
+            Ok((path, comparator)) => {
+                retrieve.code_path = Some(path);
+                retrieve.code_comparator = Some(comparator);
+            }
+            Err(_) => *input = checkpoint,
+        }
+        ws.parse_next(input)?;
+        let terminology = inner_expression(input)?;
+        retrieve.codes = Some(Box::new(terminology));
+        ws.parse_next(input)?;
+    }
+
     lit("]").parse_next(input)?;
 
-    let type_spec = TypeSpecifier::Named(NamedTypeSpecifier {
-        namespace: None,
-        name: type_name.name.clone(),
-    });
-
-    Ok(dummy_span(Expression::Retrieve(Box::new(Retrieve::new(
-        dummy_span(type_spec),
-    )))))
+    Ok(dummy_span(Expression::Retrieve(Box::new(retrieve))))
 }
 
 /// Parse list expression
@@ -1593,7 +2205,9 @@ fn list_expression<'a>(input: &mut Input<'a>) -> PResult<Spanned<Expression>> {
 fn identifier_or_function_call<'a>(input: &mut Input<'a>) -> PResult<Spanned<Expression>> {
     // Use identifier_or_keyword_parser for the initial identifier since it might be a namespace
     // like "System" followed by a type that is also a keyword (e.g., "ValueSet", "Code")
-    let mut id = identifier_or_keyword_parser(input)?;
+    let mut id = identifier_or_keyword_parser
+        .verify(|id: &Identifier| id.quoted || !is_structural_keyword(&id.name))
+        .parse_next(input)?;
     ws.parse_next(input)?;
 
     // Check for qualified identifier (e.g., System.ValueSet)
@@ -1633,7 +2247,7 @@ fn identifier_or_function_call<'a>(input: &mut Input<'a>) -> PResult<Spanned<Exp
                 1..,
                 |input: &mut Input<'a>| {
                     ws.parse_next(input)?;
-                    let expr = inner_expression(input)?;
+                    let expr = expression_with_dummy_spans(input)?;
                     ws.parse_next(input)?;
                     Ok(expr)
                 },
@@ -1888,7 +2502,7 @@ fn query_expression<'a>(input: &mut Input<'a>) -> PResult<Spanned<Expression>> {
     ws.parse_next(input)?;
 
     // Must be followed by an alias identifier (not a keyword or operator)
-    let alias = identifier_parser(input).map_err(|_| {
+    let alias = query_alias(input).map_err(|_| {
         *input = checkpoint;
         ContextError::new()
     })?;
@@ -1923,7 +2537,123 @@ fn query_source_expression<'a>(input: &mut Input<'a>) -> PResult<Spanned<Express
         return Ok(retrieve);
     }
 
-    Err(ContextError::new())
+    // Qualified identifier expression: `"Def"`, `Lib."Def"`, `Alias.path.to`
+    qualified_identifier_expression(input)
+}
+
+/// Keywords that structure a library or a query and can never start an
+/// operand, so `define A: 1 +` fails at the dangling operator instead of
+/// swallowing the next `define`.
+fn is_structural_keyword(word: &str) -> bool {
+    matches!(
+        word,
+        "library"
+            | "using"
+            | "include"
+            | "called"
+            | "parameter"
+            | "default"
+            | "codesystem"
+            | "codesystems"
+            | "valueset"
+            | "context"
+            | "define"
+            | "function"
+            | "fluent"
+            | "public"
+            | "private"
+            | "returns"
+            | "external"
+            | "where"
+            | "return"
+            | "sort"
+            | "such"
+            | "that"
+            | "with"
+            | "without"
+            | "then"
+            | "else"
+            | "when"
+            | "and"
+            | "or"
+            | "xor"
+            | "implies"
+            | "between"
+    )
+}
+
+/// Unquoted words that begin an expression construct (`minimum Integer`,
+/// `predecessor of x`, `year from x`, `duration in days between ...`) or
+/// continue one (`of`, `per`), and so can never be a query source or alias.
+fn opens_expression_construct(word: &str) -> bool {
+    matches!(
+        word.to_ascii_lowercase().as_str(),
+        "minimum"
+            | "maximum"
+            | "predecessor"
+            | "successor"
+            | "expand"
+            | "duration"
+            | "difference"
+            | "of"
+            | "per"
+            | "year"
+            | "years"
+            | "month"
+            | "months"
+            | "week"
+            | "weeks"
+            | "day"
+            | "days"
+            | "hour"
+            | "hours"
+            | "minute"
+            | "minutes"
+            | "second"
+            | "seconds"
+            | "millisecond"
+            | "milliseconds"
+            | "timezone"
+            | "timezoneoffset"
+            | "occurs"
+    )
+}
+
+/// Parse a query alias: an identifier that is not a keyword and does not
+/// open an expression construct.
+fn query_alias<'a>(input: &mut Input<'a>) -> PResult<Identifier> {
+    identifier_parser
+        .verify(|id: &Identifier| id.quoted || !opens_expression_construct(&id.name))
+        .parse_next(input)
+}
+
+/// Parse a (possibly qualified) identifier path used as a query source:
+/// `"Qualifying Encounters"`, `Common."Active Conditions"`, `Patient.name`.
+///
+/// The first segment must not be a keyword, so expressions such as
+/// `exists "X"` are never mistaken for an aliased query source.
+fn qualified_identifier_expression<'a>(input: &mut Input<'a>) -> PResult<Spanned<Expression>> {
+    let first = identifier_parser
+        .verify(|id: &Identifier| id.quoted || !opens_expression_construct(&id.name))
+        .parse_next(input)?;
+    let mut expr = dummy_span(Expression::IdentifierRef(IdentifierRef { name: first }));
+    loop {
+        let checkpoint = *input;
+        ws.parse_next(input)?;
+        if lit(".").parse_next(input).is_ok() {
+            ws.parse_next(input)?;
+            if let Ok(property) = identifier_or_keyword_parser(input) {
+                expr = dummy_span(Expression::Property(PropertyAccess {
+                    source: Box::new(expr),
+                    property,
+                }));
+                continue;
+            }
+        }
+        *input = checkpoint;
+        break;
+    }
+    Ok(expr)
 }
 
 /// Parse comma-separated query sources for multi-source queries
@@ -1934,7 +2664,7 @@ fn parse_query_sources<'a>(input: &mut Input<'a>) -> PResult<Vec<QuerySource>> {
             ws.parse_next(input)?;
             let expr = query_source_expression(input)?;
             ws.parse_next(input)?;
-            let alias = identifier_parser(input)?;
+            let alias = query_alias(input)?;
             ws.parse_next(input)?;
             Ok(QuerySource::new(Box::new(expr), alias))
         },
@@ -1955,6 +2685,49 @@ fn parse_query_clauses<'a>(sources: Vec<QuerySource>, input: &mut Input<'a>) -> 
 
     loop {
         ws.parse_next(input)?;
+
+        // Parse let clause: let a: expr, b: expr
+        if padded_keyword("let").parse_next(input).is_ok() {
+            let lets: Vec<LetClause> = separated(
+                1..,
+                |input: &mut Input<'a>| {
+                    ws.parse_next(input)?;
+                    let identifier = identifier_parser(input)?;
+                    ws.parse_next(input)?;
+                    lit(":").parse_next(input)?;
+                    let expression = expression_with_dummy_spans(input)?;
+                    ws.parse_next(input)?;
+                    Ok(LetClause::new(identifier, Box::new(expression)))
+                },
+                ",",
+            )
+            .parse_next(input)?;
+            query.lets.extend(lets);
+            continue;
+        }
+
+        // Parse inclusion clauses: with/without <source> <alias> such that <expr>
+        let relationship = if padded_keyword("with").parse_next(input).is_ok() {
+            Some(RelationshipKind::With)
+        } else if padded_keyword("without").parse_next(input).is_ok() {
+            Some(RelationshipKind::Without)
+        } else {
+            None
+        };
+        if let Some(kind) = relationship {
+            let source = query_source_expression(input)?;
+            ws.parse_next(input)?;
+            let alias = query_alias(input)?;
+            padded_keyword("such").parse_next(input)?;
+            padded_keyword("that").parse_next(input)?;
+            let condition = implies_expression(input)?;
+            query.relationships.push(RelationshipClause {
+                kind,
+                source: QuerySource::new(Box::new(source), alias),
+                such_that: Some(Box::new(condition)),
+            });
+            continue;
+        }
 
         // Parse return clause
         if padded_keyword("return").parse_next(input).is_ok() {
