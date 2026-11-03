@@ -1618,7 +1618,7 @@ fn duration_difference_between<'a>(input: &mut Input<'a>) -> PResult<Spanned<Exp
     };
 
     // Parse precision
-    let precision = alt((
+    let precision = alt([
         keyword("years").value(TemporalPrecision::Year),
         keyword("year").value(TemporalPrecision::Year),
         keyword("months").value(TemporalPrecision::Month),
@@ -1635,7 +1635,7 @@ fn duration_difference_between<'a>(input: &mut Input<'a>) -> PResult<Spanned<Exp
         keyword("second").value(TemporalPrecision::Second),
         keyword("milliseconds").value(TemporalPrecision::Millisecond),
         keyword("millisecond").value(TemporalPrecision::Millisecond),
-    ))
+    ])
     .parse_next(input)
     .map_err(|_: ContextError| {
         *input = checkpoint;
@@ -1692,7 +1692,7 @@ fn duration_difference_between<'a>(input: &mut Input<'a>) -> PResult<Spanned<Exp
 fn component_extraction<'a>(input: &mut Input<'a>) -> PResult<Spanned<Expression>> {
     let checkpoint = *input;
 
-    let component = alt((
+    let component = alt([
         keyword("year").value(DateTimeComponent::Year),
         keyword("month").value(DateTimeComponent::Month),
         keyword("day").value(DateTimeComponent::Day),
@@ -1703,7 +1703,7 @@ fn component_extraction<'a>(input: &mut Input<'a>) -> PResult<Spanned<Expression
         keyword("timezoneoffset").value(DateTimeComponent::TimezoneOffset),
         keyword("date").value(DateTimeComponent::Date),
         keyword("time").value(DateTimeComponent::Time),
-    ))
+    ])
     .parse_next(input)
     .inspect_err(|_| {
         *input = checkpoint;
@@ -1802,70 +1802,74 @@ fn atom<'a>(input: &mut Input<'a>) -> PResult<Spanned<Expression>> {
     ws.parse_next(input)?;
 
     alt((
-        keyword("null").map(|_| dummy_span(Expression::Literal(Literal::Null))),
-        |input: &mut Input<'a>| {
-            let b = boolean_parser(input)?;
-            Ok(dummy_span(Expression::Literal(Literal::Boolean(b))))
-        },
-        |input: &mut Input<'a>| {
-            let lit = temporal_literal_parser(input)?;
-            Ok(dummy_span(Expression::Literal(lit)))
-        },
-        |input: &mut Input<'a>| {
-            let checkpoint = *input;
-            let q = quantity_literal_parser
-                .parse_next(input)
-                .map_err(|_: ContextError| {
+        alt((
+            keyword("null").map(|_| dummy_span(Expression::Literal(Literal::Null))),
+            |input: &mut Input<'a>| {
+                let b = boolean_parser(input)?;
+                Ok(dummy_span(Expression::Literal(Literal::Boolean(b))))
+            },
+            |input: &mut Input<'a>| {
+                let lit = temporal_literal_parser(input)?;
+                Ok(dummy_span(Expression::Literal(lit)))
+            },
+            |input: &mut Input<'a>| {
+                let checkpoint = *input;
+                let q = quantity_literal_parser
+                    .parse_next(input)
+                    .map_err(|_: ContextError| {
+                        *input = checkpoint;
+                        ContextError::new()
+                    })?;
+                if q.unit.is_none() {
                     *input = checkpoint;
-                    ContextError::new()
-                })?;
-            if q.unit.is_none() {
-                *input = checkpoint;
-                return Err(ContextError::new());
-            }
-            Ok(dummy_span(Expression::Literal(Literal::Quantity(q))))
-        },
-        |input: &mut Input<'a>| {
-            let lit = number_parser(input)?;
-            Ok(dummy_span(Expression::Literal(lit)))
-        },
-        |input: &mut Input<'a>| {
-            let s = string_parser(input)?;
-            Ok(dummy_span(Expression::Literal(Literal::String(s))))
-        },
-        |input: &mut Input<'a>| if_expression(input),
-        |input: &mut Input<'a>| case_expression(input),
-        |input: &mut Input<'a>| convert_expression(input),
-        |input: &mut Input<'a>| cast_expression(input),
-        |input: &mut Input<'a>| interval_constructor(input),
-        |input: &mut Input<'a>| retrieve_expression(input),
-        |input: &mut Input<'a>| list_expression(input),
-        |input: &mut Input<'a>| {
-            lit("(").parse_next(input)?;
-            ws.parse_next(input)?;
-            let expr = expression_with_dummy_spans(input)?;
-            ws.parse_next(input)?;
-            lit(")").parse_next(input)?;
-            Ok(dummy_span(expr.inner))
-        },
-        // Temporal constructors (keyword-named functions) - grouped to reduce alt count
-        |input: &mut Input<'a>| {
-            alt((
-                |input: &mut Input<'a>| datetime_constructor(input),
-                |input: &mut Input<'a>| date_constructor(input),
-                |input: &mut Input<'a>| time_constructor(input),
-                |input: &mut Input<'a>| now_function(input),
-                |input: &mut Input<'a>| today_function(input),
-                |input: &mut Input<'a>| timeofday_function(input),
-            ))
-            .parse_next(input)
-        },
-        // Tuple literal
-        |input: &mut Input<'a>| tuple_expression(input),
-        // Code / Concept selectors (`Code '1' from "CS"`, `Concept { ... }`)
-        |input: &mut Input<'a>| selector_expression(input),
-        // Regular identifiers and function calls (must come last)
-        |input: &mut Input<'a>| identifier_or_function_call(input),
+                    return Err(ContextError::new());
+                }
+                Ok(dummy_span(Expression::Literal(Literal::Quantity(q))))
+            },
+            |input: &mut Input<'a>| {
+                let lit = number_parser(input)?;
+                Ok(dummy_span(Expression::Literal(lit)))
+            },
+            |input: &mut Input<'a>| {
+                let s = string_parser(input)?;
+                Ok(dummy_span(Expression::Literal(Literal::String(s))))
+            },
+            |input: &mut Input<'a>| if_expression(input),
+            |input: &mut Input<'a>| case_expression(input),
+            |input: &mut Input<'a>| convert_expression(input),
+        )),
+        alt((
+            |input: &mut Input<'a>| cast_expression(input),
+            |input: &mut Input<'a>| interval_constructor(input),
+            |input: &mut Input<'a>| retrieve_expression(input),
+            |input: &mut Input<'a>| list_expression(input),
+            |input: &mut Input<'a>| {
+                lit("(").parse_next(input)?;
+                ws.parse_next(input)?;
+                let expr = expression_with_dummy_spans(input)?;
+                ws.parse_next(input)?;
+                lit(")").parse_next(input)?;
+                Ok(dummy_span(expr.inner))
+            },
+            // Temporal constructors (keyword-named functions) - grouped to reduce alt count
+            |input: &mut Input<'a>| {
+                alt((
+                    |input: &mut Input<'a>| datetime_constructor(input),
+                    |input: &mut Input<'a>| date_constructor(input),
+                    |input: &mut Input<'a>| time_constructor(input),
+                    |input: &mut Input<'a>| now_function(input),
+                    |input: &mut Input<'a>| today_function(input),
+                    |input: &mut Input<'a>| timeofday_function(input),
+                ))
+                .parse_next(input)
+            },
+            // Tuple literal
+            |input: &mut Input<'a>| tuple_expression(input),
+            // Code / Concept selectors (`Code '1' from "CS"`, `Concept { ... }`)
+            |input: &mut Input<'a>| selector_expression(input),
+            // Regular identifiers and function calls (must come last)
+            |input: &mut Input<'a>| identifier_or_function_call(input),
+        )),
     ))
     .parse_next(input)
 }

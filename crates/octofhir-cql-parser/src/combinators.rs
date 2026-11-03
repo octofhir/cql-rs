@@ -492,7 +492,7 @@ fn quoted_unit_string<'a>(input: &mut Input<'a>) -> PResult<String> {
 
 /// Parse an unquoted duration unit keyword
 fn duration_unit_keyword<'a>(input: &mut Input<'a>) -> PResult<String> {
-    alt((
+    alt([
         keyword("years").value("year".to_string()),
         keyword("year").value("year".to_string()),
         keyword("months").value("month".to_string()),
@@ -509,7 +509,7 @@ fn duration_unit_keyword<'a>(input: &mut Input<'a>) -> PResult<String> {
         keyword("second").value("second".to_string()),
         keyword("milliseconds").value("millisecond".to_string()),
         keyword("millisecond").value("millisecond".to_string()),
-    ))
+    ])
     .parse_next(input)
 }
 

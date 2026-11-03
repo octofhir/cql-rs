@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.2] - 2026-11-04
+
+### Changed
+
+- Remove unused dependencies from the AST, types, ELM, model and evaluator crates.
+- Stop enabling the FHIR model HTTP client in the evaluator and model crates; use
+  the lightweight model 0.1.19 abstractions instead.
+- Limit the evaluator Tokio dependency to runtime support; test macros and example
+  error handling stay in development dependencies.
+- Keep the existing CLI defaults and the `colored` compatibility feature.
+- Update the private Winnow parser to 1.0.4, the CLI line editor to Rustyline 19,
+  and test fixtures to rstest 0.28.
+- Document the library-only dependency configuration and refresh compatible lockfile
+  dependencies.
+
 ## [0.2.0] - 2026-11-01
 
 ### Added

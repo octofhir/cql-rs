@@ -32,7 +32,7 @@ chrono = { workspace = true, optional = true }
 clap = { workspace = true, optional = true }
 colored = { workspace = true, optional = true }
 human-panic = { workspace = true, optional = true }
-rustyline = { version = "13", optional = true }
+rustyline = { version = "19", optional = true }
 serde = { workspace = true, optional = true }
 serde_json = { workspace = true, optional = true }
 

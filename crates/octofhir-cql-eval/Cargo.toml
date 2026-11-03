@@ -8,11 +8,9 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
-octofhir-cql-ast = { workspace = true }
 octofhir-cql-elm = { workspace = true }
 octofhir-cql-types = { workspace = true }
 octofhir-cql-model = { workspace = true }
-octofhir-cql-diagnostics = { workspace = true }
 octofhir-fhir-model = { workspace = true }
 octofhir-ucum = { workspace = true }
 serde = { workspace = true }
@@ -23,9 +21,7 @@ indexmap = { workspace = true }
 parking_lot = { workspace = true }
 thiserror = { workspace = true }
 regex = { workspace = true }
-async-trait = { workspace = true }
 tokio = { workspace = true }
-smallvec = { workspace = true }
 num-traits = "0.2"
 
 [dev-dependencies]

@@ -10,11 +10,10 @@ repository.workspace = true
 [dependencies]
 serde = { workspace = true }
 thiserror = { workspace = true }
-colored = { workspace = true, optional = true }
 
 [features]
 default = []
-colored = ["dep:colored"]
+colored = []
 
 [lints]
 workspace = true

@@ -25,6 +25,21 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: Check formatting
         run: cargo fmt --all -- --check
+      - name: Check library dependency graph
+        run: |
+          cargo check --locked -p octofhir-cql --lib --no-default-features
+          python3 - <<'PY'
+          import re
+          import subprocess
+          graph = subprocess.check_output([
+              "cargo", "tree", "--locked", "-p", "octofhir-cql",
+              "--no-default-features", "--edges", "normal,build",
+              "--prefix", "none", "--format", "{p}",
+          ], text=True)
+          forbidden = re.findall(r"^(?:reqwest|hyper|rustls|native-tls|openssl-sys) v.*", graph, re.M)
+          if forbidden:
+              raise SystemExit("Unexpected library transport dependencies: " + ", ".join(forbidden))
+          PY
       - name: Clippy
         run: cargo clippy --workspace --all-targets --all-features -- -D warnings
 

@@ -54,9 +54,8 @@ cargo install octofhir-cql
 
 ```toml
 [dependencies]
-octofhir-cql = "0.1"
-# Library only, without the CLI dependencies (clap, rustyline, ...):
-# octofhir-cql = { version = "0.1", default-features = false }
+octofhir-cql = { version = "0.2.2", default-features = false }
+# Enable the `cli` feature only when you also need the command-line binary.
 ```
 
 ## Quick start: CLI

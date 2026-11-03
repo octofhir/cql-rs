@@ -8,11 +8,8 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
-octofhir-cql-diagnostics = { workspace = true }
 octofhir-cql-ast = { workspace = true }
-octofhir-ucum = { workspace = true }
 serde = { workspace = true }
-serde_json = { workspace = true }
 indexmap = { workspace = true }
 bigdecimal = { workspace = true }
 chrono = { workspace = true }

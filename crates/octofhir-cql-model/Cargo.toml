@@ -9,7 +9,6 @@ repository.workspace = true
 
 [dependencies]
 octofhir-cql-types = { workspace = true }
-octofhir-cql-diagnostics = { workspace = true }
 octofhir-fhir-model = { workspace = true }
 bigdecimal = { workspace = true }
 serde = { workspace = true }
@@ -18,12 +17,12 @@ async-trait = { workspace = true }
 thiserror = { workspace = true }
 quick-xml = { workspace = true }
 indexmap = { workspace = true }
-anyhow = { workspace = true }
 once_cell = { workspace = true }
 parking_lot = { workspace = true }
 
 [dev-dependencies]
-tokio = { workspace = true }
+anyhow = { workspace = true }
+tokio = { workspace = true, features = ["macros"] }
 tempfile = "3"
 
 [lints]

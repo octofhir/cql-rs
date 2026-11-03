@@ -13,7 +13,7 @@ exclude = []
 resolver = "3"
 
 [workspace.package]
-version = "0.2.1"
+version = "0.2.2"
 edition = "2024"
 authors = ["OctoFHIR Team <funyloony@gmail.com>"]
 license = "MIT OR Apache-2.0"
@@ -22,17 +22,17 @@ homepage = "https://github.com/octofhir/cql-rs"
 
 [workspace.dependencies]
 # Internal crates
-octofhir-cql = { path = "crates/octofhir-cql", version = "0.2.1" }
-octofhir-cql-ast = { path = "crates/octofhir-cql-ast", version = "0.2.1" }
-octofhir-cql-parser = { path = "crates/octofhir-cql-parser", version = "0.2.1" }
-octofhir-cql-elm = { path = "crates/octofhir-cql-elm", version = "0.2.1" }
-octofhir-cql-types = { path = "crates/octofhir-cql-types", version = "0.2.1" }
-octofhir-cql-eval = { path = "crates/octofhir-cql-eval", version = "0.2.1" }
-octofhir-cql-model = { path = "crates/octofhir-cql-model", version = "0.2.1" }
-octofhir-cql-diagnostics = { path = "crates/octofhir-cql-diagnostics", version = "0.2.1" }
+octofhir-cql = { path = "crates/octofhir-cql", version = "0.2.2" }
+octofhir-cql-ast = { path = "crates/octofhir-cql-ast", version = "0.2.2" }
+octofhir-cql-parser = { path = "crates/octofhir-cql-parser", version = "0.2.2" }
+octofhir-cql-elm = { path = "crates/octofhir-cql-elm", version = "0.2.2" }
+octofhir-cql-types = { path = "crates/octofhir-cql-types", version = "0.2.2" }
+octofhir-cql-eval = { path = "crates/octofhir-cql-eval", version = "0.2.2" }
+octofhir-cql-model = { path = "crates/octofhir-cql-model", version = "0.2.2" }
+octofhir-cql-diagnostics = { path = "crates/octofhir-cql-diagnostics", version = "0.2.2" }
 
 # External octofhir crates
-octofhir-fhir-model = { version = "0.1.7", features = ["serde", "http-client"] }
+octofhir-fhir-model = { version = "0.1.19", features = ["serde"] }
 octofhir-ucum = { version = "0.9.1", features = ["fhir", "serde"] }
 
 # Core dependencies
@@ -51,12 +51,12 @@ thiserror = "2"
 once_cell = "1.21"
 
 # Parser
-winnow = { version = "0.7", features = ["std"] }
+winnow = { version = "1.0.4", features = ["std"] }
 
 # Async
 async-trait = "0.1"
 futures = "0.3"
-tokio = { version = "1.47", features = ["full"] }
+tokio = { version = "1.54.1", features = ["rt", "rt-multi-thread"] }
 
 # CLI dependencies
 clap = { version = "4", features = ["derive"] }
@@ -64,7 +64,7 @@ human-panic = "2.0"
 colored = "3.0"
 
 # Test dependencies
-rstest = "0.18"
+rstest = "0.28"
 pretty_assertions = "1"
 proptest = "1"
 divan = "0.1"
