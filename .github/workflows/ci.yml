@@ -36,9 +36,9 @@ jobs:
               "--no-default-features", "--edges", "normal,build",
               "--prefix", "none", "--format", "{p}",
           ], text=True)
-          forbidden = re.findall(r"^(?:reqwest|hyper|rustls|native-tls|openssl-sys) v.*", graph, re.M)
+          forbidden = re.findall(r"^(?:reqwest|hyper|rustls|native-tls|openssl-sys|fuzzy-matcher|thread_local) v.*", graph, re.M)
           if forbidden:
-              raise SystemExit("Unexpected library transport dependencies: " + ", ".join(forbidden))
+              raise SystemExit("Unexpected library transport/search dependencies: " + ", ".join(forbidden))
           PY
       - name: Clippy
         run: cargo clippy --workspace --all-targets --all-features -- -D warnings

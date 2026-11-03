@@ -474,15 +474,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "fuzzy-matcher"
-version = "0.3.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "54614a3312934d066701a80f20f15fa3b56d67ac7722b39eea5b4c9dd1d66c94"
-dependencies = [
- "thread_local",
-]
-
-[[package]]
 name = "getrandom"
 version = "0.2.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -777,7 +768,7 @@ dependencies = [
 
 [[package]]
 name = "octofhir-cql"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -799,7 +790,7 @@ dependencies = [
  "octofhir-cql-types",
  "pretty_assertions",
  "proptest",
- "quick-xml 0.42.0",
+ "quick-xml",
  "regex",
  "rstest",
  "rustyline",
@@ -810,7 +801,7 @@ dependencies = [
 
 [[package]]
 name = "octofhir-cql-ast"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = [
  "bigdecimal",
  "octofhir-cql-diagnostics",
@@ -819,7 +810,7 @@ dependencies = [
 
 [[package]]
 name = "octofhir-cql-diagnostics"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = [
  "serde",
  "thiserror",
@@ -827,7 +818,7 @@ dependencies = [
 
 [[package]]
 name = "octofhir-cql-elm"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = [
  "bigdecimal",
  "octofhir-cql-ast",
@@ -840,7 +831,7 @@ dependencies = [
 
 [[package]]
 name = "octofhir-cql-eval"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = [
  "bigdecimal",
  "chrono",
@@ -862,7 +853,7 @@ dependencies = [
 
 [[package]]
 name = "octofhir-cql-model"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -872,7 +863,7 @@ dependencies = [
  "octofhir-fhir-model",
  "once_cell",
  "parking_lot",
- "quick-xml 0.42.0",
+ "quick-xml",
  "serde",
  "serde_json",
  "tempfile",
@@ -882,7 +873,7 @@ dependencies = [
 
 [[package]]
 name = "octofhir-cql-parser"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = [
  "bigdecimal",
  "insta",
@@ -896,7 +887,7 @@ dependencies = [
 
 [[package]]
 name = "octofhir-cql-types"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = [
  "bigdecimal",
  "chrono",
@@ -922,19 +913,16 @@ dependencies = [
 
 [[package]]
 name = "octofhir-ucum"
-version = "0.9.2"
+version = "0.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7f9723e5eca100ae3a14b698bbdca2a4d2e6acfc8568a3e68ceefa23a6478192"
+checksum = "d78334a1da0ac53c35b3d833588c52adf8f8ff16e25dff734a2c476db93280c1"
 dependencies = [
- "fuzzy-matcher",
  "hashbrown",
  "libm",
- "quick-xml 0.41.0",
- "regex",
+ "quick-xml",
  "rust_decimal",
  "serde",
  "spin",
- "thiserror",
 ]
 
 [[package]]
@@ -1040,15 +1028,6 @@ name = "quick-error"
 version = "1.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a1d01941d82fa2ab50be1e79e6714289dd7cde78eba4c074bc5a4374f650dfe0"
-
-[[package]]
-name = "quick-xml"
-version = "0.41.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e660451e55124f798a69a5af3f49ccfbefbd41910eefd25caf2393e1f3473ec1"
-dependencies = [
- "memchr",
-]
 
 [[package]]
 name = "quick-xml"
@@ -1516,15 +1495,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 3.0.9",
-]
-
-[[package]]
-name = "thread_local"
-version = "1.1.10"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1ad99c4c6d32803332c548b1af0540b357b3f5fc0be8f6c6bfe8b2e6ae784070"
-dependencies = [
- "cfg-if",
 ]
 
 [[package]]
