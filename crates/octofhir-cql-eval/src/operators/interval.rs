@@ -443,6 +443,8 @@ impl CqlEngine {
         match (&left, &right) {
             (CqlValue::Interval(a), CqlValue::Interval(b)) => interval_includes(a, b),
             (CqlValue::List(a), CqlValue::List(b)) => list_includes(a, b),
+            // `interval includes point`: the same as contains.
+            (CqlValue::Interval(interval), point) => interval_contains_point(interval, point),
             // List includes element - check if element is in the list
             (CqlValue::List(list), element) if !matches!(element, CqlValue::List(_)) => {
                 list_contains(list, element)
@@ -492,6 +494,14 @@ impl CqlEngine {
             (element, CqlValue::List(list)) if !matches!(element, CqlValue::List(_)) => {
                 list_contains(list, element)
             }
+            // `point during interval`: for a point, included in means in.
+            (point, CqlValue::Interval(interval)) => match precision {
+                Some(precision) => interval_contains_point(
+                    &truncate_interval(interval, precision),
+                    &truncate_value(point, precision),
+                ),
+                None => interval_contains_point(interval, point),
+            },
             _ => Err(EvalError::unsupported_operator(
                 "IncludedIn",
                 format!("{}, {}", left.get_type().name(), right.get_type().name()),

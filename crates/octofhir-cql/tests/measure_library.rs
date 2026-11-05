@@ -209,3 +209,26 @@ fn type_tests_understand_fhir_type_names() {
     };
     assert!(values.iter().all(|v| matches!(v, CqlValue::Quantity(_))));
 }
+
+/// `during` and `included in` take a point on the left: measures filter by date with them.
+#[test]
+fn a_point_can_be_included_in_an_interval() {
+    let library = CompiledLibrary::compile_with(
+        r#"library Points version '1.0'
+define "Period": Interval[@2024-01-01T00:00:00.000Z, @2024-12-31T23:59:59.999Z]
+define "Inside": @2024-03-01T00:00:00.000Z during "Period"
+define "Outside": @2020-03-01T00:00:00.000Z during "Period"
+define "Same day": @2024-12-31T12:00:00.000Z included in day of Interval[@2024-12-31T00:00:00.000Z, @2024-12-31T00:00:00.000Z]
+define "Includes": "Period" includes @2024-03-01T00:00:00.000Z
+"#,
+        &DirectoryLibrarySource::new([fixtures()]),
+    )
+    .expect("library compiles");
+    let mut ctx = library.context();
+    library.register(&mut ctx);
+    let results = library.evaluate(&mut ctx).expect("evaluation succeeds");
+    assert_eq!(results["Inside"], CqlValue::Boolean(true));
+    assert_eq!(results["Outside"], CqlValue::Boolean(false));
+    assert_eq!(results["Same day"], CqlValue::Boolean(true));
+    assert_eq!(results["Includes"], CqlValue::Boolean(true));
+}
