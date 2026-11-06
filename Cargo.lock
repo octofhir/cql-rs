@@ -768,7 +768,7 @@ dependencies = [
 
 [[package]]
 name = "octofhir-cql"
-version = "0.2.3"
+version = "0.2.4"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -801,7 +801,7 @@ dependencies = [
 
 [[package]]
 name = "octofhir-cql-ast"
-version = "0.2.3"
+version = "0.2.4"
 dependencies = [
  "bigdecimal",
  "octofhir-cql-diagnostics",
@@ -810,7 +810,7 @@ dependencies = [
 
 [[package]]
 name = "octofhir-cql-diagnostics"
-version = "0.2.3"
+version = "0.2.4"
 dependencies = [
  "serde",
  "thiserror",
@@ -818,7 +818,7 @@ dependencies = [
 
 [[package]]
 name = "octofhir-cql-elm"
-version = "0.2.3"
+version = "0.2.4"
 dependencies = [
  "bigdecimal",
  "octofhir-cql-ast",
@@ -831,7 +831,7 @@ dependencies = [
 
 [[package]]
 name = "octofhir-cql-eval"
-version = "0.2.3"
+version = "0.2.4"
 dependencies = [
  "bigdecimal",
  "chrono",
@@ -853,7 +853,7 @@ dependencies = [
 
 [[package]]
 name = "octofhir-cql-model"
-version = "0.2.3"
+version = "0.2.4"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -873,7 +873,7 @@ dependencies = [
 
 [[package]]
 name = "octofhir-cql-parser"
-version = "0.2.3"
+version = "0.2.4"
 dependencies = [
  "bigdecimal",
  "insta",
@@ -887,7 +887,7 @@ dependencies = [
 
 [[package]]
 name = "octofhir-cql-types"
-version = "0.2.3"
+version = "0.2.4"
 dependencies = [
  "bigdecimal",
  "chrono",
