@@ -674,13 +674,24 @@ impl CqlEngine {
         ctx: &mut EvaluationContext,
     ) -> EvalResult<CqlValue> {
         let source = self.evaluate(&message.source, ctx)?;
-        let _condition = self.evaluate(&message.condition, ctx)?;
-        let _code = self.evaluate(&message.code, ctx)?;
-        let _severity = self.evaluate(&message.severity, ctx)?;
-        let _msg = self.evaluate(&message.message, ctx)?;
+        let condition = self.evaluate(&message.condition, ctx)?;
+        let code = self.evaluate(&message.code, ctx)?;
+        let severity = self.evaluate(&message.severity, ctx)?;
+        let text = self.evaluate(&message.message, ctx)?;
 
-        // In a real implementation, we would log the message here
-        // For now, we just return the source
+        if condition == CqlValue::Boolean(true) {
+            let library = ctx
+                .current_library()
+                .map_or_else(String::new, |library| library.identifier.id.clone());
+            if let Some(trace) = ctx.trace_mut() {
+                let part = |value: &CqlValue| match value {
+                    CqlValue::String(text) => text.clone(),
+                    _ => String::new(),
+                };
+                let line = format!("{} {}: {}", part(&severity), part(&code), part(&text));
+                trace.message(&library, line.trim().to_owned());
+            }
+        }
 
         Ok(source)
     }

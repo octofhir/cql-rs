@@ -340,6 +340,10 @@ pub struct ExpressionDef {
     /// Annotations
     #[serde(skip_serializing_if = "Option::is_none")]
     pub annotation: Option<Vec<Annotation>>,
+    /// Where the definition is in the CQL text, as `line:column-line:column`, 1-based. Kept out of
+    /// the serialized ELM, which carries locators only on request.
+    #[serde(default, skip_serializing)]
+    pub locator: Option<String>,
 }
 
 impl ExpressionDef {

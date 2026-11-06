@@ -12,6 +12,8 @@ use parking_lot::RwLock;
 use std::collections::HashMap;
 use std::sync::Arc;
 
+use crate::trace::TraceRecorder;
+
 /// Evaluation context for CQL expression execution
 ///
 /// The context maintains all state needed during evaluation including:
@@ -49,6 +51,8 @@ pub struct EvaluationContext {
     terminology_provider: Option<Arc<dyn TerminologyProvider>>,
     /// Data retrieval provider
     data_provider: Option<Arc<dyn DataProvider>>,
+    /// Debug trace of the evaluation, when one was asked for
+    trace: Option<TraceRecorder>,
 }
 
 /// A scope for variable bindings during query evaluation
@@ -161,6 +165,7 @@ impl EvaluationContext {
             current_recursion_depth: 0,
             terminology_provider: None,
             data_provider: None,
+            trace: None,
         }
     }
 
@@ -310,6 +315,20 @@ impl EvaluationContext {
 
     /// Run `f` with every query/let scope hidden, so a function body or a
     /// referenced definition cannot see the caller's aliases.
+    /// Record a debug trace of what this context evaluates.
+    pub fn record_trace(&mut self, recorder: TraceRecorder) {
+        self.trace = Some(recorder);
+    }
+
+    /// The recorded trace.
+    pub fn take_trace(&mut self) -> Option<TraceRecorder> {
+        self.trace.take()
+    }
+
+    pub(crate) fn trace_mut(&mut self) -> Option<&mut TraceRecorder> {
+        self.trace.as_mut()
+    }
+
     pub fn with_isolated_scopes<T>(&mut self, f: impl FnOnce(&mut Self) -> T) -> T {
         let saved = std::mem::take(&mut self.scope_stack);
         let result = f(self);

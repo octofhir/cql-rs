@@ -427,7 +427,9 @@ impl AstToElmConverter {
                 );
             }
             self.enter_definition(name, stmt.span);
-            defs.push(self.convert_statement(&stmt.inner));
+            let mut def = self.convert_statement(&stmt.inner);
+            def.locator = self.locator(stmt.span);
+            defs.push(def);
         }
         *self.current_definition.borrow_mut() = None;
 
@@ -480,6 +482,7 @@ impl AstToElmConverter {
             fluent: None,
             external: None,
             annotation: None,
+            locator: None,
         }
     }
 
@@ -695,6 +698,20 @@ impl AstToElmConverter {
     fn convert_function_ref(&self, fn_ref: &ast::FunctionRefExpr) -> Expression {
         let name = fn_ref.name.name.as_str();
         let args: &[ast::Spanned<AstExpression>] = &fn_ref.arguments;
+
+        // `Message` is an operator of the language written as a function.
+        if let ("Message", None, [source, condition, code, severity, message]) =
+            (name, &fn_ref.library, args)
+        {
+            return Expression::Message(MessageExpression {
+                element: Element::default(),
+                source: Box::new(self.convert_expression(&source.inner)),
+                condition: Box::new(self.convert_expression(&condition.inner)),
+                code: Box::new(self.convert_expression(&code.inner)),
+                severity: Box::new(self.convert_expression(&severity.inner)),
+                message: Box::new(self.convert_expression(&message.inner)),
+            });
+        }
 
         if let Some(qualifier) = &fn_ref.library {
             let qualifier = qualifier.name.as_str();
@@ -986,6 +1003,24 @@ impl AstToElmConverter {
         }
     }
 
+    /// A span as an ELM locator, when the source is known.
+    fn locator(&self, span: Span) -> Option<String> {
+        let source = self.source.as_deref()?;
+        let position = |offset: usize| {
+            let before = source.get(..offset)?;
+            let line = before.matches('\n').count() + 1;
+            let start = before.rfind('\n').map_or(0, |index| index + 1);
+            Some((line, before[start..].encode_utf16().count() + 1))
+        };
+        // The span of a statement reaches the next one.
+        let end = span.start + source.get(span.start..span.end)?.trim_end().len();
+        let (start_line, start_column) = position(span.start)?;
+        let (end_line, end_column) = position(end)?;
+        Some(format!(
+            "{start_line}:{start_column}-{end_line}:{end_column}"
+        ))
+    }
+
     /// Convert statement (expression or function definition)
     fn convert_statement(&self, stmt: &Statement) -> ExpressionDef {
         match stmt {
@@ -1000,6 +1035,7 @@ impl AstToElmConverter {
                 fluent: None,
                 external: None,
                 annotation: None,
+                locator: None,
             },
             Statement::FunctionDef(def) => {
                 let scope = Scope {
@@ -1033,6 +1069,7 @@ impl AstToElmConverter {
                     fluent: def.fluent.then_some(true),
                     external: def.external.then_some(true),
                     annotation: None,
+                    locator: None,
                 }
             }
         }

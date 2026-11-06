@@ -23,6 +23,7 @@ use crate::context::EvaluationContext;
 use crate::engine::CqlEngine;
 use crate::error::{EvalError, EvalResult};
 use crate::operators::type_ops::value_is_type;
+use crate::trace::TraceVariable;
 use octofhir_cql_elm::{
     CodeRef, CodeSystemRef, ConceptRef, ExpressionDef, ExpressionRef, FunctionRef, Library,
     ParameterRef, TypeSpecifier, ValueSetRef,
@@ -131,9 +132,28 @@ impl CqlEngine {
             .and_then(|d| d.expression.as_deref())
             .ok_or_else(|| EvalError::undefined_expression(name))?;
 
+        let locator = ctx.trace_mut().is_some().then(|| {
+            library
+                .statements
+                .as_ref()
+                .and_then(|s| s.defs.iter().find(|d| d.name == name && !d.is_function()))
+                .and_then(|d| d.locator.clone())
+        });
+        let locator = locator.flatten();
+        if let Some(trace) = ctx.trace_mut() {
+            trace.enter(&library.identifier.id, name, locator.as_deref(), Vec::new());
+        }
         ctx.push_library(library.clone());
         let result = ctx.with_isolated_scopes(|ctx| self.evaluate(expr, ctx));
         ctx.pop_library();
+        if let Some(trace) = ctx.trace_mut() {
+            trace.exit(
+                &library.identifier.id,
+                name,
+                locator.as_deref(),
+                result.as_ref().ok(),
+            );
+        }
 
         let value = result?;
         ctx.cache_result(cache_key, value.clone());
@@ -319,6 +339,23 @@ impl CqlEngine {
             .ok_or_else(|| EvalError::undefined_function(&def.name))?;
         let operands = def.operand.as_deref().unwrap_or_default();
 
+        if let Some(trace) = ctx.trace_mut() {
+            let variables = operands
+                .iter()
+                .zip(&args)
+                .map(|(operand, value)| TraceVariable {
+                    name: operand.name.clone(),
+                    context_type: "parameter",
+                    value: value.clone(),
+                })
+                .collect();
+            trace.enter(
+                &library.identifier.id,
+                &def.name,
+                def.locator.as_deref(),
+                variables,
+            );
+        }
         ctx.push_library(library.clone());
         let result = ctx.with_isolated_scopes(|ctx| {
             ctx.push_scope();
@@ -330,6 +367,14 @@ impl CqlEngine {
             result
         });
         ctx.pop_library();
+        if let Some(trace) = ctx.trace_mut() {
+            trace.exit(
+                &library.identifier.id,
+                &def.name,
+                def.locator.as_deref(),
+                result.as_ref().ok(),
+            );
+        }
         result
     }
 

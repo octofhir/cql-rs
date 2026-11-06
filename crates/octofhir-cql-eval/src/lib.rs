@@ -11,6 +11,7 @@ pub mod references;
 pub mod registry;
 pub mod retrieve;
 pub mod terminology;
+pub mod trace;
 pub mod value;
 
 // Re-export main types
@@ -23,6 +24,7 @@ pub use references::TerminologyId;
 pub use registry::{FunctionRegistry, OperatorRegistry};
 pub use retrieve::{DataRetrieverAdapter, extract_codes};
 pub use terminology::TerminologyAdapter;
+pub use trace::{TraceEvent, TracePhase, TraceRecorder, TraceVariable};
 pub use value::*;
 
 // Re-export commonly used operator helpers
